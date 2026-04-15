@@ -102,6 +102,7 @@
         
         function connect() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // 使用 /roulette/ws 路徑
             const wsUrl = protocol + '//' + location.host + '/roulette/ws';
             console.log('Connecting to:', wsUrl);
             ws = new WebSocket(wsUrl);
