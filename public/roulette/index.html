@@ -629,7 +629,7 @@
                     amount: roundWin > 0 ? roundWin : -roundBet
                 });
                 
-                if (historyBets.length > 50) historyBets.pop();
+                if (historyBets.length > 5) historyBets.pop();
                 updateHistoryUI();
             }
         }
@@ -688,7 +688,10 @@
         async function placeBet(type, amount, choice) {
             if (gamePhase !== 'betting') return;
             
-            currentBets.push({ type, amount, info: choice });
+            const bet = { type, amount, info: choice };
+            if (type === 'color') bet.color = choice;
+            if (type === 'odd_even') bet.choice = choice;
+            currentBets.push(bet);
             updateCurrentBetsUI();
             
             try {
@@ -707,7 +710,7 @@
             if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
             if (gamePhase !== 'betting') return;
             
-            currentBets.push({ type: 'number', amount: amt, info: '#' + num });
+            currentBets.push({ type: 'number', amount: amt, info: '#' + num, number: num });
             updateCurrentBetsUI();
             
             try {
