@@ -14,7 +14,8 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 10px; }
         .balance { font-size: 1.3rem; }
         .balance span { color: #ffd700; font-weight: bold; }
-        .result-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1rem; min-width: 80px; text-align: center; }
+        .result-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1rem; min-width: 80px; text-align: center; display: none; }
+        .result-badge.show { display: inline-block; }
         .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
         .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
@@ -552,8 +553,7 @@
                     phaseText.textContent = '⏳ 等待開始';
                     countdown.textContent = '-';
                     timerBox.classList.add('waiting');
-                    badge.className = 'result-badge neutral';
-                    badge.textContent = '-';
+                    badge.style.display = 'none';
                     disableBtns();
                     break;
                     
@@ -566,8 +566,7 @@
                     if (gamePhase !== 'betting') {
                         currentBets = [];
                         updateCurrentBetsUI();
-                        badge.className = 'result-badge neutral';
-                        badge.textContent = '-';
+                        badge.style.display = 'none';
                         wheel.classList.remove('spinning', 'spinning-anim');
                         wheel.style.animation = '';
                     }
@@ -583,9 +582,7 @@
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display waiting';
-                    // Clear currentBets at start of spinning (new round, no more bets accepted)
-                    currentBets = [];
-                    updateCurrentBetsUI();
+                    // Do NOT clear currentBets here - we need them for result calculation!
                     break;
                     
                 case 'result':
@@ -634,11 +631,9 @@
         }
         
         function processResult(lastSpin) {
-            console.log('processResult called, currentBets at start:', JSON.stringify(currentBets));
+            console.log('processResult called, currentBets:', JSON.stringify(currentBets));
             let roundWin = 0;
             let roundBet = 0;
-            console.log('processResult called:', JSON.stringify(lastSpin));
-            console.log('currentBets:', JSON.stringify(currentBets));
             
             for (const bet of currentBets) {
                 roundBet += bet.amount;
@@ -653,14 +648,12 @@
                 
                 if (win) {
                     const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
-                    console.log('Bet win:', bet, 'prize:', prize);
                     roundWin += prize;
                 }
             }
             
-            console.log('roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
+            console.log('roundBet:', roundBet, 'roundWin:', roundWin);
             myBalance = myBalance - roundBet + roundWin;
-            console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
             
@@ -671,13 +664,14 @@
                 body: JSON.stringify({ username: myName, newScore: myBalance })
             });
             
+            // 顯示結果badge
             const badge = document.getElementById('resultBadge');
             if (roundWin > 0) {
                 badge.textContent = '+' + roundWin;
-                badge.className = 'result-badge win';
+                badge.className = 'result-badge show win';
             } else if (roundBet > 0) {
                 badge.textContent = '-' + roundBet;
-                badge.className = 'result-badge lose';
+                badge.className = 'result-badge show lose';
             }
             
             if (roundBet > 0) {

@@ -193,7 +193,30 @@ function getRouletteColor(num) {
 
 function spinWheel() {
     rouletteState.phase = 'spinning';
-    const result = Math.floor(Math.random() * 37);
+    
+    // 庄家勝率65%的機率分布
+    // P(0 green) = 0.30 -> 庄家贏（閒家下注顏色必輸）
+    // P(red) = 0.35
+    // P(black) = 0.35
+    // 下注紅色時：庄家贏率 = P(0) + P(black) = 0.30 + 0.35 = 0.65 (65%)
+    // 下注黑色時：庄家贏率 = P(0) + P(red) = 0.30 + 0.35 = 0.65 (65%)
+    // 下注單數時：庄家贏率 = P(0) + P(even non-0) ≈ 0.30 + 0.32 ≈ 0.62
+    // 下注雙數時：庄家贏率 = P(0) + P(odd non-0) ≈ 0.30 + 0.32 ≈ 0.62
+    const rnd = Math.random();
+    let result;
+    
+    if (rnd < 0.30) {
+        result = 0;
+    } else if (rnd < 0.65) {
+        // 0.30 ~ 0.65 -> red (35%)
+        const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+        result = reds[Math.floor(Math.random() * reds.length)];
+    } else {
+        // 0.65 ~ 1.00 -> black (35%)
+        const blacks = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+        result = blacks[Math.floor(Math.random() * blacks.length)];
+    }
+    
     rouletteState.lastSpin = { result, color: getRouletteColor(result), time: Date.now() };
     
     // HTTP輪詢模式不需要廣播，等待3秒後進入結果
@@ -352,6 +375,29 @@ app.post('/api/roulette/update-score', async (req, res) => {
         res.json({ success: true });
     } catch(e) {
         console.log('更新余額失敗:', e.message);
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+// 輪盤遊戲 - 管理員：修改玩家餘額（老闆用）
+app.post('/api/roulette/admin/update-score', async (req, res) => {
+    const { username, newScore } = req.body;
+    if (!username || newScore === undefined) {
+        return res.json({ success: false, message: '請提供 username 和 newScore' });
+    }
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    
+    try {
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = ? WHERE username = ?`,
+            args: [newScore, username]
+        });
+        console.log(`管理員更新 ${username} 的餘額為 ${newScore}`);
+        res.json({ success: true, message: `已將 ${username} 的餘額更新為 ${newScore}` });
+    } catch(e) {
+        console.log('更新餘額失敗:', e.message);
         res.json({ success: false, message: '更新失敗' });
     }
 });
