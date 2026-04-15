@@ -269,7 +269,7 @@
     <script>
         console.log('Roulette script starting...');
         
-        let myName = '', myBalance = 1000, gamePhase = 'waiting', lastResult = null;
+        let myName = '', myBalance = parseInt(localStorage.getItem('rouletteBalance')) || 1000, gamePhase = 'waiting', lastResult = null;
         let currentBets = [];
         let historyBets = [];
         let quickAmount = 100;
@@ -321,6 +321,7 @@
                     console.log('Login success, setting up game UI');
                     myName = username;
                     myBalance = data.player.score;
+                    localStorage.setItem('rouletteBalance', myBalance);
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('topBar').style.display = 'flex';
@@ -601,6 +602,7 @@
             }
             
             myBalance = myBalance - roundBet + roundWin;
+            localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
             
             const badge = document.getElementById('resultBadge');
