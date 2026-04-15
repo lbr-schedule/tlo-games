@@ -133,18 +133,17 @@
     </style>
 </head>
 <body>
-    <h1>🎰 T-LO 俄羅斯輪盤</h1>
+    <h1>🎰 T-LO 俄羅斯輪盤 <span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
-        <div class="top-bar">
+        <div class="top-bar" id="topBar" style="display:none;">
             <div class="balance">💰 餘額: <span id="balance">1000</span></div>
             <div>
-                <span class="help-toggle" onclick="showHelp()">❓</span>
                 <span class="result-badge neutral" id="resultBadge">-</span>
             </div>
         </div>
         
-        <div class="timer-box waiting" id="timerBox">
+        <div class="timer-box waiting" id="timerBox" style="display:none;">
             <div class="phase" id="phaseText">載入中...</div>
             <div class="countdown" id="countdown">-</div>
         </div>
@@ -237,6 +236,11 @@
         <div class="modal">
             <h2>🎰 俄羅斯輪盤 玩法</h2>
             
+            <h3>📌 遊戲流程</h3>
+            <p>1. 下注時間結束後開始旋轉</p>
+            <p>2. 轉盤停止後，指針指的數字就是結果</p>
+            <p>3. 猜對即可獲得獎金</p>
+            
             <h3>💰 下注方式</h3>
             <p>選擇你要下注的金額（快捷：10 / 50 / 100 / 500）</p>
             <p>或自行輸入金額下注</p>
@@ -257,11 +261,6 @@
             <div class="bet-demo">
                 <span class="num">數字</span> - 10倍獎金（0-36）
             </div>
-            
-            <h3>📌 遊戲流程</h3>
-            <p>1. 下注時間結束後開始旋轉</p>
-            <p>2. 轉盤停止後，指針指的數字就是結果</p>
-            <p>3. 猜對即可獲得獎金</p>
             
             <button class="close-btn" onclick="hideHelp()">知道了！</button>
         </div>
@@ -324,6 +323,8 @@
                     myBalance = data.player.score;
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('topBar').style.display = 'flex';
+                    document.getElementById('timerBox').style.display = 'block';
                     document.getElementById('gameSection').style.display = 'block';
                     console.log('Calling drawWheel...');
                     drawWheel();
@@ -395,6 +396,8 @@
             myName = '';
             myBalance = 1000;
             document.getElementById('authSection').style.display = 'block';
+            document.getElementById('topBar').style.display = 'none';
+            document.getElementById('timerBox').style.display = 'none';
             document.getElementById('gameSection').style.display = 'none';
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
