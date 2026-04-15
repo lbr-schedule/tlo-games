@@ -632,13 +632,16 @@
         }
         
         function processResult(lastSpin) {
-            console.log('processResult START - currentBets:', JSON.stringify(currentBets));
+            console.log('===== processResult START =====');
+            console.log('currentBets:', JSON.stringify(currentBets));
+            console.log('lastSpin:', JSON.stringify(lastSpin));
             let roundWin = 0;
             let roundBet = 0;
             
             for (const bet of currentBets) {
                 roundBet += bet.amount;
                 let win = false;
+                console.log('Checking bet:', JSON.stringify(bet), 'vs result:', lastSpin.result, lastSpin.color);
                 
                 if (bet.type === 'color' && bet.color === lastSpin.color) win = true;
                 if (bet.type === 'odd_even') {
@@ -647,13 +650,15 @@
                 }
                 if (bet.type === 'number' && bet.number === lastSpin.result) win = true;
                 
+                console.log('Bet win?', win);
                 if (win) {
                     const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
+                    console.log('Prize calculated:', prize, '(bet.type:', bet.type, ', bet.amount:', bet.amount, ')');
                     roundWin += prize;
                 }
             }
             
-            console.log('roundBet:', roundBet, 'roundWin:', roundWin);
+            console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
             myBalance = myBalance - roundBet + roundWin;
             localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
