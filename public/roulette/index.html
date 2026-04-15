@@ -309,7 +309,7 @@
             if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
             
             try {
-                const res = await fetch('/api/login', {
+                const res = await fetch('/api/roulette/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -349,7 +349,7 @@
             if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
             
             try {
-                const res = await fetch('/api/register', {
+                const res = await fetch('/api/roulette/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })

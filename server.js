@@ -6,7 +6,7 @@ const { createClient } = require('@libsql/client');
 const app = express();
 const server = http.createServer(app);
 
-// Turso 資料庫
+// 骰子遊戲資料庫（Turso）
 const dbUrl = process.env.DATABASE_URL || 'libsql://lbr-dice-lbr-schedule.aws-ap-northeast-1.turso.io';
 const dbAuthToken = process.env.DATABASE_AUTH_TOKEN || '';
 
@@ -19,9 +19,27 @@ try {
         authToken: dbAuthToken
     });
     dbAvailable = true;
-    console.log('已连接到 Turso 数据库:', dbUrl);
+    console.log('骰子遊戲已连接到 Turso 数据库:', dbUrl);
 } catch(e) {
-    console.log('Turso 连接失败，将使用内存存储:', e.message);
+    console.log('骰子遊戲 Turso 连接失败:', e.message);
+}
+
+// 輪盤遊戲資料庫（Turso）
+const rouletteDbUrl = process.env.ROULETTE_DATABASE_URL || 'libsql://lbr-roulette-lbr-schedule.aws-ap-northeast-1.turso.io';
+const rouletteDbAuthToken = process.env.ROULETTE_DATABASE_AUTH_TOKEN || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzYyNDA0MTIsImlkIjoiMDE5ZDkwMmUtYmYwMS03NzQ0LTlkZWYtYjEyM2Y4YWM4YTM1IiwicmlkIjoiNjY1Y2FiZDQtMTEzYS00NzY0LWEzYjUtODg2ZWZhMmNjZjlmIn0.ratx_Llo1inhrNog6Tg9HYNh5W8Knv3WL4hc4md-V8bpysiCpzs0877bhIKC8TEUagwduSKZ2lxdDUriMIBWDA';
+
+let rouletteDb = null;
+let rouletteDbAvailable = false;
+
+try {
+    rouletteDb = createClient({
+        url: rouletteDbUrl,
+        authToken: rouletteDbAuthToken
+    });
+    rouletteDbAvailable = true;
+    console.log('輪盤遊戲已连接到 Turso 数据库:', rouletteDbUrl);
+} catch(e) {
+    console.log('輪盤遊戲 Turso 连接失败:', e.message);
 }
 
 // 骰子遊戲用 WebSocket
@@ -216,6 +234,45 @@ app.post('/api/roulette/bet', (req, res) => {
     }
     
     res.json({ success: true, message: '下注成功！' });
+});
+
+// 輪盤遊戲 - 註冊
+app.post('/api/roulette/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await rouletteDb.execute({
+            sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
+            args: [username, password]
+        });
+        res.json({ success: true, message: '註冊成功！' });
+    } catch(e) {
+        res.json({ success: false, message: '帳號已存在' });
+    }
+});
+
+// 輪盤遊戲 - 登入
+app.post('/api/roulette/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM players WHERE username = ? AND password = ?`,
+            args: [username, password]
+        });
+        
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            res.json({ success: true, player: { id: row.id, username: row.username, score: row.score, wins: row.wins || 0, losses: row.losses || 0 } });
+        } else {
+            res.json({ success: false, message: '帳號或密碼錯誤' });
+        }
+    } catch(e) {
+        res.json({ success: false, message: '登入失敗' });
+    }
 });
 
 // ========== HTTP 路由 ==========
