@@ -21,16 +21,12 @@ const rouletteState = {
     gamePhase: 'idle',
     currentBets: [],
     lastResult: null,
-    BETTING_TIME: 10000
+    players: new Map(), // username -> ws
+    BETTING_TIME: 10000,
+    spinTimer: null
 };
 
 // 骰子遊戲邏輯
-function getDiceColor(num) {
-    if (num <= 2) return '#ff6b6b';
-    if (num <= 4) return '#ffd93d';
-    return '#6bcb77';
-}
-
 function createDiceGame(player1, player2) {
     return {
         id: Date.now(),
@@ -64,18 +60,22 @@ function getRouletteColor(num) {
 }
 
 function broadcastRoulette(msg) {
-    wss.clients.forEach(ws => {
-        if (ws.readyState === WebSocket.OPEN && ws.gameType === 'roulette') {
+    for (const [username, ws] of rouletteState.players) {
+        if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify(msg));
         }
-    });
+    }
+}
+
+function getOnlinePlayers() {
+    return Array.from(rouletteState.players.keys());
 }
 
 function startRouletteBetting() {
     rouletteState.gamePhase = 'betting';
     rouletteState.currentBets = [];
     broadcastRoulette({ type: 'betting_start', duration: rouletteState.BETTING_TIME });
-    setTimeout(spinRouletteWheel, rouletteState.BETTING_TIME);
+    rouletteState.spinTimer = setTimeout(spinRouletteWheel, rouletteState.BETTING_TIME);
 }
 
 function spinRouletteWheel() {
@@ -83,7 +83,7 @@ function spinRouletteWheel() {
     const result = Math.floor(Math.random() * 37);
     rouletteState.lastResult = { result, color: getRouletteColor(result) };
     broadcastRoulette({ type: 'spinning', result });
-    setTimeout(() => showRouletteResult(result, rouletteState.lastResult.color), 3000);
+    rouletteState.spinTimer = setTimeout(() => showRouletteResult(result, rouletteState.lastResult.color), 3000);
 }
 
 function showRouletteResult(result, color) {
@@ -111,14 +111,31 @@ function showRouletteResult(result, color) {
     }
 
     broadcastRoulette({ type: 'result', result, color, winners, losers });
-    setTimeout(startRouletteBetting, 5000);
+    
+    // 5秒後開始下一局（只有有玩家在線才繼續）
+    if (rouletteState.players.size > 0) {
+        rouletteState.spinTimer = setTimeout(startRouletteBetting, 5000);
+    } else {
+        rouletteState.gamePhase = 'idle';
+    }
 }
 
-// 升級 HTTP 請求處理
+// 停止輪盤遊戲
+function stopRouletteGame() {
+    if (rouletteState.spinTimer) {
+        clearTimeout(rouletteState.spinTimer);
+        rouletteState.spinTimer = null;
+    }
+    rouletteState.gamePhase = 'idle';
+    rouletteState.currentBets = [];
+}
+
+// HTTP 升級處理
 app.on('upgrade', (request, socket, head) => {
-    const pathname = new URL(request.url, 'http://localhost').pathname;
+    const pathname = new URL(request.url, 'http://' + request.headers.host).pathname;
+    console.log('WS upgrade request:', pathname);
     
-    if (pathname === '/roulette' || pathname === '/roulette/ws') {
+    if (pathname === '/roulette/ws' || pathname === '/ws/roulette') {
         wss.handleUpgrade(request, socket, head, (ws) => {
             ws.gameType = 'roulette';
             wss.emit('connection', ws, request);
@@ -145,6 +162,18 @@ wss.on('connection', (ws) => {
             }
         } catch(e) { console.log('Error:', e.message); }
     });
+    
+    ws.on('close', () => {
+        if (ws.gameType === 'roulette' && ws._username) {
+            rouletteState.players.delete(ws._username);
+            broadcastRoulette({ type: 'players_update', players: getOnlinePlayers() });
+            
+            // 如果沒有玩家了，停止遊戲
+            if (rouletteState.players.size === 0) {
+                stopRouletteGame();
+            }
+        }
+    });
 });
 
 // 骰子遊戲訊息處理
@@ -152,11 +181,9 @@ function handleDiceMessage(ws, msg) {
     const username = msg.username || 'Player';
 
     if (msg.type === 'join') {
-        // 配對玩家
         const opponent = getNextDiceOpponent(username);
         
         if (opponent) {
-            // 找到對手，開始遊戲
             const game = createDiceGame(username, opponent);
             diceState.games.set(game.id, game);
             diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== opponent);
@@ -169,7 +196,6 @@ function handleDiceMessage(ws, msg) {
             ws.send(JSON.stringify({ type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 0 }));
             diceState.players.set(username, { ws, gameId: game.id });
         } else {
-            // 等待中
             if (!diceState.waitingPlayers.includes(username)) {
                 diceState.waitingPlayers.push(username);
             }
@@ -199,7 +225,6 @@ function handleDiceMessage(ws, msg) {
             nextTurn: game.currentTurn
         });
         
-        // 3回合後結束
         if (game.round >= 3) {
             game.status = 'finished';
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
@@ -222,7 +247,6 @@ function handleDiceMessage(ws, msg) {
         const game = diceState.games.get(player.gameId);
         if (!game || game.status !== 'finished') return;
         
-        // 重建新遊戲
         const newGame = createDiceGame(game.players[0], game.players[1]);
         diceState.games.set(newGame.id, newGame);
         diceState.games.delete(game.id);
@@ -241,13 +265,36 @@ function handleRouletteMessage(ws, msg) {
     const username = msg.username || 'Player';
 
     if (msg.type === 'join') {
-        ws._balance = 1000;
         ws._username = username;
-        ws.send(JSON.stringify({ type: 'joined', balance: ws._balance, phase: rouletteState.gamePhase, result: rouletteState.lastResult }));
-        if (rouletteState.gamePhase === 'idle') startRouletteBetting();
+        ws._balance = 1000;
+        rouletteState.players.set(username, ws);
+        
+        // 發送歡迎訊息和當前狀態
+        ws.send(JSON.stringify({ 
+            type: 'joined', 
+            balance: ws._balance, 
+            phase: rouletteState.gamePhase,
+            result: rouletteState.lastResult,
+            players: getOnlinePlayers()
+        }));
+        
+        // 廣播玩家列表
+        broadcastRoulette({ type: 'players_update', players: getOnlinePlayers() });
+        
+        // 如果遊戲閒置，開始新遊戲
+        if (rouletteState.gamePhase === 'idle') {
+            startRouletteBetting();
+        }
     }
 
     if (msg.type === 'bet' && rouletteState.gamePhase === 'betting') {
+        // 檢查玩家是否已下注
+        const existingBet = rouletteState.currentBets.find(b => b.username === username);
+        if (existingBet) {
+            ws.send(JSON.stringify({ type: 'error', message: '你已經下注了！' }));
+            return;
+        }
+        
         rouletteState.currentBets.push({
             username,
             balance: ws._balance,
@@ -257,7 +304,8 @@ function handleRouletteMessage(ws, msg) {
             choice: msg.choice,
             number: msg.number
         });
-        broadcastRoulette({ type: 'bets_update', bets: rouletteState.currentBets });
+        
+        ws.send(JSON.stringify({ type: 'bet_confirmed', bets: rouletteState.currentBets.filter(b => b.username === username) }));
     }
 }
 
@@ -265,14 +313,46 @@ function handleRouletteMessage(ws, msg) {
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
 
-// 首頁導向骰子遊戲
+// 首頁
 app.get('/', (req, res) => {
-    res.redirect('/dice');
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>T-LO 遊戲大廳</title>
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+                h1 { color: #ffd700; font-size: 2.5rem; margin-bottom: 30px; }
+                .games { display: flex; gap: 30px; }
+                .game-card { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; text-align: center; }
+                .game-card h2 { color: #ffd700; margin-bottom: 15px; }
+                .game-card a { display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <h1>🎮 T-LO 遊戲大廳</h1>
+            <div class="games">
+                <div class="game-card">
+                    <h2>🎲 骰子大作戰</h2>
+                    <p>PvP 對戰遊戲</p>
+                    <a href="/dice">開始玩</a>
+                </div>
+                <div class="game-card">
+                    <h2>🎰 俄羅斯輪盤</h2>
+                    <p>單人/多人對戰</p>
+                    <a href="/roulette">開始玩</a>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🎮 T-LO 遊戲大廳已啟動!`);
+    console.log(`   首頁: http://localhost:${PORT}/`);
     console.log(`   骰子遊戲: http://localhost:${PORT}/dice`);
     console.log(`   俄羅斯輪盤: http://localhost:${PORT}/roulette`);
 });
