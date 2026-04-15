@@ -36,16 +36,16 @@ try {
         url: rouletteDbUrl,
         authToken: rouletteDbAuthToken
     });
-    rouletteDbAvailable = true;
-    console.log('輪盤遊戲已连接到 Turso 数据库:', rouletteDbUrl);
+    console.log('輪盤遊戲 Turso client 已建立');
 } catch(e) {
-    console.log('輪盤遊戲 Turso 连接失败:', e.message);
+    console.log('輪盤遊戲 Turso client 建立失敗:', e.message);
 }
 
 // 測試輪盤資料庫連線
 if (rouletteDb) {
-    rouletteDb.execute({ sql: 'SELECT 1' }).then(() => {
-        console.log('輪盤資料庫連線測試成功');
+    rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
+        console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
+        rouletteDbAvailable = true;
     }).catch(e => {
         console.log('輪盤資料庫連線測試失敗:', e.message);
         rouletteDbAvailable = false;
