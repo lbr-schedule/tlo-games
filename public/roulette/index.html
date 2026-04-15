@@ -605,6 +605,13 @@
             localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
             
+            // 更新資料庫余額
+            fetch('/api/roulette/update-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: myName, newScore: myBalance })
+            });
+            
             const badge = document.getElementById('resultBadge');
             if (roundWin > 0) {
                 badge.textContent = '+' + roundWin;

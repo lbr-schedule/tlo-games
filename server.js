@@ -329,6 +329,27 @@ app.post('/api/roulette/login', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 更新余額
+app.post('/api/roulette/update-score', async (req, res) => {
+    const { username, newScore } = req.body;
+    if (!username || typeof newScore !== 'number') {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = ? WHERE username = ?`,
+            args: [newScore, username]
+        });
+        console.log('更新余額成功, username:', username, 'newScore:', newScore);
+        res.json({ success: true });
+    } catch(e) {
+        console.log('更新余額失敗:', e.message);
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
 // ========== HTTP 路由 ==========
 app.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, 'http://localhost');
