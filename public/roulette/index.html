@@ -344,7 +344,8 @@
                     msg.className = 'auth-msg';
                 }
             } catch(e) {
-                msg.textContent = '連線失敗';
+                console.log('Login fetch error:', e.message);
+                msg.textContent = '連線失敗: ' + e.message;
                 msg.className = 'auth-msg';
             }
         }
