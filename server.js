@@ -203,16 +203,39 @@ function spinWheel() {
     }, 3000);
 }
 
+// 輪盤遊戲狀態（單人，無需 WebSocket）
+let rouletteState = {
+    phase: 'waiting', // waiting, betting, spinning, result
+    result: null,
+    lastSpin: null,
+    spinTimer: null,
+    betTimer: null,
+    BETTING_TIME: 10000,
+    phaseStartTime: 0,
+    hasPlayer: false
+};
+
+// 當玩家登入時呼叫
+function playerJoined() {
+    rouletteState.hasPlayer = true;
+    if (rouletteState.phase === 'waiting') {
+        startBetting();
+    }
+}
+
 function startBetting() {
+    if (!rouletteState.hasPlayer) {
+        rouletteState.phase = 'waiting';
+        return;
+    }
     rouletteState.phase = 'betting';
-    rouletteState.lastSpin = null; // 清除上一局結果
-    rouletteState.currentBets = []; // 清除下注（防範新一局殘留）
+    rouletteState.lastSpin = null;
+    rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
     rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
 }
 
-// 初始化輪盤
-startBetting();
+// 不再自動開始，等待玩家加入
 
 // 輪盤 API
 app.get('/api/roulette/status', (req, res) => {
@@ -305,11 +328,14 @@ app.post('/api/roulette/login', async (req, res) => {
         
         if (result.rows && result.rows.length > 0) {
             const row = result.rows[0];
+            console.log('輪盤登入成功, username:', username, 'score:', row.score);
+            playerJoined(); // 通知有玩家加入
             res.json({ success: true, player: { id: row.id, username: row.username, score: row.score, wins: row.wins || 0, losses: row.losses || 0 } });
         } else {
             res.json({ success: false, message: '帳號或密碼錯誤' });
         }
     } catch(e) {
+        console.log('輪盤登入失敗:', e.message);
         res.json({ success: false, message: '登入失敗' });
     }
 });
