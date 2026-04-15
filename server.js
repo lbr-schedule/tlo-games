@@ -350,6 +350,43 @@ app.post('/api/roulette/update-score', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 保存歷史記錄
+app.post('/api/roulette/save-history', async (req, res) => {
+    const { username, result, color, win, amount } = req.body;
+    if (!username) {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await rouletteDb.execute({
+            sql: `INSERT INTO roulette_history (username, result, color, win, amount) VALUES (?, ?, ?, ?, ?)`,
+            args: [username, result, color, win ? 1 : 0, amount]
+        });
+        res.json({ success: true });
+    } catch(e) {
+        console.log('保存歷史失敗:', e.message);
+        res.json({ success: false, message: '保存失敗' });
+    }
+});
+
+// 輪盤遊戲 - 取得歷史記錄
+app.get('/api/roulette/history/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!rouletteDbAvailable) return res.json({ history: [] });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_history WHERE username = ? ORDER BY id DESC LIMIT 5`,
+            args: [username]
+        });
+        res.json({ history: result.rows || [] });
+    } catch(e) {
+        console.log('取得歷史失敗:', e.message);
+        res.json({ history: [] });
+    }
+});
+
 // ========== HTTP 路由 ==========
 app.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, 'http://localhost');

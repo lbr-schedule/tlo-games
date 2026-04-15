@@ -293,7 +293,7 @@
             document.getElementById('gameSection').style.display = 'block';
             drawWheel();
             updateCurrentBetsUI();
-            updateHistoryUI();
+            loadHistoryFromDB();
             pollStatus();
             pollInterval = setInterval(pollStatus, 1000);
         }
@@ -351,6 +351,7 @@
                     document.getElementById('timerBox').style.display = 'block';
                     document.getElementById('gameSection').style.display = 'block';
                     console.log('Calling drawWheel...');
+                    loadHistoryFromDB();
                     drawWheel();
                     console.log('drawWheel called, setting up polling');
                     currentBets = [];
@@ -412,6 +413,23 @@
             } else {
                 document.querySelector('.game-tab:nth-child(2)').classList.add('active');
                 document.getElementById('historyTab').classList.add('active');
+            }
+        }
+        
+        async function loadHistoryFromDB() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/history/' + myName);
+                const data = await res.json();
+                historyBets = (data.history || []).map(row => ({
+                    result: row.result,
+                    color: row.color,
+                    win: row.win === 1,
+                    amount: row.amount
+                }));
+                updateHistoryUI();
+            } catch(e) {
+                console.log('載入歷史失敗:', e);
             }
         }
         
@@ -656,6 +674,19 @@
                 
                 if (historyBets.length > 5) historyBets.pop();
                 updateHistoryUI();
+                
+                // 保存到資料庫
+                fetch('/api/roulette/save-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: myName,
+                        result: lastSpin.result,
+                        color: lastSpin.color,
+                        win: roundWin > 0,
+                        amount: roundWin > 0 ? roundWin : -roundBet
+                    })
+                });
             }
         }
         
