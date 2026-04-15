@@ -564,7 +564,6 @@
                     enableBtns();
                     
                     if (gamePhase !== 'betting') {
-                        console.log('Clearing currentBets, was:', JSON.stringify(currentBets));
                         currentBets = [];
                         updateCurrentBetsUI();
                         badge.className = 'result-badge neutral';
@@ -584,6 +583,9 @@
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display waiting';
+                    // Clear currentBets at start of spinning (new round, no more bets accepted)
+                    currentBets = [];
+                    updateCurrentBetsUI();
                     break;
                     
                 case 'result':
@@ -632,6 +634,7 @@
         }
         
         function processResult(lastSpin) {
+            console.log('processResult called, currentBets at start:', JSON.stringify(currentBets));
             let roundWin = 0;
             let roundBet = 0;
             console.log('processResult called:', JSON.stringify(lastSpin));
