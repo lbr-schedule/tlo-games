@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 T-LO 骰子大作戰 - PvP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 15px; }
+        h1 span { font-size: 2.5rem; }
+        .container { max-width: 450px; width: 100%; }
+        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem; margin-bottom: 10px; }
+        input:focus { border-color: #667eea; outline: none; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-secondary { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .btn-dice { background: linear-gradient(135deg, #f83600, #f9d423); color: white; font-size: 1.2rem; padding: 15px; }
+        .btn-rematch { background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; }
+        .auth-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .auth-tabs .tab { flex: 1; padding: 8px; text-align: center; background: #eee; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .auth-tabs .tab.active { background: #667eea; color: white; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-section, .game-section { display: none; }
+        .auth-section.active, .game-section.active { display: block; }
+        .player-info { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; color: white; margin-bottom: 15px; }
+        .player-info .score { font-size: 1.8rem; font-weight: bold; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; text-align: center; background: #eee; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .status { text-align: center; padding: 20px; font-size: 1.1rem; color: #666; background: #f8f8f8; border-radius: 15px; }
+        .status .spinner { font-size: 3rem; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .dice-area { display: flex; justify-content: space-around; align-items: center; padding: 20px; background: #f8f8f8; border-radius: 20px; margin: 15px 0; }
+        .dice-box { text-align: center; }
+        .dice-box h3 { color: #666; margin-bottom: 10px; }
+        .dice { width: 80px; height: 80px; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: 0 auto 10px; transition: all 0.3s; }
+        .dice.win { background: #d4ffd4; box-shadow: 0 0 30px #4f4; }
+        .dice.lose { background: #ffd4d4; box-shadow: 0 0 30px #f44; }
+        .dice.draw { background: #ffffd4; box-shadow: 0 0 30px #ff4; }
+        .result { text-align: center; font-size: 1.5rem; font-weight: bold; padding: 15px; border-radius: 10px; margin: 15px 0; }
+        .result.win { background: #d4ffd4; color: #080; }
+        .result.lose { background: #ffd4d4; color: #d00; }
+        .result.draw { background: #ffffd4; color: #880; }
+        .opponent-info { text-align: center; padding: 10px; background: #f8f8f8; border-radius: 10px; margin-bottom: 15px; }
+        .opponent-info .name { font-weight: bold; color: #764ba2; }
+        .rank-list { list-style: none; }
+        .rank-list li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .rank-list li:first-child { background: #fff9d4; border-radius: 10px 10px 0 0; font-weight: bold; }
+        .switch-btn { text-align: center; margin-top: 15px; }
+        .switch-btn a { color: #667eea; cursor: pointer; text-decoration: underline; }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        .dice.shaking { animation: shake 0.2s ease-in-out infinite; }
+        .connection-status { text-align: center; font-size: 0.8rem; padding: 5px; border-radius: 5px; margin-bottom: 10px; }
+        .connection-status.offline { background: #ffe0e0; color: #d00; }
+        .connection-status.online { background: #e0ffe0; color: #080; }
+        .cheat-badge { display: inline-block; background: linear-gradient(135deg, #ffd700, #ff8c00); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; }
+        .message { text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+        .message.error { background: #ffe0e0; color: #d00; }
+        .message.success { background: #e0ffe0; color: #080; }
+        .score-info { display: flex; justify-content: space-around; margin-top: 10px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span>🎲</span> T-LO 骰子</h1>
+        <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
+        
+        <!-- 登入區塊 -->
+        <div class="card auth-section active" id="authSection">
+            <div class="auth-tabs">
+                <div class="tab active" onclick="showAuth('login')">登入</div>
+                <div class="tab" onclick="showAuth('register')">註冊</div>
+            </div>
+            <div id="authMessage"></div>
+            <div class="auth-form active" id="loginForm">
+                <input type="text" id="loginUsername" placeholder="帳號">
+                <input type="password" id="loginPassword" placeholder="密碼">
+                <button class="btn-primary" onclick="doLogin()">登入</button>
+            </div>
+            <div class="auth-form" id="registerForm">
+                <input type="text" id="registerUsername" placeholder="選擇帳號">
+                <input type="password" id="registerPassword" placeholder="設定密碼">
+                <button class="btn-primary" onclick="doRegister()">註冊</button>
+            </div>
+        </div>
+        
+        <!-- 遊戲區塊 -->
+        <div class="card game-section" id="gameSection">
+            <div class="player-info">
+                <div>
+                    <div id="playerName">-</div>
+                    <div id="cheatBadge"></div>
+                </div>
+                <div class="score" id="playerScore">0</div>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('pvp')">🎮 對戰</div>
+                <div class="tab" onclick="showTab('rank')">🏆 排行</div>
+            </div>
+            
+            <!-- 配對區域 -->
+            <div id="matchView">
+                <div class="status">
+                    <div class="spinner">🐱</div>
+                    <p>等待配對中...</p>
+                </div>
+                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button>
+            </div>
+            
+            <!-- 對戰區域 -->
+            <div id="battleView" style="display:none;">
+                <div class="opponent-info">對手: <span class="name" id="opponentDisplay">-</span></div>
+                
+                <div class="dice-area">
+                    <div class="dice-box">
+                        <h3>你</h3>
+                        <div class="dice" id="myDice">?</div>
+                    </div>
+                    <div style="font-size:1.5rem;">VS</div>
+                    <div class="dice-box">
+                        <h3>對手</h3>
+                        <div class="dice" id="oppDice">?</div>
+                    </div>
+                </div>
+                
+                <div id="resultView" style="display:none;">
+                    <div class="result" id="resultText"></div>
+                    <div class="score-info">
+                        <span id="scoreChangeText"></span>
+                    </div>
+                </div>
+                
+                <button class="btn-dice" id="rollBtn" onclick="doAction()" disabled>等待擲骰...</button>
+                <button class="btn-secondary" onclick="doLeave()" style="margin-top:10px;">離開對戰</button>
+            </div>
+            
+            <!-- 排行區域 -->
+            <div id="rankView" style="display:none;">
+                <ul class="rank-list" id="rankList"><li>載入中...</li></ul>
+                <button class="btn-primary" onclick="loadRank()" style="margin-top:15px;">🔄 刷新</button>
+            </div>
+            
+            <div class="switch-btn"><a onclick="doLogout()">登出</a></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let myName = '';
+        let myScore = 0;
+        let inGame = false;
+        let canPlay = false;
+        
+        // 頁面載入時恢復 session
+        function restoreSession() {
+            const saved = localStorage.getItem('lbr_dice_session');
+            if (saved) {
+                const data = JSON.parse(saved);
+                myName = data.username || '';
+                myScore = data.score || 0;
+                if (myName) {
+                    document.getElementById('playerName').textContent = myName;
+                    document.getElementById('playerScore').textContent = myScore;
+                    document.getElementById('authSection').classList.remove('active');
+                    document.getElementById('gameSection').classList.add('active');
+                    if (data.cheat === 1) {
+                        document.getElementById('cheatBadge').innerHTML = '<span class="cheat-badge">🌟 老闆模式</span>';
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // 保存 session 到 localStorage
+        function saveSession() {
+            const data = {
+                username: myName,
+                score: myScore,
+                cheat: document.getElementById('cheatBadge').textContent.includes('老闆') ? 1 : 0
+            };
+            localStorage.setItem('lbr_dice_session', JSON.stringify(data));
+        }
+        
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(protocol + '//' + location.host);
+            
+            ws.onopen = () => {
+                document.getElementById('connectionStatus').className = 'connection-status online';
+                document.getElementById('connectionStatus').textContent = '✅ 已連線';
+                if (myName) startMatch();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('收到:', data);
+                handleMessage(data);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('connectionStatus').className = 'connection-status offline';
+                document.getElementById('connectionStatus').textContent = '⚠️ 連線中斷';
+                // 清除 session，因為連線中斷可能來自伺服器重啟
+                myName = '';
+                myScore = 0;
+                localStorage.removeItem('lbr_dice_session');
+                // 顯示配對畫面（等同登出）
+                showMatch();
+                // 不要自動重連，避免造成重配對問題
+            };
+            
+            ws.onerror = () => {
+                document.getElementById('connectionStatus').textContent = '❌ 連線錯誤';
+            };
+        }
+        
+        function handleMessage(data) {
+            switch(data.type) {
+                case 'waiting':
+                    showMatch();
+                    break;
+                    
+                case 'start':
+                    showBattle(data.opponent);
+                    resetMatchButton();
+                    break;
+                    
+                case 'rolled':
+                    // 自己擲骰了，顯示骰子但允許等待對手
+                    document.getElementById('myDice').textContent = data.yourDice;
+                    // 不 disable 按鈕，只是顯示等待
+                    document.getElementById('rollBtn').textContent = '等待對手擲骰...';
+                    break;
+                    
+                case 'opponent_ready':
+                    // 對手已準備（擲骰），輪到你了
+                    document.getElementById('oppDice').textContent = '?';
+                    document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                    break;
+                    
+                case 'result':
+                    showResult(data);
+                    break;
+                    
+                case 'rematch_start':
+                    resetDice();
+                    document.getElementById('resultView').style.display = 'none';
+                    gameEnded = false;
+                    canPlay = true;
+                    document.getElementById('rollBtn').disabled = false;
+                    document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
+                    break;
+                    
+                case 'rematch_confirmed':
+                    resetDice();
+                    document.getElementById('resultView').style.display = 'none';
+                    gameEnded = false;
+                    canPlay = true;
+                    document.getElementById('rollBtn').disabled = false;
+                    document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
+                    break;
+                    
+                case 'opponent_left':
+                    showMatch();
+                    // 不要自動重新配對，等待用戶手動按鈕
+                    break;
+                    
+                case 'opponent_disconnected':
+                    showMatch();
+                    // 不要自動重新配對
+                    break;
+                    
+                case 'left':
+                    showMatch();
+                    break;
+            }
+        }
+        
+        function showMatch() {
+            inGame = false;
+            canPlay = false;
+            gameEnded = false;
+            document.getElementById('matchView').style.display = 'block';
+            document.getElementById('battleView').style.display = 'none';
+            document.getElementById('rankView').style.display = 'none';
+            // 重置對手顯示
+            document.getElementById('opponentDisplay').textContent = '-';
+            resetDice();
+            document.getElementById('resultView').style.display = 'none';
+            document.getElementById('rollBtn').disabled = true;
+            document.getElementById('rollBtn').textContent = '等待擲骰...';
+            // 重置配對按鈕
+            resetMatchButton();
+        }
+        
+        function showBattle(opponent) {
+            inGame = true;
+            canPlay = true;
+            gameEnded = false;
+            document.getElementById('matchView').style.display = 'none';
+            document.getElementById('battleView').style.display = 'block';
+            document.getElementById('rankView').style.display = 'none';
+            document.getElementById('opponentDisplay').textContent = opponent;
+            resetDice();
+            document.getElementById('resultView').style.display = 'none';
+            document.getElementById('rollBtn').disabled = false;
+            document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
+            document.getElementById('oppDice').textContent = '?';
+        }
+        
+        function resetDice() {
+            document.getElementById('myDice').textContent = '?';
+            document.getElementById('myDice').className = 'dice';
+            document.getElementById('oppDice').textContent = '?';
+            document.getElementById('oppDice').className = 'dice';
+        }
+        
+        function showResult(data) {
+            document.getElementById('myDice').textContent = data.yourDice;
+            document.getElementById('oppDice').textContent = data.opponentDice;
+            
+            const myDice = document.getElementById('myDice');
+            myDice.className = 'dice ' + data.result;
+            
+            const resultView = document.getElementById('resultView');
+            const resultText = document.getElementById('resultText');
+            const scoreChangeText = document.getElementById('scoreChangeText');
+            
+            resultView.style.display = 'block';
+            
+            if (data.result === 'win') {
+                resultText.textContent = '🎉 你贏了！';
+                resultText.className = 'result win';
+                scoreChangeText.textContent = '+' + data.scoreChange + ' 分';
+            } else if (data.result === 'lose') {
+                resultText.textContent = '😢 你輸了...';
+                resultText.className = 'result lose';
+                scoreChangeText.textContent = data.scoreChange + ' 分';
+            } else {
+                resultText.textContent = '🤝 平手！';
+                resultText.className = 'result draw';
+                scoreChangeText.textContent = '±0 分';
+            }
+            
+            // 更新積分
+            myScore += data.scoreChange;
+            document.getElementById('playerScore').textContent = myScore;
+            saveSession(); // 更新 session
+            
+            // 顯示再來一局（按鈕合併到 rollBtn）
+            gameEnded = true;
+            canPlay = false;
+            document.getElementById('rollBtn').disabled = false;
+            document.getElementById('rollBtn').textContent = '🔄 再來一局';
+        }
+        
+        async function doLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!username || !password) { showMsg('請填寫帳號和密碼', 'error'); return; }
+            
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                myName = username;
+                myScore = data.player.score;
+                document.getElementById('playerName').textContent = username;
+                document.getElementById('playerScore').textContent = myScore;
+                if (data.player.cheat === 1) {
+                    document.getElementById('cheatBadge').innerHTML = '<span class="cheat-badge">🌟 老闆模式</span>';
+                }
+                document.getElementById('authSection').classList.remove('active');
+                document.getElementById('gameSection').classList.add('active');
+                saveSession(); // 保存 session
+                connect();
+            } else {
+                showMsg(data.message, 'error');
+            }
+        }
+        
+        async function doRegister() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            if (!username || !password) { showMsg('請填寫帳號和密碼', 'error'); return; }
+            if (username.length < 3) { showMsg('帳號至少3個字', 'error'); return; }
+            if (password.length < 4) { showMsg('密碼至少4個字', 'error'); return; }
+            
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                showMsg('✅ ' + data.message, 'success');
+                setTimeout(() => { showAuth('login'); document.getElementById('loginUsername').value = username; }, 1500);
+            } else {
+                showMsg(data.message, 'error');
+            }
+        }
+        
+        function showAuth(tab) {
+            document.querySelectorAll('.auth-tabs .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.auth-tabs .tab:first-child').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.auth-tabs .tab:last-child').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+        
+        function showMsg(msg, type) {
+            const el = document.getElementById('authMessage');
+            el.innerHTML = '<div class="message ' + type + '">' + msg + '</div>';
+            setTimeout(() => el.innerHTML = '', 4000);
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'pvp') {
+                document.getElementById('matchView').style.display = inGame ? 'none' : 'block';
+                document.getElementById('battleView').style.display = inGame ? 'block' : 'none';
+                document.getElementById('rankView').style.display = 'none';
+            } else {
+                document.getElementById('matchView').style.display = 'none';
+                document.getElementById('battleView').style.display = 'none';
+                document.getElementById('rankView').style.display = 'block';
+                loadRank();
+            }
+        }
+        
+        let isMatching = false;
+        let gameEnded = false; // 追蹤遊戲是否結束
+        
+        function startMatch() {
+            if (ws && ws.readyState === WebSocket.OPEN && myName) {
+                ws.send(JSON.stringify({ type: 'join', username: myName }));
+                // 改變按鈕文字讓使用者知道已按過
+                const btn = document.getElementById('matchBtn');
+                btn.textContent = '⏳ 配對中...';
+                btn.disabled = true;
+                isMatching = true;
+            }
+        }
+        
+        function resetMatchButton() {
+            const btn = document.getElementById('matchBtn');
+            if (btn) {
+                btn.textContent = '🔍 開始配對';
+                btn.disabled = false;
+            }
+            isMatching = false;
+        }
+        
+        function doRoll() {
+            if (!canPlay || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const diceEl = document.getElementById('myDice');
+            diceEl.classList.add('shaking');
+            
+            let count = 0;
+            const interval = setInterval(() => {
+                diceEl.textContent = Math.floor(Math.random() * 6) + 1;
+                count++;
+                if (count >= 10) {
+                    clearInterval(interval);
+                    diceEl.classList.remove('shaking');
+                    ws.send(JSON.stringify({ type: 'roll' }));
+                    document.getElementById('rollBtn').textContent = '等待對手...';
+                }
+            }, 80);
+        }
+        
+        // 統一的按鈕動作：根據遊戲狀態執行擲骰或再來一局
+        function doAction() {
+            if (gameEnded) {
+                doRematch();
+            } else {
+                doRoll();
+            }
+        }
+        
+        function doRematch() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'rematch' }));
+                document.getElementById('rollBtn').textContent = '等待對手確認...';
+                document.getElementById('rollBtn').disabled = true;
+            }
+        }
+        
+        function doLeave() {
+            if (ws) ws.send(JSON.stringify({ type: 'leave' }));
+            showMatch();
+        }
+        
+        async function loadRank() {
+            const res = await fetch('/api/players');
+            const data = await res.json();
+            const list = document.getElementById('rankList');
+            
+            if (!data.players || data.players.length === 0) {
+                list.innerHTML = '<li style="text-align:center;color:#888;">還沒有玩家</li>';
+                return;
+            }
+            
+            list.innerHTML = data.players.map((p, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+                return '<li><span>' + medal + ' ' + p.username + '</span><span>' + p.score + ' 分</span></li>';
+            }).join('');
+            
+            // 更新自己的積分
+            const me = data.players.find(p => p.username === myName);
+            if (me) {
+                myScore = me.score;
+                document.getElementById('playerScore').textContent = myScore;
+            }
+        }
+        
+        function doLogout() {
+            localStorage.removeItem('lbr_dice_session'); // 清除 session
+            if (ws) { ws.send(JSON.stringify({ type: 'leave' })); ws.close(); }
+            myName = '';
+            myScore = 0;
+            inGame = false;
+            document.getElementById('gameSection').classList.remove('active');
+            document.getElementById('authSection').classList.add('active');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('registerUsername').value = '';
+            document.getElementById('registerPassword').value = '';
+        }
+        
+        // 頁面載入
+        window.onload = function() {
+            if (restoreSession()) {
+                connect();
+            }
+        };
+    </script>
+</body>
+</html>

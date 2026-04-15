@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎰 T-LO 俄羅斯輪盤</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: white; }
+        h1 { text-align: center; padding: 20px; color: #ffd700; font-size: 1.8rem; }
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+        
+        .balance { text-align: center; font-size: 1.3rem; margin-bottom: 15px; padding: 12px; background: rgba(255,215,0,0.15); border-radius: 12px; }
+        .balance span { color: #ffd700; font-weight: bold; }
+        
+        .wheel-container { text-align: center; margin: 15px 0; }
+        .wheel { width: 200px; height: 200px; border-radius: 50%; margin: 0 auto; border: 6px solid #ffd700; background: conic-gradient(#00aa00 0deg 9.7deg, #cc0000 9.7deg 19.4deg, #000 19.4deg 29.1deg, #cc0000 29.1deg 38.8deg, #000 38.8deg 48.5deg, #cc0000 48.5deg 58.2deg, #000 58.2deg 67.9deg, #cc0000 67.9deg 77.6deg, #000 77.6deg 87.3deg, #cc0000 87.3deg 97deg, #000 97deg 106.7deg, #cc0000 106.7deg 116.4deg, #000 116.4deg 126.1deg, #cc0000 126.1deg 135.8deg, #000 135.8deg 145.5deg, #cc0000 145.5deg 155.2deg, #000 155.2deg 164.9deg, #cc0000 164.9deg 174.6deg, #000 174.6deg 184.3deg, #cc0000 184.3deg 194deg, #000 194deg 203.7deg, #cc0000 203.7deg 213.4deg, #000 213.4deg 223.1deg, #cc0000 223.1deg 232.8deg, #000 232.8deg 242.5deg, #cc0000 242.5deg 252.2deg, #000 252.2deg 261.9deg, #cc0000 261.9deg 271.6deg, #000 271.6deg 281.3deg, #cc0000 281.3deg 291deg, #000 291deg 300.7deg, #cc0000 300.7deg 310.4deg, #000 310.4deg 320.1deg, #cc0000 320.1deg 329.8deg, #000 329.8deg 339.5deg, #cc0000 339.5deg 349.2deg, #000 349.2deg 360deg); }
+        .wheel-pointer { font-size: 1.5rem; margin-bottom: 5px; }
+        
+        .result-display { text-align: center; font-size: 1.5rem; padding: 15px; margin: 15px 0; border-radius: 12px; }
+        .result-display.red { background: rgba(204,0,0,0.3); }
+        .result-display.black { background: rgba(0,0,0,0.3); }
+        .result-display.green { background: rgba(0,170,0,0.3); }
+        .result-display.spinning { background: rgba(255,215,0,0.3); animation: pulse 0.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .timer { text-align: center; font-size: 1.2rem; color: #ffd700; margin-bottom: 15px; }
+        
+        .bet-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .bet-btn { padding: 12px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+        .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
+        .bet-btn.black { background: linear-gradient(135deg, #333, #666); color: white; }
+        .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
+        .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
+        
+        .number-bet { display: flex; gap: 8px; margin-bottom: 15px; }
+        .number-bet input { flex: 1; padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.9rem; }
+        .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        
+        .my-bets { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .my-bets h4 { color: #ffd700; margin-bottom: 8px; font-size: 0.95rem; }
+        .bet-item { padding: 5px 0; border-bottom: 1px solid #444; font-size: 0.9rem; }
+        
+        .auth-section { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; }
+        .auth-section input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; }
+        .auth-section button { width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🎰 T-LO 俄羅斯輪盤</h1>
+    
+    <div class="container">
+        <div class="balance">💰 餘額: <span id="balance">1000</span></div>
+        
+        <div class="auth-section" id="authSection">
+            <input type="text" id="username" placeholder="輸入你的名字" value="Player1">
+            <button onclick="doLogin()">開始遊戲</button>
+        </div>
+        
+        <div class="game-section" id="gameSection" style="display:none;">
+            <div class="wheel-container">
+                <div class="wheel-pointer">▼</div>
+                <div class="wheel"></div>
+            </div>
+            
+            <div class="result-display" id="resultDisplay">等待開始...</div>
+            <div class="timer" id="timer">-</div>
+            
+            <div class="bet-buttons">
+                <button class="bet-btn red" onclick="placeBet('color', 50, 'red')">🔴 紅 (2x)</button>
+                <button class="bet-btn black" onclick="placeBet('color', 50, 'black')">⚫ 黑 (2x)</button>
+                <button class="bet-btn odd" onclick="placeBet('odd_even', 50, 'odd')">🔢 單 (2x)</button>
+                <button class="bet-btn even" onclick="placeBet('odd_even', 50, 'even')">⚇ 雙 (2x)</button>
+            </div>
+            
+            <div class="number-bet">
+                <input type="number" id="betNum" placeholder="數字 0-36" min="0" max="36">
+                <input type="number" id="betAmt" placeholder="金額" min="10" value="50">
+                <button onclick="placeNumberBet()">數字 (10x)</button>
+            </div>
+            
+            <div class="my-bets">
+                <h4>📋 我的下注</h4>
+                <div id="myBets">尚無下注</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws, myName = '', myBalance = 1000, gamePhase = 'idle', myCurrentBets = [];
+        
+        function connect() {
+            const wsPath = location.pathname.startsWith('/roulette') ? '/roulette' : '/';
+            ws = new WebSocket('ws://' + location.host + wsPath);
+            ws.onopen = () => ws.send(JSON.stringify({ type: 'join', username: myName }));
+            ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+            ws.onclose = () => setTimeout(connect, 3000);
+        }
+        
+        function handleMessage(data) {
+            switch(data.type) {
+                case 'joined':
+                    myBalance = data.balance || 1000;
+                    document.getElementById('balance').textContent = myBalance;
+                    break;
+                case 'betting_start':
+                    gamePhase = 'betting';
+                    myCurrentBets = [];
+                    document.getElementById('resultDisplay').textContent = '⏰ 下注時間!';
+                    document.getElementById('resultDisplay').className = 'result-display spinning';
+                    updateTimer(data.duration);
+                    updateMyBets();
+                    break;
+                case 'spinning':
+                    gamePhase = 'spinning';
+                    document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
+                    document.getElementById('resultDisplay').className = 'result-display spinning';
+                    break;
+                case 'result':
+                    gamePhase = 'result';
+                    const colors = { red: '🔴 紅色', black: '⚫ 黑色', green: '🟢 綠色' };
+                    document.getElementById('resultDisplay').textContent = '結果: ' + data.result + ' ' + colors[data.color];
+                    document.getElementById('resultDisplay').className = 'result-display ' + data.color;
+                    const myWin = data.winners.find(w => w.username === myName);
+                    const myLoss = data.losers.find(l => l.username === myName);
+                    if (myWin) { myBalance += myWin.prize; alert('🎉 贏了 ' + myWin.prize + '！'); }
+                    if (myLoss) { myBalance -= myLoss.amount; }
+                    document.getElementById('balance').textContent = myBalance;
+                    break;
+            }
+        }
+        
+        let timerInterval;
+        function updateTimer(duration) {
+            clearInterval(timerInterval);
+            let sec = Math.floor(duration / 1000);
+            timerInterval = setInterval(() => {
+                sec--;
+                document.getElementById('timer').textContent = '⏰ ' + sec + '秒';
+                if (sec <= 0) clearInterval(timerInterval);
+            }, 1000);
+            document.getElementById('timer').textContent = '⏰ ' + sec + '秒';
+        }
+        
+        function placeBet(type, amount, choice) {
+            if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
+            ws.send(JSON.stringify({ type: 'bet', username: myName, betType: type, amount, color: choice, choice }));
+            myCurrentBets.push({ type, amount, info: choice });
+            updateMyBets();
+        }
+        
+        function placeNumberBet() {
+            const num = parseInt(document.getElementById('betNum').value);
+            const amt = parseInt(document.getElementById('betAmt').value);
+            if (isNaN(num) || num < 0 || num > 36) { alert('請選0-36數字'); return; }
+            if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
+            if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
+            ws.send(JSON.stringify({ type: 'bet', username: myName, betType: 'number', amount: amt, number: num }));
+            myCurrentBets.push({ type: 'number', amount: amt, info: '#' + num });
+            updateMyBets();
+        }
+        
+        function updateMyBets() {
+            document.getElementById('myBets').innerHTML = myCurrentBets.length ? 
+                myCurrentBets.map(b => '<div class="bet-item">' + b.info + ' → ' + b.amount + '</div>').join('') : 
+                '尚無下注';
+        }
+        
+        function doLogin() {
+            myName = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
+            connect();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "tlo-games",
+  "version": "1.0.0",
+  "description": "T-LO 統一遊戲伺服器 - 骰子 + 俄羅斯輪盤",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  }
+}
