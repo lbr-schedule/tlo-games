@@ -212,6 +212,48 @@ app.on('upgrade', (request, socket, head) => {
     }
 });
 
+// JSON 解析
+app.use(express.json());
+
+// 骰子遊戲 - 內存用戶存儲（臨時）
+const dicePlayers = new Map();
+
+// 骰子遊戲 API
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
+    if (dicePlayers.has(username)) return res.json({ success: false, message: '帳號已存在' });
+    
+    dicePlayers.set(username, { username, password, score: 100, wins: 0, losses: 0 });
+    res.json({ success: true, message: '註冊成功！' });
+});
+
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    const player = dicePlayers.get(username);
+    
+    if (player && player.password === password) {
+        res.json({ success: true, player: { id: 1, username: player.username, score: player.score, wins: player.wins, losses: player.losses, cheat: 0 } });
+    } else {
+        res.json({ success: false, message: '帳號或密碼錯誤' });
+    }
+});
+
+app.get('/api/players', (req, res) => {
+    const players = Array.from(dicePlayers.values()).map(p => ({ username: p.username, score: p.score, wins: p.wins, losses: p.losses }));
+    players.sort((a, b) => b.score - a.score);
+    res.json({ players: players.slice(0, 20) });
+});
+
+app.get('/api/player/:username', (req, res) => {
+    const player = dicePlayers.get(req.params.username);
+    if (player) {
+        res.json({ player: { username: player.username, score: player.score, wins: player.wins, losses: player.losses } });
+    } else {
+        res.json({ player: null });
+    }
+});
+
 // 靜態檔案
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
