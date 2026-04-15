@@ -116,7 +116,10 @@
     <div class="container">
         <div class="top-bar">
             <div class="balance">💰 餘額: <span id="balance">1000</span></div>
-            <div class="result-badge neutral" id="resultBadge">-</div>
+            <div>
+                <span class="help-toggle" onclick="showHelp()">❓</span>
+                <span class="result-badge neutral" id="resultBadge">-</span>
+            </div>
         </div>
         
         <div class="timer-box waiting" id="timerBox">
@@ -143,8 +146,6 @@
             </div>
             
             <div class="result-display waiting" id="resultDisplay">等待開始...</div>
-            
-            <span class="help-toggle" onclick="showHelp()">❓ 玩法說明</span>
             
             <div class="bet-section">
                 <h3>💰 選擇下注</h3>
@@ -557,7 +558,7 @@
             <h3>📌 遊戲流程</h3>
             <p>1. 下注時間結束後開始旋轉</p>
             <p>2. 轉盤停止後，指針指的數字就是結果</p>
-            <p>3. 猜對的人獲得獎金</p>
+            <p>3. 猜對即可獲得獎金</p>
             
             <button class="close-btn" onclick="hideHelp()">知道了！</button>
         </div>
