@@ -272,30 +272,31 @@
         // 檢查是否已登入
         const savedUsername = localStorage.getItem('rouletteUsername');
         const savedBalance = localStorage.getItem('rouletteBalance');
+        
+        // 初始化變數
+        let myName = savedUsername || '';
+        let myBalance = savedBalance ? parseInt(savedBalance) : 1000;
+        let gamePhase = 'waiting', lastResult = null;
+        let currentBets = [];
+        let historyBets = [];
+        let quickAmount = 100;
+        let pollInterval;
+        let lastProcessedSpinId = 0;
+        
         if (savedUsername && savedBalance) {
-            myName = savedUsername;
-            myBalance = parseInt(savedBalance);
+            // 已登入，恢復 session
+            console.log('Restoring session for:', myName);
             document.getElementById('balance').textContent = myBalance;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('topBar').style.display = 'flex';
             document.getElementById('timerBox').style.display = 'block';
             document.getElementById('gameSection').style.display = 'block';
             drawWheel();
-            currentBets = [];
-            historyBets = [];
-            lastProcessedSpinId = 0;
             updateCurrentBetsUI();
             updateHistoryUI();
             pollStatus();
             pollInterval = setInterval(pollStatus, 1000);
         }
-        
-        let myName = '', myBalance = parseInt(localStorage.getItem('rouletteBalance')) || 1000, gamePhase = 'waiting', lastResult = null;
-        let currentBets = [];
-        let historyBets = [];
-        let quickAmount = 100;
-        let pollInterval;
-        let lastProcessedSpinId = 0;
         
         // 輪盤數字（真實輪盤排列）
         const wheelNumbers = [
