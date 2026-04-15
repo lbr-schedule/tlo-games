@@ -47,8 +47,7 @@
         .auth-section input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; }
         .auth-section button { width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
         
-        .player-list { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.85rem; }
-        .player-list h4 { color: #ffd700; margin-bottom: 5px; }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -56,11 +55,11 @@
     
     <div class="container">
         <div class="balance">💰 餘額: <span id="balance">1000</span></div>
-        <div class="status" id="status">連接中...</div>
+        <div class="status" id="status">載入中...</div>
         
         <div class="auth-section" id="authSection">
             <input type="text" id="username" placeholder="輸入你的名字" value="Player1">
-            <button onclick="doLogin()">開始遊戲</button>
+            <button onclick="startGame()">開始遊戲</button>
         </div>
         
         <div class="game-section" id="gameSection" style="display:none;">
@@ -72,22 +71,17 @@
             <div class="result-display" id="resultDisplay">等待開始...</div>
             <div class="timer" id="timer">-</div>
             
-            <div class="player-list" id="playerList">
-                <h4>👥 在線玩家</h4>
-                <div id="players">-</div>
-            </div>
-            
-            <div class="bet-buttons">
-                <button class="bet-btn red" onclick="placeBet('color', 50, 'red')">🔴 紅 (2x)</button>
-                <button class="bet-btn black" onclick="placeBet('color', 50, 'black')">⚫ 黑 (2x)</button>
-                <button class="bet-btn odd" onclick="placeBet('odd_even', 50, 'odd')">🔢 單 (2x)</button>
-                <button class="bet-btn even" onclick="placeBet('odd_even', 50, 'even')">⚇ 雙 (2x)</button>
+            <div class="bet-buttons" id="betButtons">
+                <button class="bet-btn red btn-disabled" onclick="placeBet('color', 50, 'red')">🔴 紅 (2x)</button>
+                <button class="bet-btn black btn-disabled" onclick="placeBet('color', 50, 'black')">⚫ 黑 (2x)</button>
+                <button class="bet-btn odd btn-disabled" onclick="placeBet('odd_even', 50, 'odd')">🔢 單 (2x)</button>
+                <button class="bet-btn even btn-disabled" onclick="placeBet('odd_even', 50, 'even')">⚇ 雙 (2x)</button>
             </div>
             
             <div class="number-bet">
                 <input type="number" id="betNum" placeholder="數字 0-36" min="0" max="36">
                 <input type="number" id="betAmt" placeholder="金額" min="10" value="50">
-                <button onclick="placeNumberBet()">數字 (10x)</button>
+                <button id="numberBetBtn" onclick="placeNumberBet()">數字 (10x)</button>
             </div>
             
             <div class="my-bets">
@@ -98,133 +92,126 @@
     </div>
 
     <script>
-        let ws, myName = '', myBalance = 1000, gamePhase = 'idle', myCurrentBets = [], onlinePlayers = [];
+        let myName = '', myBalance = 1000, gamePhase = 'waiting', myCurrentBets = [];
+        let pollInterval;
         
-        function connect() {
-            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            // 使用 /roulette/ws 路徑
-            const wsUrl = protocol + '//' + location.host + '/roulette/ws';
-            console.log('Connecting to:', wsUrl);
-            ws = new WebSocket(wsUrl);
+        function startGame() {
+            myName = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
             
-            ws.onopen = () => {
-                console.log('Connected!');
-                ws.send(JSON.stringify({ type: 'join', username: myName }));
-            };
-            
-            ws.onmessage = (e) => {
-                console.log('Received:', e.data);
-                handleMessage(JSON.parse(e.data));
-            };
-            
-            ws.onclose = () => {
-                console.log('Disconnected, reconnecting...');
-                document.getElementById('status').textContent = '斷線了，重新連接中...';
-                setTimeout(connect, 3000);
-            };
-            
-            ws.onerror = (e) => {
-                console.log('WS Error:', e);
-            };
+            // 開始輪詢遊戲狀態
+            pollStatus();
+            pollInterval = setInterval(pollStatus, 1000);
         }
         
-        function handleMessage(data) {
-            document.getElementById('status').textContent = '在線';
+        async function pollStatus() {
+            try {
+                const res = await fetch('/api/roulette/status');
+                const data = await res.json();
+                
+                gamePhase = data.phase;
+                updateUI(data);
+            } catch(e) {
+                console.log('Poll error:', e);
+            }
+        }
+        
+        function updateUI(data) {
+            const colors = { red: '🔴 紅色', black: '⚫ 黑色', green: '🟢 綠色' };
+            const btns = document.querySelectorAll('.bet-btn');
+            const numberBtn = document.getElementById('numberBetBtn');
             
-            switch(data.type) {
-                case 'joined':
-                    myBalance = data.balance || 1000;
-                    document.getElementById('balance').textContent = myBalance;
-                    updatePlayers(data.players || [myName]);
-                    if (data.phase === 'idle' || data.phase === 'result') {
-                        document.getElementById('resultDisplay').textContent = '等待開始...';
-                        document.getElementById('resultDisplay').className = 'result-display';
-                    }
-                    break;
-                    
+            switch(data.phase) {
                 case 'waiting':
-                    document.getElementById('status').textContent = data.message || '等待玩家...';
+                    document.getElementById('status').textContent = '等待開始...';
+                    document.getElementById('resultDisplay').textContent = '等待開始...';
+                    document.getElementById('resultDisplay').className = 'result-display';
+                    document.getElementById('timer').textContent = '-';
+                    btns.forEach(b => b.classList.add('btn-disabled'));
+                    numberBtn.classList.add('btn-disabled');
                     break;
                     
-                case 'betting_start':
-                    gamePhase = 'betting';
-                    myCurrentBets = [];
+                case 'betting':
+                    document.getElementById('status').textContent = '⏰ 下注時間!';
                     document.getElementById('resultDisplay').textContent = '⏰ 下注時間!';
                     document.getElementById('resultDisplay').className = 'result-display spinning';
-                    document.getElementById('timer').textContent = '下注: ' + Math.floor(data.duration/1000) + '秒';
-                    updateTimer(data.duration);
-                    updateMyBets();
+                    document.getElementById('timer').textContent = '⏰ ' + data.remaining + '秒';
+                    btns.forEach(b => b.classList.remove('btn-disabled'));
+                    numberBtn.classList.remove('btn-disabled');
                     break;
                     
                 case 'spinning':
-                    gamePhase = 'spinning';
+                    document.getElementById('status').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display spinning';
+                    document.getElementById('timer').textContent = '-';
+                    btns.forEach(b => b.classList.add('btn-disabled'));
+                    numberBtn.classList.add('btn-disabled');
                     break;
                     
                 case 'result':
-                    gamePhase = 'result';
-                    const colors = { red: '🔴 紅色', black: '⚫ 黑色', green: '🟢 綠色' };
-                    document.getElementById('resultDisplay').textContent = '結果: ' + data.result + ' ' + colors[data.color];
-                    document.getElementById('resultDisplay').className = 'result-display ' + data.color;
-                    const myWin = data.winners?.find(w => w.username === myName);
-                    const myLoss = data.losers?.find(l => l.username === myName);
-                    if (myWin) { myBalance += myWin.prize; alert('🎉 贏了 ' + myWin.prize + '！'); }
-                    if (myLoss) { myBalance -= myLoss.amount; }
-                    document.getElementById('balance').textContent = myBalance;
-                    break;
-                    
-                case 'players_update':
-                    updatePlayers(data.players);
+                    if (data.lastSpin) {
+                        const colorName = colors[data.lastSpin.color];
+                        document.getElementById('status').textContent = '結果出爐!';
+                        document.getElementById('resultDisplay').textContent = '結果: ' + data.lastSpin.result + ' ' + colorName;
+                        document.getElementById('resultDisplay').className = 'result-display ' + data.lastSpin.color;
+                        checkWin(data.lastSpin);
+                    }
+                    document.getElementById('timer').textContent = '5秒後開始下一局';
+                    btns.forEach(b => b.classList.add('btn-disabled'));
+                    numberBtn.classList.add('btn-disabled');
                     break;
             }
         }
         
-        function updatePlayers(players) {
-            onlinePlayers = players || [];
-            document.getElementById('players').textContent = onlinePlayers.join(', ') || '-';
+        function checkWin(lastSpin) {
+            // 簡單的贏家判斷（玩家預設都下50 red）
+            // 實際遊戲需要在伺服器端計算
         }
         
-        let timerInterval;
-        function updateTimer(duration) {
-            clearInterval(timerInterval);
-            let sec = Math.floor(duration / 1000);
-            timerInterval = setInterval(() => {
-                sec--;
-                if (sec >= 0) document.getElementById('timer').textContent = '下注: ' + sec + '秒';
-                if (sec <= 0) clearInterval(timerInterval);
-            }, 1000);
-        }
-        
-        function placeBet(type, amount, choice) {
+        async function placeBet(type, amount, choice) {
             if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
-            ws.send(JSON.stringify({ type: 'bet', username: myName, betType: type, amount, color: choice, choice }));
+            
             myCurrentBets.push({ type, amount, info: choice });
             updateMyBets();
+            
+            try {
+                await fetch('/api/roulette/bet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, betType: type, amount, color: choice, choice })
+                });
+            } catch(e) {
+                console.log('Bet error:', e);
+            }
         }
         
-        function placeNumberBet() {
+        async function placeNumberBet() {
             const num = parseInt(document.getElementById('betNum').value);
             const amt = parseInt(document.getElementById('betAmt').value);
             if (isNaN(num) || num < 0 || num > 36) { alert('請選0-36數字'); return; }
             if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
             if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
-            ws.send(JSON.stringify({ type: 'bet', username: myName, betType: 'number', amount: amt, number: num }));
+            
             myCurrentBets.push({ type: 'number', amount: amt, info: '#' + num });
             updateMyBets();
+            
+            try {
+                await fetch('/api/roulette/bet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num })
+                });
+            } catch(e) {
+                console.log('Bet error:', e);
+            }
         }
         
         function updateMyBets() {
             document.getElementById('myBets').innerHTML = myCurrentBets.length ? 
                 myCurrentBets.map(b => '<div class="bet-item">' + b.info + ' → ' + b.amount + '</div>').join('') : 
                 '尚無下注';
-        }
-        
-        function doLogin() {
-            myName = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('gameSection').style.display = 'block';
-            connect();
         }
     </script>
 </body>

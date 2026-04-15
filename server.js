@@ -1,12 +1,12 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 
-// ====== 骰子遊戲 ======
+// 骰子遊戲用 WebSocket
+const WebSocket = require('ws');
 const diceWss = new WebSocket.Server({ noServer: true });
 const diceState = {
     waitingPlayers: [],
@@ -14,15 +14,13 @@ const diceState = {
     players: new Map()
 };
 
-// ====== 輪盤遊戲 ======
-const rouletteWss = new WebSocket.Server({ noServer: true });
-const rouletteState = {
-    gamePhase: 'idle',
-    currentBets: [],
-    lastResult: null,
-    players: new Map(),
-    BETTING_TIME: 10000,
-    spinTimer: null
+// 輪盤遊戲狀態（單人，無需 WebSocket）
+let rouletteState = {
+    phase: 'waiting', // waiting, betting, spinning, result
+    result: null,
+    lastSpin: null,
+    spinTimer: null,
+    BETTING_TIME: 10000
 };
 
 // ========== 骰子遊戲邏輯 ==========
@@ -136,152 +134,69 @@ diceWss.on('connection', (ws) => {
     });
 });
 
-// ========== 輪盤遊戲邏輯 ==========
+// ========== 輪盤遊戲邏輯（無 WebSocket） ==========
 function getRouletteColor(num) {
     if (num === 0) return 'green';
     const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     return reds.includes(num) ? 'red' : 'black';
 }
 
-function broadcastRoulette(msg) {
-    for (const [username, ws] of rouletteState.players) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(msg));
-        }
-    }
-}
-
-function getOnlinePlayers() {
-    return Array.from(rouletteState.players.keys());
-}
-
-function startRouletteBetting() {
-    rouletteState.gamePhase = 'betting';
-    rouletteState.currentBets = [];
-    broadcastRoulette({ type: 'betting_start', duration: rouletteState.BETTING_TIME });
-    rouletteState.spinTimer = setTimeout(spinRouletteWheel, rouletteState.BETTING_TIME);
-}
-
-function spinRouletteWheel() {
-    rouletteState.gamePhase = 'spinning';
+function spinWheel() {
+    rouletteState.phase = 'spinning';
     const result = Math.floor(Math.random() * 37);
-    rouletteState.lastResult = { result, color: getRouletteColor(result) };
-    broadcastRoulette({ type: 'spinning', result });
-    rouletteState.spinTimer = setTimeout(() => showRouletteResult(result, rouletteState.lastResult.color), 3000);
-}
-
-function showRouletteResult(result, color) {
-    rouletteState.gamePhase = 'result';
-    const winners = [];
-    const losers = [];
-
-    for (const bet of rouletteState.currentBets) {
-        let win = false;
-        if (bet.type === 'color' && bet.color === color) win = true;
-        if (bet.type === 'odd_even') {
-            if (bet.choice === 'odd' && result % 2 === 1 && result !== 0) win = true;
-            if (bet.choice === 'even' && result % 2 === 0 && result !== 0) win = true;
-        }
-        if (bet.type === 'number' && bet.number === result) win = true;
-
-        if (win) {
-            const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
-            bet.balance += prize;
-            winners.push({ username: bet.username, amount: bet.amount, prize });
-        } else {
-            bet.balance -= bet.amount;
-            losers.push({ username: bet.username, amount: bet.amount });
-        }
-    }
-
-    broadcastRoulette({ type: 'result', result, color, winners, losers });
+    rouletteState.lastSpin = { result, color: getRouletteColor(result), time: Date.now() };
     
-    if (rouletteState.players.size > 0) {
-        rouletteState.spinTimer = setTimeout(startRouletteBetting, 5000);
-    } else {
-        rouletteState.gamePhase = 'idle';
-    }
+    setTimeout(() => {
+        rouletteState.phase = 'result';
+        // 5秒後自動開始下一局
+        rouletteState.spinTimer = setTimeout(startBetting, 5000);
+    }, 3000);
 }
 
-function handleRouletteMessage(ws, msg) {
-    const username = msg.username || 'Player';
-
-    if (msg.type === 'join') {
-        ws._username = username;
-        ws._balance = 1000;
-        rouletteState.players.set(username, ws);
-        
-        ws.send(JSON.stringify({ 
-            type: 'joined', 
-            balance: ws._balance, 
-            phase: rouletteState.gamePhase,
-            result: rouletteState.lastResult,
-            players: getOnlinePlayers()
-        }));
-        
-        broadcastRoulette({ type: 'players_update', players: getOnlinePlayers() });
-        
-        if (rouletteState.gamePhase === 'idle') {
-            startRouletteBetting();
-        }
-    }
-
-    if (msg.type === 'bet' && rouletteState.gamePhase === 'betting') {
-        const existingBet = rouletteState.currentBets.find(b => b.username === username);
-        if (existingBet) {
-            ws.send(JSON.stringify({ type: 'error', message: '你已經下注了！' }));
-            return;
-        }
-        
-        rouletteState.currentBets.push({
-            username,
-            balance: ws._balance,
-            type: msg.betType,
-            amount: parseInt(msg.amount),
-            color: msg.color,
-            choice: msg.choice,
-            number: msg.number
-        });
-        
-        ws.send(JSON.stringify({ type: 'bet_confirmed', bets: rouletteState.currentBets.filter(b => b.username === username) }));
-    }
+function startBetting() {
+    rouletteState.phase = 'betting';
+    rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
 }
 
-rouletteWss.on('connection', (ws) => {
-    ws.on('message', (data) => {
-        try {
-            handleRouletteMessage(ws, JSON.parse(data));
-        } catch(e) { console.log('Roulette error:', e.message); }
-    });
+// 初始化輪盤
+startBetting();
+
+// 輪盤 API
+app.get('/api/roulette/status', (req, res) => {
+    let remaining = 0;
+    if (rouletteState.phase === 'betting' && rouletteState.spinTimer) {
+        const expires = rouletteState.spinTimer._idleStart + rouletteState.spinTimer._idleTimeout;
+        remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+    }
     
-    ws.on('close', () => {
-        if (ws._username) {
-            rouletteState.players.delete(ws._username);
-            broadcastRoulette({ type: 'players_update', players: getOnlinePlayers() });
-            
-            if (rouletteState.players.size === 0) {
-                if (rouletteState.spinTimer) {
-                    clearTimeout(rouletteState.spinTimer);
-                    rouletteState.spinTimer = null;
-                }
-                rouletteState.gamePhase = 'idle';
-            }
-        }
+    res.json({
+        phase: rouletteState.phase,
+        lastSpin: rouletteState.lastSpin,
+        remaining: remaining
     });
 });
 
+app.post('/api/roulette/bet', (req, res) => {
+    if (rouletteState.phase !== 'betting') {
+        return res.json({ success: false, message: '現在不能下注' });
+    }
+    
+    const { username, betType, amount, color, choice, number } = req.body;
+    
+    if (!username || !amount || amount < 10) {
+        return res.json({ success: false, message: '請輸入正確的金額' });
+    }
+    
+    res.json({ success: true, message: '下注成功！' });
+});
+
 // ========== HTTP 路由 ==========
-// 骰子 WebSocket
 app.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, 'http://localhost');
     
     if (url.pathname === '/dice/ws') {
         diceWss.handleUpgrade(request, socket, head, (ws) => {
             diceWss.emit('connection', ws, request);
-        });
-    } else if (url.pathname === '/roulette/ws') {
-        rouletteWss.handleUpgrade(request, socket, head, (ws) => {
-            rouletteWss.emit('connection', ws, request);
         });
     } else {
         socket.destroy();
@@ -319,7 +234,7 @@ app.get('/', (req, res) => {
                 </div>
                 <div class="game-card">
                     <h2>🎰 俄羅斯輪盤</h2>
-                    <p>單人/多人對戰</p>
+                    <p>單人對戰</p>
                     <a href="/roulette">開始玩</a>
                 </div>
             </div>
