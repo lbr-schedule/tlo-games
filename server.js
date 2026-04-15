@@ -212,6 +212,12 @@ function playerJoined() {
     }
 }
 
+// 輪盤遊戲 - 玩家上線（保持遊戲運行）
+app.post('/api/roulette/ping', (req, res) => {
+    playerJoined();
+    res.json({ success: true });
+});
+
 function startBetting() {
     if (!rouletteState.hasPlayer) {
         rouletteState.phase = 'waiting';

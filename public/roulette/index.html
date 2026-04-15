@@ -310,6 +310,8 @@
             loadHistoryFromDB();
             pollStatus();
             pollInterval = setInterval(pollStatus, 1000);
+            // 通知伺服器玩家上線
+            fetch('/api/roulette/ping', { method: 'POST' });
         }
         
         function showAuth(tab) {
