@@ -148,15 +148,9 @@ function spinWheel() {
     const result = Math.floor(Math.random() * 37);
     rouletteState.lastSpin = { result, color: getRouletteColor(result), time: Date.now() };
     
-    broadcastRoulette({ type: 'spinning', result });
-    
+    // HTTP輪詢模式不需要廣播，等待3秒後進入結果
     setTimeout(() => {
         rouletteState.phase = 'result';
-        broadcastRoulette({ 
-            type: 'result', 
-            result: rouletteState.lastSpin.result, 
-            color: rouletteState.lastSpin.color 
-        });
         // 5秒後自動開始下一局
         rouletteState.spinTimer = setTimeout(startBetting, 5000);
     }, 3000);
