@@ -269,6 +269,27 @@
     <script>
         console.log('Roulette script starting...');
         
+        // 檢查是否已登入
+        const savedUsername = localStorage.getItem('rouletteUsername');
+        const savedBalance = localStorage.getItem('rouletteBalance');
+        if (savedUsername && savedBalance) {
+            myName = savedUsername;
+            myBalance = parseInt(savedBalance);
+            document.getElementById('balance').textContent = myBalance;
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('topBar').style.display = 'flex';
+            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('gameSection').style.display = 'block';
+            drawWheel();
+            currentBets = [];
+            historyBets = [];
+            lastProcessedSpinId = 0;
+            updateCurrentBetsUI();
+            updateHistoryUI();
+            pollStatus();
+            pollInterval = setInterval(pollStatus, 1000);
+        }
+        
         let myName = '', myBalance = parseInt(localStorage.getItem('rouletteBalance')) || 1000, gamePhase = 'waiting', lastResult = null;
         let currentBets = [];
         let historyBets = [];
@@ -322,6 +343,7 @@
                     myName = username;
                     myBalance = data.player.score;
                     localStorage.setItem('rouletteBalance', myBalance);
+                    localStorage.setItem('rouletteUsername', username);
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('topBar').style.display = 'flex';
@@ -396,6 +418,8 @@
             if (pollInterval) clearInterval(pollInterval);
             myName = '';
             myBalance = 1000;
+            localStorage.removeItem('rouletteUsername');
+            localStorage.removeItem('rouletteBalance');
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('topBar').style.display = 'none';
             document.getElementById('timerBox').style.display = 'none';
