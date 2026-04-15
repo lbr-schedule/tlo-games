@@ -28,8 +28,8 @@
         .timer-box.waiting { border: 3px solid #666; }
         @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
         
-        .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 300px; height: 300px; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; position: relative; transform-origin: center center; }
+        .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); transform-origin: center center; box-sizing: border-box; }
         .wheel-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
         .wheel-content { position: absolute; width: 100%; height: 100%; }
         .wheel-number { position: absolute; font-size: 11px; font-weight: bold; font-family: Arial; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
