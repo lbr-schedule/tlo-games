@@ -157,6 +157,7 @@ function spinWheel() {
 
 function startBetting() {
     rouletteState.phase = 'betting';
+    rouletteState.lastSpin = null; // 清除上一局結果
     rouletteState.phaseStartTime = Date.now();
     rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
 }
