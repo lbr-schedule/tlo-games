@@ -367,8 +367,8 @@
             const slotAngle = 360 / 37;
             const targetAngle = index * slotAngle + slotAngle / 2;
             const spins = 5 + Math.floor(Math.random() * 4);
-            // 順時針轉動，讓結果數字轉到頂部（指針位置）
-            const totalRotation = spins * 360 + targetAngle;
+            // 逆時針轉動（因為輪盤一開始是 -90deg）
+            const totalRotation = spins * 360 - targetAngle;
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
