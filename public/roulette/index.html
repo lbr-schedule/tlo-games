@@ -33,6 +33,7 @@
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 3s ease-out; }
         .wheel.spinning { animation: wheel-spin 0.5s linear infinite; }
+        .wheel.spinning-anim { animation: wheel-spin 0.5s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
@@ -314,8 +315,8 @@
                         updateCurrentBetsUI();
                         badge.className = 'result-badge neutral';
                         badge.textContent = '-';
-                        wheel.classList.remove('spinning');
-                        wheel.style.animation = 'none';
+                        wheel.classList.remove('spinning', 'spinning-anim');
+                        wheel.style.animation = '';
                         wheel.style.transform = 'rotate(0deg)';
                     }
                     break;
@@ -324,7 +325,9 @@
                     phaseText.textContent = '🎰 轉動中...';
                     countdown.textContent = '❓';
                     timerBox.classList.add('spinning');
-                    wheel.classList.add('spinning');
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    void wheel.offsetWidth;
+                    wheel.classList.add('spinning-anim');
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display waiting';
@@ -334,8 +337,8 @@
                     phaseText.textContent = '📌 結果出爐';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
-                    wheel.classList.remove('spinning');
-                    wheel.style.animation = 'none';
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    wheel.style.animation = '';
                     disableBtns();
                     
                     if (data.lastSpin) {
@@ -364,10 +367,12 @@
             const slotAngle = 360 / 37;
             const targetAngle = index * slotAngle + slotAngle / 2;
             const spins = 5 + Math.floor(Math.random() * 4);
-            const totalRotation = spins * 360 + (360 - targetAngle);
+            // 順時針轉動，讓結果數字轉到頂部（指針位置）
+            const totalRotation = spins * 360 + targetAngle;
             
             const wheel = document.getElementById('wheel');
-            wheel.classList.remove('spinning');
+            wheel.classList.remove('spinning', 'spinning-anim');
+            wheel.style.animation = '';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
         }
         
