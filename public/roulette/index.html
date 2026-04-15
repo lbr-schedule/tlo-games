@@ -628,6 +628,8 @@
         function processResult(lastSpin) {
             let roundWin = 0;
             let roundBet = 0;
+            console.log('processResult called:', JSON.stringify(lastSpin));
+            console.log('currentBets:', JSON.stringify(currentBets));
             
             for (const bet of currentBets) {
                 roundBet += bet.amount;
@@ -642,11 +644,14 @@
                 
                 if (win) {
                     const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
+                    console.log('Bet win:', bet, 'prize:', prize);
                     roundWin += prize;
                 }
             }
             
+            console.log('roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
             myBalance = myBalance - roundBet + roundWin;
+            console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
             
