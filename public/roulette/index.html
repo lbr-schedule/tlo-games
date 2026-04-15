@@ -314,7 +314,8 @@
                         updateCurrentBetsUI();
                         badge.className = 'result-badge neutral';
                         badge.textContent = '-';
-                        // 重置轉盤角度
+                        wheel.classList.remove('spinning');
+                        wheel.style.animation = 'none';
                         wheel.style.transform = 'rotate(0deg)';
                     }
                     break;
@@ -333,6 +334,8 @@
                     phaseText.textContent = '📌 結果出爐';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
+                    wheel.classList.remove('spinning');
+                    wheel.style.animation = 'none';
                     disableBtns();
                     
                     if (data.lastSpin) {
