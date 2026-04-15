@@ -338,7 +338,6 @@
                     timerBox.classList.add('result');
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = 'none';
-                    wheel.style.transition = 'none';
                     disableBtns();
                     
                     if (data.lastSpin) {
@@ -347,12 +346,11 @@
                         display.textContent = '🎯 結果: ' + data.lastSpin.result + ' ' + colorName;
                         display.className = 'result-display ' + data.lastSpin.color;
                         
-                        // 轉到結果
-                        rotateToResult(data.lastSpin.result);
-                        
+                        // 轉到結果（只在第一次進 result 時）
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
+                            rotateToResult(data.lastSpin.result);
                             processResult(data.lastSpin);
                         }
                     }
