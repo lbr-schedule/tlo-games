@@ -456,8 +456,11 @@
         
         async function pollStatus() {
             try {
+                console.log('Polling roulette status...');
                 const res = await fetch('/api/roulette/status');
+                console.log('Status response:', res.status);
                 const data = await res.json();
+                console.log('Status data:', JSON.stringify(data));
                 updateUI(data);
             } catch(e) {
                 console.log('Poll error:', e);

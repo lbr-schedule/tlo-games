@@ -216,20 +216,28 @@ startBetting();
 
 // 輪盤 API
 app.get('/api/roulette/status', (req, res) => {
-    let remaining = 0;
-    
-    if (rouletteState.phase === 'betting') {
-        const elapsed = (Date.now() - rouletteState.phaseStartTime) / 1000;
-        remaining = Math.max(0, Math.ceil(rouletteState.BETTING_TIME / 1000 - elapsed));
-    } else if (rouletteState.phase === 'result') {
-        remaining = 5;
+    console.log('收到 roulette/status 請求');
+    try {
+        let remaining = 0;
+        
+        if (rouletteState.phase === 'betting') {
+            const elapsed = (Date.now() - rouletteState.phaseStartTime) / 1000;
+            remaining = Math.max(0, Math.ceil(rouletteState.BETTING_TIME / 1000 - elapsed));
+        } else if (rouletteState.phase === 'result') {
+            remaining = 5;
+        }
+        
+        const response = {
+            phase: rouletteState.phase,
+            lastSpin: rouletteState.lastSpin,
+            remaining: remaining
+        };
+        console.log('roulette/status 回應:', JSON.stringify(response));
+        res.json(response);
+    } catch(e) {
+        console.log('roulette/status 錯誤:', e.message);
+        res.status(500).json({ error: e.message });
     }
-    
-    res.json({
-        phase: rouletteState.phase,
-        lastSpin: rouletteState.lastSpin,
-        remaining: remaining
-    });
 });
 
 // JSON 解析（必須在路由之前）
