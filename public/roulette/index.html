@@ -633,12 +633,27 @@
         
         function processResult(lastSpin) {
             console.log('===== processResult START =====');
+            
+            // Guard: if currentBets is empty, this is a duplicate call, skip
+            if (currentBets.length === 0) {
+                console.log('processResult called but currentBets is empty - SKIPPING (duplicate)');
+                return;
+            }
+            
             console.log('currentBets:', JSON.stringify(currentBets));
             console.log('lastSpin:', JSON.stringify(lastSpin));
+            
+            // Save bets before clearing
+            const betsToProcess = [...currentBets];
+            
+            // Clear currentBets NOW to prevent any chance of duplicate processing
+            currentBets = [];
+            updateCurrentBetsUI();
+            
             let roundWin = 0;
             let roundBet = 0;
             
-            for (const bet of currentBets) {
+            for (const bet of betsToProcess) {
                 roundBet += bet.amount;
                 let win = false;
                 console.log('Checking bet:', JSON.stringify(bet), 'vs result:', lastSpin.result, lastSpin.color);
@@ -660,6 +675,7 @@
             
             console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
             myBalance = myBalance - roundBet + roundWin;
+            console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
             document.getElementById('balance').textContent = myBalance;
             
@@ -669,10 +685,6 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: myName, newScore: myBalance })
             });
-            
-            // Clear currentBets after processing (prepare for next round)
-            currentBets = [];
-            updateCurrentBetsUI();
             
             // 顯示結果badge
             const badge = document.getElementById('resultBadge');
