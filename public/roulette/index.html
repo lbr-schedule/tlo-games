@@ -268,6 +268,8 @@
     </div>
 
     <script>
+        console.log('Roulette script starting...');
+        
         let myName = '', myBalance = 1000, gamePhase = 'waiting', lastResult = null;
         let currentBets = [];
         let historyBets = [];
@@ -409,7 +411,10 @@
         }
         
         function drawWheel() {
+            console.log('drawWheel called');
             const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) { console.log('Canvas not found!'); return; }
+            const ctx = canvas.getContext('2d');
             const ctx = canvas.getContext('2d');
             const centerX = 150;
             const centerY = 150;
@@ -455,15 +460,20 @@
         }
         
         async function pollStatus() {
+            console.log('pollStatus called, phase:', gamePhase);
             try {
-                console.log('Polling roulette status...');
+                console.log('Fetching /api/roulette/status...');
                 const res = await fetch('/api/roulette/status');
-                console.log('Status response:', res.status);
+                console.log('Response status:', res.status);
+                if (!res.ok) {
+                    console.log('Response not OK');
+                    return;
+                }
                 const data = await res.json();
-                console.log('Status data:', JSON.stringify(data));
+                console.log('Poll data:', data);
                 updateUI(data);
             } catch(e) {
-                console.log('Poll error:', e);
+                console.log('Poll error:', e.message);
             }
         }
         
