@@ -430,7 +430,7 @@
                     color: row.color,
                     win: row.win === 1,
                     amount: row.amount
-                }));
+                })).slice(0, 5); // Only keep 5 records for UI
                 updateHistoryUI();
             } catch(e) {
                 console.log('載入歷史失敗:', e);
@@ -563,13 +563,15 @@
                     timerBox.classList.add('betting');
                     enableBtns();
                     
-                    if (gamePhase !== 'betting') {
+                    // Only clear bets when transitioning FROM result (starting new round)
+                    // Don't clear when transitioning from waiting to betting
+                    if (gamePhase === 'result' || gamePhase === 'spinning') {
                         currentBets = [];
                         updateCurrentBetsUI();
-                        badge.style.display = 'none';
-                        wheel.classList.remove('spinning', 'spinning-anim');
-                        wheel.style.animation = '';
                     }
+                    badge.style.display = 'none';
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    wheel.style.animation = '';
                     break;
                     
                 case 'spinning':
@@ -682,7 +684,8 @@
                     amount: roundWin > 0 ? roundWin : -roundBet
                 });
                 
-                if (historyBets.length > 5) historyBets.pop();
+                // Keep only latest 5 records for UI
+                if (historyBets.length > 5) historyBets = historyBets.slice(0, 5);
                 updateHistoryUI();
                 
                 // 保存到資料庫
