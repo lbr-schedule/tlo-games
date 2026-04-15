@@ -674,7 +674,7 @@
                     amount: roundWin > 0 ? roundWin : -roundBet
                 });
                 
-                if (historyBets.length > 5) historyBets.pop();
+                if (historyBets.length > 100) historyBets.pop();
                 updateHistoryUI();
                 
                 // 保存到資料庫

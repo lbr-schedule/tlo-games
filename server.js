@@ -376,6 +376,21 @@ app.post('/api/roulette/save-history', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 清理過多歷史（每用戶最多100筆）
+async function cleanupOldHistory() {
+    if (!rouletteDbAvailable) return;
+    try {
+        await rouletteDb.execute({
+            sql: `DELETE FROM roulette_history WHERE id NOT IN (SELECT id FROM roulette_history WHERE username, id IN (SELECT username, MAX(id) FROM roulette_history GROUP BY username) UNION SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY username ORDER BY id DESC) as rn FROM roulette_history) WHERE rn <= 100)`
+        });
+    } catch(e) {
+        console.log('清理歷史失敗:', e.message);
+    }
+}
+
+// 每小時清理一次
+setInterval(cleanupOldHistory, 3600000);
+
 // 輪盤遊戲 - 取得歷史記錄
 app.get('/api/roulette/history/:username', async (req, res) => {
     const { username } = req.params;
@@ -383,7 +398,7 @@ app.get('/api/roulette/history/:username', async (req, res) => {
     
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT * FROM roulette_history WHERE username = ? ORDER BY id DESC LIMIT 5`,
+            sql: `SELECT * FROM roulette_history WHERE username = ? ORDER BY id DESC LIMIT 100`,
             args: [username]
         });
         res.json({ history: result.rows || [] });
