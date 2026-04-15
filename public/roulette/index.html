@@ -563,12 +563,8 @@
                     timerBox.classList.add('betting');
                     enableBtns();
                     
-                    // Only clear bets when transitioning FROM result (starting new round)
-                    // Don't clear when transitioning from waiting to betting
-                    if (gamePhase === 'result' || gamePhase === 'spinning') {
-                        currentBets = [];
-                        updateCurrentBetsUI();
-                    }
+                    // NEVER clear currentBets when entering betting - we need them for result calculation!
+                    // currentBets will only be cleared AFTER processResult is called
                     badge.style.display = 'none';
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = '';
@@ -602,14 +598,16 @@
                         display.className = 'result-display ' + data.lastSpin.color;
                         
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
-                        console.log('RESULT DEBUG - spinId:', spinId, 'lastProcessedSpinId:', lastProcessedSpinId);
-                        console.log('RESULT DEBUG - currentBets:', JSON.stringify(currentBets));
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
                             rotateToResult(data.lastSpin.result);
                             processResult(data.lastSpin);
                         }
                     }
+                    break;
+                    
+                default:
+                    // For any other phase, don't clear currentBets
                     break;
             }
             
@@ -631,7 +629,7 @@
         }
         
         function processResult(lastSpin) {
-            console.log('processResult called, currentBets:', JSON.stringify(currentBets));
+            console.log('processResult START - currentBets:', JSON.stringify(currentBets));
             let roundWin = 0;
             let roundBet = 0;
             
