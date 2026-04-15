@@ -71,10 +71,7 @@
         .wheel.spinning .wheel-bg { animation: spin 0.5s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .wheel-content { position: absolute; width: 100%; height: 100%; }
-        .wheel-number { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; font-family: Arial, sans-serif; transform: translate(-50%, -50%); color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-        .wheel-number.green { background: #009900; border: 2px solid #00cc00; }
-        .wheel-number.red { background: #cc0000; border: 2px solid #ff4444; }
-        .wheel-number.black { background: #1a1a1a; border: 2px solid #444; }
+        .wheel-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; font-family: Arial, sans-serif; transform-origin: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); writing-mode: horizontal-tb; }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
         .result-display { text-align: center; font-size: 1.5rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
@@ -244,10 +241,6 @@
         function initWheel() {
             const content = document.getElementById('wheelContent');
             content.innerHTML = '';
-            // 數字在半徑125的位置，中心是160
-            const radius = 125;
-            const centerX = 160;
-            const centerY = 160;
             // 每個扇形9.73度，數字在中間
             const anglePerSlot = 360 / wheelNumbers.length;
             
@@ -255,8 +248,9 @@
                 // 每個數字的位置角度 - 從頂部開始 (-90度)，每個數字間隔 9.73度
                 const angle = -90 + i * anglePerSlot + anglePerSlot / 2;
                 const rad = angle * Math.PI / 180;
-                const x = Math.cos(rad) * radius + centerX;
-                const y = Math.sin(rad) * radius + centerY;
+                const radius = 105; // 數字在半徑105的位置
+                const x = Math.cos(rad) * radius + 160;
+                const y = Math.sin(rad) * radius + 160;
                 
                 const div = document.createElement('div');
                 div.className = 'wheel-number ' + item.color;
