@@ -292,6 +292,7 @@
         let myBalance = savedBalance ? parseInt(savedBalance) : 1000;
         let gamePhase = 'waiting', lastResult = null;
         let currentBets = [];
+        console.log('currentBets initialized:', JSON.stringify(currentBets));
         let historyBets = [];
         let quickAmount = 100;
         let pollInterval;
@@ -563,6 +564,7 @@
                     enableBtns();
                     
                     if (gamePhase !== 'betting') {
+                        console.log('Clearing currentBets, was:', JSON.stringify(currentBets));
                         currentBets = [];
                         updateCurrentBetsUI();
                         badge.className = 'result-badge neutral';
