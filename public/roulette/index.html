@@ -28,7 +28,7 @@
         .timer-box.waiting { border: 3px solid #666; }
         @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
         
-        .wheel { width: 320px; height: 320px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; position: relative; }
+        .wheel { width: 320px; height: 320px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; position: relative; overflow: hidden; }
         .wheel-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(
             #009900 0deg 9.73deg,   /* 0 綠 */
             #cc0000 9.73deg 19.46deg,  /* 32 紅 */
@@ -68,10 +68,10 @@
             #cc0000 340.55deg 350.28deg,  /* 3 紅 */
             #1a1a1a 350.28deg 360deg      /* 26 黑 */
         ); }
-        .wheel.spinning .wheel-bg { animation: spin 0.5s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .wheel-content { position: absolute; width: 100%; height: 100%; }
-        .wheel-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; font-family: Arial, sans-serif; transform-origin: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); writing-mode: horizontal-tb; }
+        .wheel-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; font-family: Arial, sans-serif; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .wheel.spinning .wheel-bg, .wheel.spinning .wheel-content { animation: spin 0.5s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
         .result-display { text-align: center; font-size: 1.5rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
@@ -245,10 +245,10 @@
             const anglePerSlot = 360 / wheelNumbers.length;
             
             wheelNumbers.forEach((item, i) => {
-                // 每個數字的位置角度 - 從頂部開始 (-90度)，每個數字間隔 9.73度
-                const angle = -90 + i * anglePerSlot + anglePerSlot / 2;
-                const rad = angle * Math.PI / 180;
-                const radius = 105; // 數字在半徑105的位置
+                // 每個數字的位置角度 - 從頂部開始，每個數字間隔 9.73度
+                const angle = i * anglePerSlot + anglePerSlot / 2;
+                const rad = (angle - 90) * Math.PI / 180;
+                const radius = 115; // 數字在半徑115的位置
                 const x = Math.cos(rad) * radius + 160;
                 const y = Math.sin(rad) * radius + 160;
                 
@@ -264,13 +264,13 @@
         function rotateToResult(result) {
             const index = wheelNumbers.findIndex(n => n.num === result);
             const anglePerNumber = 360 / wheelNumbers.length;
-            // 指針在頂部，數字要對準頂部
-            // 從-90度開始，所以每個數字i的位置是 -90 + i*9.73 + 4.86（中點）
-            // 最終目標角度 = -90 + index * anglePerNumber + anglePerNumber/2
-            const targetAngle = -90 + index * anglePerNumber + anglePerNumber / 2;
+            // 指針在頂部(12點鐘位置)，數字要對準頂部
+            // 每個數字i的位置是 i * 9.73 + 4.86（中點）
+            // 目標角度 = 讓數字i停在頂部
+            const targetAngle = index * anglePerNumber + anglePerNumber / 2;
             // 轉 5-8 圈，最後剛好停在數字位置
             const spins = 5 + Math.floor(Math.random() * 4);
-            const totalRotation = spins * 360 - targetAngle;
+            const totalRotation = spins * 360 + (360 - targetAngle);
             
             const wheel = document.getElementById('wheel');
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
