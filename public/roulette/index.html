@@ -337,7 +337,8 @@
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
                     wheel.classList.remove('spinning', 'spinning-anim');
-                    wheel.style.animation = '';
+                    wheel.style.animation = 'none';
+                    wheel.style.transition = 'none';
                     disableBtns();
                     
                     if (data.lastSpin) {
@@ -371,7 +372,8 @@
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
-            wheel.style.animation = '';
+            wheel.style.animation = 'none';
+            wheel.style.transition = 'transform 3s ease-out';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
         }
         
