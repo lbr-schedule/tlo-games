@@ -602,14 +602,12 @@
                         display.className = 'result-display ' + data.lastSpin.color;
                         
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
-                        console.log('Checking spinId:', spinId, 'lastProcessedSpinId:', lastProcessedSpinId);
+                        console.log('RESULT DEBUG - spinId:', spinId, 'lastProcessedSpinId:', lastProcessedSpinId);
+                        console.log('RESULT DEBUG - currentBets:', JSON.stringify(currentBets));
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
-                            console.log('Calling processResult for spinId:', spinId);
                             rotateToResult(data.lastSpin.result);
                             processResult(data.lastSpin);
-                        } else {
-                            console.log('SpinId already processed, skipping');
                         }
                     }
                     break;
