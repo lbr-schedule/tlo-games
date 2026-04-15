@@ -148,8 +148,15 @@ function spinWheel() {
     const result = Math.floor(Math.random() * 37);
     rouletteState.lastSpin = { result, color: getRouletteColor(result), time: Date.now() };
     
+    broadcastRoulette({ type: 'spinning', result });
+    
     setTimeout(() => {
         rouletteState.phase = 'result';
+        broadcastRoulette({ 
+            type: 'result', 
+            result: rouletteState.lastSpin.result, 
+            color: rouletteState.lastSpin.color 
+        });
         // 5秒後自動開始下一局
         rouletteState.spinTimer = setTimeout(startBetting, 5000);
     }, 3000);
@@ -158,6 +165,7 @@ function spinWheel() {
 function startBetting() {
     rouletteState.phase = 'betting';
     rouletteState.lastSpin = null; // 清除上一局結果
+    rouletteState.currentBets = []; // 清除下注（防範新一局殘留）
     rouletteState.phaseStartTime = Date.now();
     rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
 }

@@ -48,6 +48,7 @@
         .quick-bet { display: flex; gap: 6px; margin-bottom: 8px; justify-content: center; }
         .quick-bet button { padding: 8px 12px; background: #333; border: 1px solid #555; border-radius: 6px; color: white; cursor: pointer; font-size: 0.85rem; }
         .quick-bet button:hover { background: #444; }
+        .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
         
         .number-bet { display: flex; gap: 6px; margin-bottom: 10px; }
         .number-bet input { flex: 1; padding: 8px; border: 2px solid #555; border-radius: 6px; background: #2a2a4a; color: white; font-size: 0.9rem; }
@@ -62,8 +63,6 @@
         .history-bets { border: 1px solid rgba(255,255,255,0.1); max-height: 120px; overflow-y: auto; }
         
         .bet-item { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.8rem; }
-        .bet-item.win { color: #00ff00; }
-        .bet-item.lose { color: #ff6666; }
         .history-item { padding: 4px 0; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .history-item:last-child { border-bottom: none; }
         
@@ -123,7 +122,7 @@
             
             <div class="bets-section">
                 <div class="bets-box current-bets">
-                    <h4>🎯 本局下注</h4>
+                    <h4>🎯 本局</h4>
                     <div id="currentBetsList"><span class="no-bets">尚無</span></div>
                 </div>
                 <div class="bets-box history-bets">
@@ -135,23 +134,33 @@
     </div>
 
     <script>
-        let myName = '', myBalance = 1000, gamePhase = 'waiting', lastResult = null;
+        let myName = '', myBalance = 1000, gamePhase = 'waiting';
         let currentBets = [];
         let historyBets = [];
         let quickAmount = 50;
         let pollInterval;
+        let lastProcessedSpinId = 0; // 防重複處理
         
         function setQuickAmount(amt) {
             quickAmount = amt;
             document.getElementById('betAmt').value = amt;
+            document.querySelectorAll('.quick-bet button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
         }
         
         function startGame() {
             myName = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
+            myBalance = 1000;
+            document.getElementById('balance').textContent = myBalance;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
+            currentBets = [];
+            historyBets = [];
+            lastProcessedSpinId = 0;
+            updateCurrentBetsUI();
+            updateHistoryUI();
             pollStatus();
-            pollInterval = setInterval(pollStatus, 500);
+            pollInterval = setInterval(pollStatus, 1000);
         }
         
         async function pollStatus() {
@@ -175,28 +184,29 @@
             
             timerBox.className = 'timer-box';
             document.getElementById('resultDisplay').className = 'result-display';
-            badge.className = 'result-badge neutral';
-            badge.textContent = '-';
             
             switch(data.phase) {
                 case 'waiting':
                     phaseText.textContent = '等待開始';
                     countdown.textContent = '-';
                     timerBox.classList.add('result');
+                    badge.className = 'result-badge neutral';
+                    badge.textContent = '-';
                     disableBtns();
                     break;
                     
                 case 'betting':
                     phaseText.textContent = '⏰ 下注時間';
-                    countdown.textContent = data.remaining + 's';
+                    countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('betting');
                     enableBtns();
+                    
+                    // 新一局開始，清除狀態
                     if (gamePhase !== 'betting') {
                         currentBets = [];
-                        lastResult = null;
+                        updateCurrentBetsUI();
                         badge.className = 'result-badge neutral';
                         badge.textContent = '-';
-                        updateCurrentBetsUI();
                     }
                     break;
                     
@@ -206,25 +216,27 @@
                     timerBox.classList.add('spinning');
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
-                    document.getElementById('resultDisplay').classList.add('waiting');
+                    document.getElementById('resultDisplay').className = 'result-display waiting';
                     break;
                     
                 case 'result':
                     phaseText.textContent = '📌 結果';
-                    countdown.textContent = data.remaining + 's';
+                    countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
                     disableBtns();
-                    
-                    if (data.lastSpin && data.lastSpin !== lastResult) {
-                        lastResult = data.lastSpin;
-                        processResult(data.lastSpin);
-                    }
                     
                     if (data.lastSpin) {
                         const colorName = colors[data.lastSpin.color];
                         const display = document.getElementById('resultDisplay');
                         display.textContent = data.lastSpin.result + ' ' + colorName;
                         display.className = 'result-display ' + data.lastSpin.color;
+                        
+                        // 用 result + time 當作唯一ID，防止重複處理
+                        const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
+                        if (spinId !== lastProcessedSpinId) {
+                            lastProcessedSpinId = spinId;
+                            processResult(data.lastSpin);
+                        }
                     }
                     break;
             }
@@ -233,10 +245,10 @@
         }
         
         function processResult(lastSpin) {
-            // 計算輸贏
             let roundWin = 0;
             let roundBet = 0;
             
+            // 計算輸贏
             for (const bet of currentBets) {
                 roundBet += bet.amount;
                 let win = false;
@@ -268,17 +280,18 @@
                 badge.className = 'result-badge lose';
             }
             
-            // 加入歷史
-            historyBets.unshift({
-                result: lastSpin.result,
-                color: lastSpin.color,
-                win: roundWin > 0,
-                amount: roundWin > 0 ? roundWin : (roundBet > 0 ? -roundBet : 0)
-            });
-            
-            if (historyBets.length > 10) historyBets.pop();
-            
-            updateHistoryUI();
+            // 加入歷史（只有有下注才記錄）
+            if (roundBet > 0) {
+                historyBets.unshift({
+                    result: lastSpin.result,
+                    color: lastSpin.color,
+                    win: roundWin > 0,
+                    amount: roundWin > 0 ? roundWin : -roundBet
+                });
+                
+                if (historyBets.length > 10) historyBets.pop();
+                updateHistoryUI();
+            }
         }
         
         function updateCurrentBetsUI() {
@@ -314,7 +327,7 @@
                 const amountClass = record.amount > 0 ? 'win' : 'lose';
                 
                 html += `<div class="history-item">
-                    <span class="${amountClass}">${record.result} ${colorEmoji} ${amountText}</span>
+                    <span class="${amountClass}" style="font-weight:bold">${record.result} ${colorEmoji} ${amountText}</span>
                 </div>`;
             }
             list.innerHTML = html;
