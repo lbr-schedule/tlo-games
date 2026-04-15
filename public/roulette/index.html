@@ -755,6 +755,7 @@
             if (type === 'color') bet.color = choice;
             if (type === 'odd_even') bet.choice = choice;
             currentBets.push(bet);
+            console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
             
             try {
