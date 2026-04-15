@@ -30,12 +30,12 @@
         
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel-bg { position: absolute; width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; }
+        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; }
         .wheel-content { position: absolute; width: 300px; height: 300px; }
         .wheel-number { position: absolute; font-size: 12px; font-weight: bold; font-family: Arial; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-        .wheel.spinning .wheel-bg { animation: spin 0.5s linear infinite; transform-origin: 150px 150px; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .wheel.spinning { animation: spin 3s ease-out forwards; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(var(--spin-angle)); } }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
         .result-display { text-align: center; font-size: 1.3rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
@@ -121,9 +121,10 @@
             <div class="wheel-container">
                 <div class="wheel-border"></div>
                 <div class="wheel-pointer">▼</div>
-                <div class="wheel" id="wheel">
-                    <canvas class="wheel-bg" id="wheelCanvas" width="300" height="300"></canvas>
-                    <div class="wheel-content" id="wheelContent"></div>
+                <div class="wheel-outer">
+                    <div class="wheel" id="wheel">
+                        <canvas id="wheelCanvas" width="300" height="300"></canvas>
+                    </div>
                 </div>
             </div>
             
@@ -360,15 +361,15 @@
         function rotateToResult(result) {
             const index = wheelNumbers.findIndex(n => n.num === result);
             const slotAngle = 360 / 37;
-            // 目標：讓數字停在頂部（指針位置）
-            // 每個數字佔 360/37 度
             const targetAngle = index * slotAngle + slotAngle / 2;
-            // 轉 5-8 圈
             const spins = 5 + Math.floor(Math.random() * 4);
             const totalRotation = spins * 360 + (360 - targetAngle);
             
             const wheel = document.getElementById('wheel');
-            wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
+            wheel.style.setProperty('--spin-angle', totalRotation + 'deg');
+            wheel.classList.remove('spinning');
+            void wheel.offsetWidth;
+            wheel.classList.add('spinning');
         }
         
         function processResult(lastSpin) {
