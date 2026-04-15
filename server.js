@@ -232,6 +232,9 @@ app.get('/api/roulette/status', (req, res) => {
     });
 });
 
+// JSON 解析（必須在路由之前）
+app.use(express.json());
+
 app.post('/api/roulette/bet', (req, res) => {
     if (rouletteState.phase !== 'betting') {
         return res.json({ success: false, message: '現在不能下注' });
@@ -315,9 +318,6 @@ app.on('upgrade', (request, socket, head) => {
         socket.destroy();
     }
 });
-
-// JSON 解析
-app.use(express.json());
 
 // 骰子遊戲 API（使用 Turso 資料庫）
 app.post('/api/register', async (req, res) => {
