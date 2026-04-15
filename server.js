@@ -20,7 +20,9 @@ let rouletteState = {
     result: null,
     lastSpin: null,
     spinTimer: null,
-    BETTING_TIME: 10000
+    betTimer: null,
+    BETTING_TIME: 10000,
+    phaseStartTime: 0
 };
 
 // ========== 骰子遊戲邏輯 ==========
@@ -155,6 +157,7 @@ function spinWheel() {
 
 function startBetting() {
     rouletteState.phase = 'betting';
+    rouletteState.phaseStartTime = Date.now();
     rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
 }
 
@@ -164,9 +167,12 @@ startBetting();
 // 輪盤 API
 app.get('/api/roulette/status', (req, res) => {
     let remaining = 0;
-    if (rouletteState.phase === 'betting' && rouletteState.spinTimer) {
-        const expires = rouletteState.spinTimer._idleStart + rouletteState.spinTimer._idleTimeout;
-        remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+    
+    if (rouletteState.phase === 'betting') {
+        const elapsed = (Date.now() - rouletteState.phaseStartTime) / 1000;
+        remaining = Math.max(0, Math.ceil(rouletteState.BETTING_TIME / 1000 - elapsed));
+    } else if (rouletteState.phase === 'result') {
+        remaining = 5;
     }
     
     res.json({

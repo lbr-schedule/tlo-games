@@ -13,41 +13,62 @@
         .balance { text-align: center; font-size: 1.3rem; margin-bottom: 15px; padding: 12px; background: rgba(255,215,0,0.15); border-radius: 12px; }
         .balance span { color: #ffd700; font-weight: bold; }
         
+        .timer-box { text-align: center; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 15px; }
+        .timer-box .phase { font-size: 1.1rem; margin-bottom: 8px; }
+        .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
+        .timer-box.betting { border: 2px solid #ffd700; }
+        .timer-box.spinning { border: 2px solid #ff6600; animation: glow 0.5s infinite; }
+        .timer-box.result { border: 2px solid #00aa00; }
+        @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 20px #ff6600; } }
+        
+        .result-display { text-align: center; font-size: 1.8rem; padding: 20px; margin: 15px 0; border-radius: 12px; font-weight: bold; }
+        .result-display.red { background: rgba(204,0,0,0.4); }
+        .result-display.black { background: rgba(50,50,50,0.4); }
+        .result-display.green { background: rgba(0,170,0,0.4); }
+        .result-display.waiting { background: rgba(255,255,255,0.1); }
+        
         .wheel-container { text-align: center; margin: 15px 0; }
         .wheel { width: 200px; height: 200px; border-radius: 50%; margin: 0 auto; border: 6px solid #ffd700; background: conic-gradient(#00aa00 0deg 9.7deg, #cc0000 9.7deg 19.4deg, #000 19.4deg 29.1deg, #cc0000 29.1deg 38.8deg, #000 38.8deg 48.5deg, #cc0000 48.5deg 58.2deg, #000 58.2deg 67.9deg, #cc0000 67.9deg 77.6deg, #000 77.6deg 87.3deg, #cc0000 87.3deg 97deg, #000 97deg 106.7deg, #cc0000 106.7deg 116.4deg, #000 116.4deg 126.1deg, #cc0000 126.1deg 135.8deg, #000 135.8deg 145.5deg, #cc0000 145.5deg 155.2deg, #000 155.2deg 164.9deg, #cc0000 164.9deg 174.6deg, #000 174.6deg 184.3deg, #cc0000 184.3deg 194deg, #000 194deg 203.7deg, #cc0000 203.7deg 213.4deg, #000 213.4deg 223.1deg, #cc0000 223.1deg 232.8deg, #000 232.8deg 242.5deg, #cc0000 242.5deg 252.2deg, #000 252.2deg 261.9deg, #cc0000 261.9deg 271.6deg, #000 271.6deg 281.3deg, #cc0000 281.3deg 291deg, #000 291deg 300.7deg, #cc0000 300.7deg 310.4deg, #000 310.4deg 320.1deg, #cc0000 320.1deg 329.8deg, #000 329.8deg 339.5deg, #cc0000 339.5deg 349.2deg, #000 349.2deg 360deg); }
         .wheel-pointer { font-size: 1.5rem; margin-bottom: 5px; }
         
-        .result-display { text-align: center; font-size: 1.5rem; padding: 15px; margin: 15px 0; border-radius: 12px; }
-        .result-display.red { background: rgba(204,0,0,0.3); }
-        .result-display.black { background: rgba(0,0,0,0.3); }
-        .result-display.green { background: rgba(0,170,0,0.3); }
-        .result-display.spinning { background: rgba(255,215,0,0.3); animation: pulse 0.5s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        .timer { text-align: center; font-size: 1.2rem; color: #ffd700; margin-bottom: 15px; }
-        
-        .status { text-align: center; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
-        
         .bet-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-        .bet-btn { padding: 12px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+        .bet-btn { padding: 15px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .bet-btn:hover { transform: scale(1.02); }
+        .bet-btn:active { transform: scale(0.98); }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #333, #666); color: white; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
+        .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
         
         .number-bet { display: flex; gap: 8px; margin-bottom: 15px; }
-        .number-bet input { flex: 1; padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.9rem; }
-        .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .number-bet input { flex: 1; padding: 12px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; }
+        .number-bet button { padding: 12px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
         
-        .my-bets { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-top: 10px; }
-        .my-bets h4 { color: #ffd700; margin-bottom: 8px; font-size: 0.95rem; }
-        .bet-item { padding: 5px 0; border-bottom: 1px solid #444; font-size: 0.9rem; }
+        .bets-section { margin-top: 15px; }
+        .bets-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        
+        .current-bets { background: rgba(0,200,100,0.15); padding: 12px; border-radius: 10px; border: 1px solid rgba(0,200,100,0.3); margin-bottom: 10px; }
+        .current-bets h4 { color: #00c864; font-size: 0.9rem; margin-bottom: 8px; }
+        .bet-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .bet-item:last-child { border-bottom: none; }
+        .bet-item.win { color: #00ff00; }
+        .bet-item.lose { color: #ff6666; }
+        
+        .history-bets { background: rgba(100,100,100,0.15); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .history-bets h4 { color: #888; font-size: 0.9rem; margin-bottom: 8px; }
+        .history-item { padding: 6px 0; font-size: 0.85rem; color: #aaa; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-item:last-child { border-bottom: none; }
+        .history-item .result { font-weight: bold; }
+        .history-item .result.win { color: #00ff00; }
+        .history-item .result.lose { color: #ff6666; }
         
         .auth-section { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; }
-        .auth-section input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; }
+        .auth-section input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: 1rem; }
         .auth-section button { width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
         
-        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+        .no-bets { color: #666; font-style: italic; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -55,7 +76,13 @@
     
     <div class="container">
         <div class="balance">💰 餘額: <span id="balance">1000</span></div>
-        <div class="status" id="status">載入中...</div>
+        
+        <div class="timer-box" id="timerBox">
+            <div class="phase" id="phaseText">載入中...</div>
+            <div class="countdown" id="countdown">-</div>
+        </div>
+        
+        <div class="result-display waiting" id="resultDisplay">等待開始...</div>
         
         <div class="auth-section" id="authSection">
             <input type="text" id="username" placeholder="輸入你的名字" value="Player1">
@@ -68,49 +95,54 @@
                 <div class="wheel"></div>
             </div>
             
-            <div class="result-display" id="resultDisplay">等待開始...</div>
-            <div class="timer" id="timer">-</div>
-            
             <div class="bet-buttons" id="betButtons">
-                <button class="bet-btn red btn-disabled" onclick="placeBet('color', 50, 'red')">🔴 紅 (2x)</button>
-                <button class="bet-btn black btn-disabled" onclick="placeBet('color', 50, 'black')">⚫ 黑 (2x)</button>
-                <button class="bet-btn odd btn-disabled" onclick="placeBet('odd_even', 50, 'odd')">🔢 單 (2x)</button>
-                <button class="bet-btn even btn-disabled" onclick="placeBet('odd_even', 50, 'even')">⚇ 雙 (2x)</button>
+                <button class="bet-btn red disabled" onclick="placeBet('color', 50, 'red')">🔴 紅 (2x)</button>
+                <button class="bet-btn black disabled" onclick="placeBet('color', 50, 'black')">⚫ 黑 (2x)</button>
+                <button class="bet-btn odd disabled" onclick="placeBet('odd_even', 50, 'odd')">🔢 單 (2x)</button>
+                <button class="bet-btn even disabled" onclick="placeBet('odd_even', 50, 'even')">⚇ 雙 (2x)</button>
             </div>
             
             <div class="number-bet">
                 <input type="number" id="betNum" placeholder="數字 0-36" min="0" max="36">
                 <input type="number" id="betAmt" placeholder="金額" min="10" value="50">
-                <button id="numberBetBtn" onclick="placeNumberBet()">數字 (10x)</button>
+                <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">數字 (10x)</button>
             </div>
             
-            <div class="my-bets">
-                <h4>📋 我的下注</h4>
-                <div id="myBets">尚無下注</div>
+            <div class="bets-section">
+                <h3>📋 下注區</h3>
+                
+                <div class="current-bets" id="currentBets">
+                    <h4>🎯 本局下注</h4>
+                    <div id="currentBetsList" class="no-bets">尚無下注</div>
+                </div>
+                
+                <div class="history-bets" id="historyBets">
+                    <h4>📜 歷史紀錄</h4>
+                    <div id="historyBetsList" class="no-bets">尚無歷史</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        let myName = '', myBalance = 1000, gamePhase = 'waiting', myCurrentBets = [];
+        let myName = '', myBalance = 1000, gamePhase = 'waiting';
+        let currentBets = []; // 本局下注
+        let historyBets = []; // 歷史紀錄
         let pollInterval;
+        let remainingSec = 0;
         
         function startGame() {
             myName = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
-            
-            // 開始輪詢遊戲狀態
             pollStatus();
-            pollInterval = setInterval(pollStatus, 1000);
+            pollInterval = setInterval(pollStatus, 500); // 更頻繁的更新
         }
         
         async function pollStatus() {
             try {
                 const res = await fetch('/api/roulette/status');
                 const data = await res.json();
-                
-                gamePhase = data.phase;
                 updateUI(data);
             } catch(e) {
                 console.log('Poll error:', e);
@@ -118,63 +150,145 @@
         }
         
         function updateUI(data) {
-            const colors = { red: '🔴 紅色', black: '⚫ 黑色', green: '🟢 綠色' };
+            const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
+            const timerBox = document.getElementById('timerBox');
+            const phaseText = document.getElementById('phaseText');
+            const countdown = document.getElementById('countdown');
             const btns = document.querySelectorAll('.bet-btn');
             const numberBtn = document.getElementById('numberBetBtn');
             
+            // 移除所有狀態類
+            timerBox.className = 'timer-box';
+            document.getElementById('resultDisplay').className = 'result-display';
+            
             switch(data.phase) {
                 case 'waiting':
-                    document.getElementById('status').textContent = '等待開始...';
-                    document.getElementById('resultDisplay').textContent = '等待開始...';
-                    document.getElementById('resultDisplay').className = 'result-display';
-                    document.getElementById('timer').textContent = '-';
-                    btns.forEach(b => b.classList.add('btn-disabled'));
-                    numberBtn.classList.add('btn-disabled');
+                    phaseText.textContent = '等待開始';
+                    countdown.textContent = '-';
+                    timerBox.classList.add('waiting');
+                    btns.forEach(b => b.classList.add('disabled'));
+                    numberBtn.classList.add('disabled');
                     break;
                     
                 case 'betting':
-                    document.getElementById('status').textContent = '⏰ 下注時間!';
-                    document.getElementById('resultDisplay').textContent = '⏰ 下注時間!';
-                    document.getElementById('resultDisplay').className = 'result-display spinning';
-                    document.getElementById('timer').textContent = '⏰ ' + data.remaining + '秒';
-                    btns.forEach(b => b.classList.remove('btn-disabled'));
-                    numberBtn.classList.remove('btn-disabled');
+                    const secs = data.remaining || 0;
+                    phaseText.textContent = '⏰ 下注時間';
+                    countdown.textContent = secs + 's';
+                    timerBox.classList.add('betting');
+                    btns.forEach(b => b.classList.remove('disabled'));
+                    numberBtn.classList.remove('disabled');
+                    
+                    // 進入下注階段，清除本局下注
+                    if (gamePhase !== 'betting') {
+                        currentBets = [];
+                        updateCurrentBetsUI();
+                    }
                     break;
                     
                 case 'spinning':
-                    document.getElementById('status').textContent = '🎰 轉動中...';
+                    phaseText.textContent = '🎰 轉動中';
+                    countdown.textContent = '...';
+                    timerBox.classList.add('spinning');
+                    btns.forEach(b => b.classList.add('disabled'));
+                    numberBtn.classList.add('disabled');
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
-                    document.getElementById('resultDisplay').className = 'result-display spinning';
-                    document.getElementById('timer').textContent = '-';
-                    btns.forEach(b => b.classList.add('btn-disabled'));
-                    numberBtn.classList.add('btn-disabled');
+                    document.getElementById('resultDisplay').classList.add('waiting');
                     break;
                     
                 case 'result':
+                    phaseText.textContent = '📌 結果';
+                    countdown.textContent = data.remaining + 's';
+                    timerBox.classList.add('result');
+                    btns.forEach(b => b.classList.add('disabled'));
+                    numberBtn.classList.add('disabled');
+                    
                     if (data.lastSpin) {
                         const colorName = colors[data.lastSpin.color];
-                        document.getElementById('status').textContent = '結果出爐!';
-                        document.getElementById('resultDisplay').textContent = '結果: ' + data.lastSpin.result + ' ' + colorName;
-                        document.getElementById('resultDisplay').className = 'result-display ' + data.lastSpin.color;
-                        checkWin(data.lastSpin);
+                        const display = document.getElementById('resultDisplay');
+                        display.textContent = data.lastSpin.result + ' ' + colorName;
+                        display.className = 'result-display ' + data.lastSpin.color;
+                        
+                        // 判定輸贏並更新歷史
+                        processResult(data.lastSpin);
                     }
-                    document.getElementById('timer').textContent = '5秒後開始下一局';
-                    btns.forEach(b => b.classList.add('btn-disabled'));
-                    numberBtn.classList.add('btn-disabled');
                     break;
             }
+            
+            gamePhase = data.phase;
         }
         
-        function checkWin(lastSpin) {
-            // 簡單的贏家判斷（玩家預設都下50 red）
-            // 實際遊戲需要在伺服器端計算
+        function processResult(lastSpin) {
+            // 根據結果更新歷史紀錄
+            historyBets.unshift({
+                bets: [...currentBets],
+                result: lastSpin.result,
+                color: lastSpin.color,
+                time: new Date().toLocaleTimeString()
+            });
+            
+            // 只保留最近10筆記錄
+            if (historyBets.length > 10) historyBets.pop();
+            
+            updateHistoryUI(lastSpin);
+        }
+        
+        function updateCurrentBetsUI() {
+            const list = document.getElementById('currentBetsList');
+            if (currentBets.length === 0) {
+                list.innerHTML = '<span class="no-bets">尚無下注</span>';
+                return;
+            }
+            
+            let html = '';
+            let total = 0;
+            for (const bet of currentBets) {
+                total += bet.amount;
+                html += `<div class="bet-item"><span>${bet.info}</span><span>${bet.amount}</span></div>`;
+            }
+            html += `<div class="bet-item" style="border-top:1px solid #444;margin-top:5px;padding-top:8px;"><span>總計</span><span style="color:#ffd700">${total}</span></div>`;
+            list.innerHTML = html;
+        }
+        
+        function updateHistoryUI(lastSpin) {
+            const list = document.getElementById('historyBetsList');
+            if (historyBets.length === 0) {
+                list.innerHTML = '<span class="no-bets">尚無歷史</span>';
+                return;
+            }
+            
+            let html = '';
+            for (const record of historyBets) {
+                const colors = { red: '🔴', black: '⚫', green: '🟢' };
+                const colorEmoji = colors[record.color] || '⚪';
+                
+                // 計算這局的輸贏
+                let isWin = false;
+                for (const bet of record.bets) {
+                    if (bet.type === 'color' && bet.color === record.color) isWin = true;
+                    if (bet.type === 'odd_even') {
+                        if (bet.choice === 'odd' && record.result % 2 === 1 && record.result !== 0) isWin = true;
+                        if (bet.choice === 'even' && record.result % 2 === 0 && record.result !== 0) isWin = true;
+                    }
+                    if (bet.type === 'number' && bet.number === record.result) isWin = true;
+                }
+                
+                const resultClass = isWin ? 'win' : 'lose';
+                const resultText = isWin ? '贏' : '輸';
+                const betsText = record.bets.map(b => b.info).join(', ') || '無下注';
+                
+                html += `<div class="history-item">
+                    <span class="result ${resultClass}">${record.result} ${colorEmoji} ${resultText}</span>
+                    <br><small>${betsText}</small>
+                </div>`;
+            }
+            list.innerHTML = html;
         }
         
         async function placeBet(type, amount, choice) {
             if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
             
-            myCurrentBets.push({ type, amount, info: choice });
-            updateMyBets();
+            currentBets.push({ type, amount, info: choice });
+            updateCurrentBetsUI();
             
             try {
                 await fetch('/api/roulette/bet', {
@@ -194,8 +308,8 @@
             if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
             if (gamePhase !== 'betting') { alert('現在不能下注！'); return; }
             
-            myCurrentBets.push({ type: 'number', amount: amt, info: '#' + num });
-            updateMyBets();
+            currentBets.push({ type: 'number', amount: amt, info: '#' + num });
+            updateCurrentBetsUI();
             
             try {
                 await fetch('/api/roulette/bet', {
@@ -206,12 +320,6 @@
             } catch(e) {
                 console.log('Bet error:', e);
             }
-        }
-        
-        function updateMyBets() {
-            document.getElementById('myBets').innerHTML = myCurrentBets.length ? 
-                myCurrentBets.map(b => '<div class="bet-item">' + b.info + ' → ' + b.amount + '</div>').join('') : 
-                '尚無下注';
         }
     </script>
 </body>
