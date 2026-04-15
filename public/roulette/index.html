@@ -11,66 +11,88 @@
         
         h1 { text-align: center; padding: 10px; color: #ffd700; font-size: 1.5rem; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 10px; }
-        .balance { font-size: 1.2rem; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 10px; }
+        .balance { font-size: 1.3rem; }
         .balance span { color: #ffd700; font-weight: bold; }
-        .result-badge { padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.9rem; }
-        .result-badge.win { background: rgba(0,200,100,0.3); color: #00ff00; }
-        .result-badge.lose { background: rgba(255,100,100,0.3); color: #ff6666; }
+        .result-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1rem; min-width: 80px; text-align: center; }
+        .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
+        .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
         
-        .timer-box { text-align: center; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-bottom: 10px; }
-        .timer-box .phase { font-size: 0.9rem; color: #aaa; margin-bottom: 3px; }
-        .timer-box .countdown { font-size: 2rem; font-weight: bold; color: #ffd700; }
-        .timer-box.betting { border: 2px solid #ffd700; }
-        .timer-box.spinning { border: 2px solid #ff6600; animation: glow 0.5s infinite; }
-        .timer-box.result { border: 2px solid #00aa00; }
-        @keyframes glow { 0%,100% { box-shadow: 0 0 5px #ff6600; } 50% { box-shadow: 0 0 15px #ff6600; } }
+        .timer-box { text-align: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
+        .timer-box .phase { font-size: 1rem; margin-bottom: 5px; }
+        .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
+        .timer-box.betting { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .timer-box.spinning { border: 3px solid #ff6600; animation: glow 0.5s infinite; }
+        .timer-box.result { border: 3px solid #00aa00; }
+        .timer-box.waiting { border: 3px solid #666; }
+        @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
         
-        .wheel-container { text-align: center; margin: 8px 0; }
-        .wheel { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto; border: 4px solid #ffd700; background: conic-gradient(#00aa00 0deg 9.7deg, #cc0000 9.7deg 19.4deg, #000 19.4deg 29.1deg, #cc0000 29.1deg 38.8deg, #000 38.8deg 48.5deg, #cc0000 48.5deg 58.2deg, #000 58.2deg 67.9deg, #cc0000 67.9deg 77.6deg, #000 77.6deg 87.3deg, #cc0000 87.3deg 97deg, #000 97deg 106.7deg, #cc0000 106.7deg 116.4deg, #000 116.4deg 126.1deg, #cc0000 126.1deg 135.8deg, #000 135.8deg 145.5deg, #cc0000 145.5deg 155.2deg, #000 155.2deg 164.9deg, #cc0000 164.9deg 174.6deg, #000 174.6deg 184.3deg, #cc0000 184.3deg 194deg, #000 194deg 203.7deg, #cc0000 203.7deg 213.4deg, #000 213.4deg 223.1deg, #cc0000 223.1deg 232.8deg, #000 232.8deg 242.5deg, #cc0000 242.5deg 252.2deg, #000 252.2deg 261.9deg, #cc0000 261.9deg 271.6deg, #000 271.6deg 281.3deg, #cc0000 281.3deg 291deg, #000 291deg 300.7deg, #cc0000 300.7deg 310.4deg, #000 310.4deg 320.1deg, #cc0000 320.1deg 329.8deg, #000 329.8deg 339.5deg, #cc0000 339.5deg 349.2deg, #000 349.2deg 360deg); }
-        .wheel-pointer { font-size: 1.2rem; }
+        .wheel-container { text-align: center; margin: 10px 0; }
+        .wheel { width: 180px; height: 180px; border-radius: 50%; margin: 0 auto; border: 5px solid #ffd700; background: conic-gradient(#00aa00 0deg 9.7deg, #cc0000 9.7deg 19.4deg, #000 19.4deg 29.1deg, #cc0000 29.1deg 38.8deg, #000 38.8deg 48.5deg, #cc0000 48.5deg 58.2deg, #000 58.2deg 67.9deg, #cc0000 67.9deg 77.6deg, #000 77.6deg 87.3deg, #cc0000 87.3deg 97deg, #000 97deg 106.7deg, #cc0000 106.7deg 116.4deg, #000 116.4deg 126.1deg, #cc0000 126.1deg 135.8deg, #000 135.8deg 145.5deg, #cc0000 145.5deg 155.2deg, #000 155.2deg 164.9deg, #cc0000 164.9deg 174.6deg, #000 174.6deg 184.3deg, #cc0000 184.3deg 194deg, #000 194deg 203.7deg, #cc0000 203.7deg 213.4deg, #000 213.4deg 223.1deg, #cc0000 223.1deg 232.8deg, #000 232.8deg 242.5deg, #cc0000 242.5deg 252.2deg, #000 252.2deg 261.9deg, #cc0000 261.9deg 271.6deg, #000 271.6deg 281.3deg, #cc0000 281.3deg 291deg, #000 291deg 300.7deg, #cc0000 300.7deg 310.4deg, #000 310.4deg 320.1deg, #cc0000 320.1deg 329.8deg, #000 329.8deg 339.5deg, #cc0000 339.5deg 349.2deg, #000 349.2deg 360deg); transition: transform 0.1s; }
+        .wheel.spinning { animation: spin 0.5s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .wheel-pointer { font-size: 1.5rem; }
         
-        .result-display { text-align: center; font-size: 1.3rem; padding: 10px; border-radius: 10px; margin: 8px 0; font-weight: bold; }
-        .result-display.red { background: rgba(204,0,0,0.4); }
-        .result-display.black { background: rgba(50,50,50,0.4); }
-        .result-display.green { background: rgba(0,170,0,0.4); }
+        .result-display { text-align: center; font-size: 1.5rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
+        .result-display.red { background: rgba(204,0,0,0.5); }
+        .result-display.black { background: rgba(50,50,50,0.5); }
+        .result-display.green { background: rgba(0,170,0,0.5); }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         
-        .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-        .bet-btn { padding: 10px 5px; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .help-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #aaa; }
+        .help-box h4 { color: #ffd700; margin-bottom: 5px; font-size: 0.9rem; }
+        .help-box p { margin: 3px 0; }
+        
+        .bet-section { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 5px; }
+        
+        .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+        .bet-btn:hover:not(.disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .bet-btn:active:not(.disabled) { transform: scale(0.95); }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #333, #666); color: white; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
-        .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+        .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+        .bet-btn .multi { display: block; font-size: 0.7rem; opacity: 0.8; }
         
-        .quick-bet { display: flex; gap: 6px; margin-bottom: 8px; justify-content: center; }
-        .quick-bet button { padding: 8px 12px; background: #333; border: 1px solid #555; border-radius: 6px; color: white; cursor: pointer; font-size: 0.85rem; }
-        .quick-bet button:hover { background: #444; }
+        .quick-bet { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; }
+        .quick-bet button { padding: 10px 15px; background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+        .quick-bet button:hover { background: #444; border-color: #666; }
         .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
         
-        .number-bet { display: flex; gap: 6px; margin-bottom: 10px; }
-        .number-bet input { flex: 1; padding: 8px; border: 2px solid #555; border-radius: 6px; background: #2a2a4a; color: white; font-size: 0.9rem; }
-        .number-bet button { padding: 8px 12px; background: #ffd700; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .number-bet { display: flex; gap: 8px; }
+        .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; }
+        .number-bet input:focus { border-color: #ffd700; outline: none; }
+        .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
         .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
+        .number-bet button:hover:not(.disabled) { background: #ffdd44; }
         
-        .bets-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .bets-box { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
-        .bets-box h4 { font-size: 0.85rem; margin-bottom: 6px; color: #aaa; }
-        .current-bets { border: 1px solid rgba(0,200,100,0.3); }
-        .current-bets h4 { color: #00c864; }
-        .history-bets { border: 1px solid rgba(255,255,255,0.1); max-height: 120px; overflow-y: auto; }
+        .bets-display { margin-top: 10px; }
+        .current-bets-box { background: rgba(0,200,100,0.1); border: 2px solid rgba(0,200,100,0.3); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        .current-bets-box h4 { color: #00c864; margin-bottom: 8px; font-size: 0.95rem; }
+        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; max-height: 150px; overflow-y: auto; }
+        .history-bets-box h4 { color: #888; margin-bottom: 8px; font-size: 0.9rem; }
         
-        .bet-item { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.8rem; }
-        .history-item { padding: 4px 0; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .history-item:last-child { border-bottom: none; }
+        .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
+        .bet-row.total { border-top: 1px dashed #444; margin-top: 5px; padding-top: 8px; font-weight: bold; }
         
-        .auth-section { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; }
-        .auth-section input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: 1rem; }
-        .auth-section button { width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .history-row { padding: 5px 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-row:last-child { border-bottom: none; }
+        .history-row .result-num { font-weight: bold; margin-right: 5px; }
+        .history-row.win { color: #00ff00; }
+        .history-row.lose { color: #ff6666; }
         
-        .no-bets { color: #666; font-size: 0.75rem; font-style: italic; }
+        .auth-section { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px; text-align: center; }
+        .auth-section h2 { color: #ffd700; margin-bottom: 15px; font-size: 1.2rem; }
+        .auth-section p { color: #aaa; margin-bottom: 15px; font-size: 0.9rem; }
+        .auth-section input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: 1rem; text-align: center; }
+        .auth-section button { width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; }
+        .auth-section button:hover { background: linear-gradient(135deg, #ffdd44, #ffa020); }
+        
+        .no-bets { color: #666; font-style: italic; font-size: 0.85rem; text-align: center; padding: 10px; }
     </style>
 </head>
 <body>
@@ -78,11 +100,11 @@
     
     <div class="container">
         <div class="top-bar">
-            <div class="balance">💰 <span id="balance">1000</span></div>
+            <div class="balance">💰 餘額: <span id="balance">1000</span></div>
             <div class="result-badge neutral" id="resultBadge">-</div>
         </div>
         
-        <div class="timer-box" id="timerBox">
+        <div class="timer-box waiting" id="timerBox">
             <div class="phase" id="phaseText">載入中...</div>
             <div class="countdown" id="countdown">-</div>
         </div>
@@ -90,56 +112,69 @@
         <div class="result-display waiting" id="resultDisplay">等待開始...</div>
         
         <div class="auth-section" id="authSection">
+            <h2>🎰 歡迎來到俄羅斯輪盤</h2>
+            <p>選擇幸運的颜色或數字，等待轉盤停止！</p>
             <input type="text" id="username" placeholder="輸入你的名字" value="Player1">
-            <button onclick="startGame()">開始遊戲</button>
+            <button onclick="startGame()">開始遊戲 🎮</button>
         </div>
         
         <div class="game-section" id="gameSection" style="display:none;">
             <div class="wheel-container">
                 <div class="wheel-pointer">▼</div>
-                <div class="wheel"></div>
+                <div class="wheel" id="wheel"></div>
             </div>
             
-            <div class="bet-buttons" id="betButtons">
-                <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅</button>
-                <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑</button>
-                <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單</button>
-                <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙</button>
+            <div class="help-box">
+                <h4>🎯 玩法說明</h4>
+                <p>🔴 紅色 / ⚫ 黑色 - 2倍獎金</p>
+                <p>單 / 雙 - 2倍獎金 | 數字 - 10倍獎金</p>
             </div>
             
-            <div class="quick-bet">
-                <button onclick="setQuickAmount(10)">10</button>
-                <button onclick="setQuickAmount(50)">50</button>
-                <button onclick="setQuickAmount(100)">100</button>
-                <button onclick="setQuickAmount(500)">500</button>
-            </div>
-            
-            <div class="number-bet">
-                <input type="number" id="betNum" placeholder="數字" min="0" max="36" style="width:70px">
-                <input type="number" id="betAmt" placeholder="金額" min="10" value="50" style="flex:1">
-                <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">數字(10x)</button>
-            </div>
-            
-            <div class="bets-section">
-                <div class="bets-box current-bets">
-                    <h4>🎯 本局</h4>
-                    <div id="currentBetsList"><span class="no-bets">尚無</span></div>
+            <div class="bet-section">
+                <h3>💰 選擇下注</h3>
+                
+                <div class="quick-bet">
+                    <button onclick="setQuickAmount(10)">10</button>
+                    <button onclick="setQuickAmount(50)">50</button>
+                    <button onclick="setQuickAmount(100)" class="active">100</button>
+                    <button onclick="setQuickAmount(500)">500</button>
                 </div>
-                <div class="bets-box history-bets">
-                    <h4>📜 歷史</h4>
-                    <div id="historyBetsList"><span class="no-bets">尚無</span></div>
+                
+                <div class="bet-buttons" id="betButtons">
+                    <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span></button>
+                    <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span></button>
+                    <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span></button>
+                    <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙數<span class="multi">2x</span></button>
+                </div>
+                
+                <div class="number-bet">
+                    <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px">
+                    <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1">
+                    <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">數字 10x</button>
+                </div>
+            </div>
+            
+            <div class="bets-display">
+                <div class="current-bets-box">
+                    <h4>🎯 本局下注 <span id="betTotal">0</span></h4>
+                    <div id="currentBetsList"><span class="no-bets">點擊上方按鈕下注</span></div>
+                </div>
+                
+                <div class="history-bets-box">
+                    <h4>📜 歷史記錄</h4>
+                    <div id="historyBetsList"><span class="no-bets">尚無記錄</span></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let myName = '', myBalance = 1000, gamePhase = 'waiting';
+        let myName = '', myBalance = 1000, gamePhase = 'waiting', lastResult = null;
         let currentBets = [];
         let historyBets = [];
-        let quickAmount = 50;
+        let quickAmount = 100;
         let pollInterval;
-        let lastProcessedSpinId = 0; // 防重複處理
+        let lastProcessedSpinId = 0;
         
         function setQuickAmount(amt) {
             quickAmount = amt;
@@ -174,34 +209,35 @@
         }
         
         function updateUI(data) {
-            const colors = { red: '🔴', black: '⚫', green: '🟢' };
+            const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
             const timerBox = document.getElementById('timerBox');
             const phaseText = document.getElementById('phaseText');
             const countdown = document.getElementById('countdown');
             const btns = document.querySelectorAll('.bet-btn');
             const numberBtn = document.getElementById('numberBetBtn');
             const badge = document.getElementById('resultBadge');
+            const wheel = document.getElementById('wheel');
             
             timerBox.className = 'timer-box';
+            wheel.className = 'wheel';
             document.getElementById('resultDisplay').className = 'result-display';
             
             switch(data.phase) {
                 case 'waiting':
-                    phaseText.textContent = '等待開始';
+                    phaseText.textContent = '⏳ 等待開始';
                     countdown.textContent = '-';
-                    timerBox.classList.add('result');
+                    timerBox.classList.add('waiting');
                     badge.className = 'result-badge neutral';
                     badge.textContent = '-';
                     disableBtns();
                     break;
                     
                 case 'betting':
-                    phaseText.textContent = '⏰ 下注時間';
+                    phaseText.textContent = '⏰ 下注時間！';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('betting');
                     enableBtns();
                     
-                    // 新一局開始，清除狀態
                     if (gamePhase !== 'betting') {
                         currentBets = [];
                         updateCurrentBetsUI();
@@ -211,16 +247,17 @@
                     break;
                     
                 case 'spinning':
-                    phaseText.textContent = '🎰 轉動中';
-                    countdown.textContent = '...';
+                    phaseText.textContent = '🎰 轉動中...';
+                    countdown.textContent = '❓';
                     timerBox.classList.add('spinning');
+                    wheel.classList.add('spinning');
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display waiting';
                     break;
                     
                 case 'result':
-                    phaseText.textContent = '📌 結果';
+                    phaseText.textContent = '📌 結果出爐';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
                     disableBtns();
@@ -231,7 +268,6 @@
                         display.textContent = data.lastSpin.result + ' ' + colorName;
                         display.className = 'result-display ' + data.lastSpin.color;
                         
-                        // 用 result + time 當作唯一ID，防止重複處理
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
@@ -248,7 +284,6 @@
             let roundWin = 0;
             let roundBet = 0;
             
-            // 計算輸贏
             for (const bet of currentBets) {
                 roundBet += bet.amount;
                 let win = false;
@@ -266,11 +301,9 @@
                 }
             }
             
-            // 更新餘額
             myBalance = myBalance - roundBet + roundWin;
             document.getElementById('balance').textContent = myBalance;
             
-            // 顯示結果badge
             const badge = document.getElementById('resultBadge');
             if (roundWin > 0) {
                 badge.textContent = '+' + roundWin;
@@ -280,7 +313,6 @@
                 badge.className = 'result-badge lose';
             }
             
-            // 加入歷史（只有有下注才記錄）
             if (roundBet > 0) {
                 historyBets.unshift({
                     result: lastSpin.result,
@@ -296,25 +328,27 @@
         
         function updateCurrentBetsUI() {
             const list = document.getElementById('currentBetsList');
+            const totalEl = document.getElementById('betTotal');
+            let total = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            totalEl.textContent = total;
+            
             if (currentBets.length === 0) {
-                list.innerHTML = '<span class="no-bets">尚無</span>';
+                list.innerHTML = '<span class="no-bets">點擊上方按鈕下注</span>';
                 return;
             }
             
             let html = '';
-            let total = 0;
             for (const bet of currentBets) {
-                total += bet.amount;
-                html += `<div class="bet-item"><span>${bet.info}</span><span>${bet.amount}</span></div>`;
+                html += `<div class="bet-row"><span>${bet.info}</span><span>${bet.amount}</span></div>`;
             }
-            html += `<div class="bet-item" style="border-top:1px solid #444;margin-top:3px;padding-top:5px;font-weight:bold;"><span>總計</span><span style="color:#ffd700">${total}</span></div>`;
+            html += `<div class="bet-row total"><span>總計</span><span style="color:#ffd700">${total}</span></div>`;
             list.innerHTML = html;
         }
         
         function updateHistoryUI() {
             const list = document.getElementById('historyBetsList');
             if (historyBets.length === 0) {
-                list.innerHTML = '<span class="no-bets">尚無</span>';
+                list.innerHTML = '<span class="no-bets">尚無記錄</span>';
                 return;
             }
             
@@ -324,10 +358,11 @@
             for (const record of historyBets) {
                 const colorEmoji = colors[record.color] || '⚪';
                 const amountText = record.amount > 0 ? '+' + record.amount : record.amount;
-                const amountClass = record.amount > 0 ? 'win' : 'lose';
+                const rowClass = record.amount > 0 ? 'win' : 'lose';
                 
-                html += `<div class="history-item">
-                    <span class="${amountClass}" style="font-weight:bold">${record.result} ${colorEmoji} ${amountText}</span>
+                html += `<div class="history-row ${rowClass}">
+                    <span class="result-num">${record.result} ${colorEmoji}</span>
+                    <span>${amountText}</span>
                 </div>`;
             }
             list.innerHTML = html;
