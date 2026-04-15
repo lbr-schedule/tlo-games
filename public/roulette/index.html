@@ -42,8 +42,11 @@
         .result-display.green { background: rgba(0,170,0,0.5); }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         
-        .help-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #aaa; }
-        .help-box h4 { color: #ffd700; margin-bottom: 5px; font-size: 0.9rem; }
+        .help-box { font-size: 0.8rem; color: #aaa; margin-bottom: 10px; }
+        .help-toggle { background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; cursor: pointer; display: inline-block; font-size: 1rem; transition: background 0.2s; }
+        .help-toggle:hover { background: rgba(255,255,255,0.2); }
+        .help-content { display: none; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 8px; font-size: 0.85rem; }
+        .help-content h4 { color: #ffd700; margin-bottom: 8px; font-size: 0.9rem; }
         
         .bet-section { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
         .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
@@ -129,8 +132,13 @@
             <div class="result-display waiting" id="resultDisplay">等待開始...</div>
             
             <div class="help-box">
-                <h4>🎯 玩法說明</h4>
-                <p>🔴 紅色 / ⚫ 黑色 - 2倍獎金 | 單 / 雙 - 2倍獎金 | 數字 - 10倍獎金</p>
+                <span class="help-toggle" onclick="toggleHelp()">❓ 玩法說明</span>
+                <div class="help-content" id="helpContent">
+                    <h4>🎯 玩法說明</h4>
+                    <p>🔴 紅色 / ⚫ 黑色 - 2倍獎金</p>
+                    <p>單數 / 雙數 - 2倍獎金</p>
+                    <p>數字 0-36 - 10倍獎金</p>
+                </div>
             </div>
             
             <div class="bet-section">
@@ -192,6 +200,11 @@
             { num: 18, color: 'red' }, { num: 29, color: 'black' }, { num: 7, color: 'red' }, { num: 28, color: 'black' },
             { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' }
         ];
+        
+        function toggleHelp() {
+            const content = document.getElementById('helpContent');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        }
         
         function setQuickAmount(amt) {
             quickAmount = amt;
