@@ -31,10 +31,10 @@
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
-        .wheel-content { position: absolute; width: 100%; height: 100%; transform-origin: 150px 150px; }
-        .wheel-number { position: absolute; font-size: 11px; font-weight: bold; font-family: Arial; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-        .wheel.spinning .wheel-content { animation: spin 0.5s linear infinite; transform-origin: center center; }
+        .wheel-bg { position: absolute; width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; }
+        .wheel-content { position: absolute; width: 300px; height: 300px; }
+        .wheel-number { position: absolute; font-size: 12px; font-weight: bold; font-family: Arial; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .wheel.spinning .wheel-bg { animation: spin 0.5s linear infinite; transform-origin: 150px 150px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
@@ -232,7 +232,7 @@
                 
                 // 繪製數字
                 const textAngle = startAngle + slotAngle / 2;
-                const textRadius = radius * 0.55;
+                const textRadius = radius * 0.85;
                 const textX = centerX + Math.cos(textAngle) * textRadius;
                 const textY = centerY + Math.sin(textAngle) * textRadius;
                 
