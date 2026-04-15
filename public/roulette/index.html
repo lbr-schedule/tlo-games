@@ -563,8 +563,11 @@
                     timerBox.classList.add('betting');
                     enableBtns();
                     
-                    // NEVER clear currentBets when entering betting - we need them for result calculation!
-                    // currentBets will only be cleared AFTER processResult is called
+                    // Clear currentBets when starting NEW round (previous phase was result/spinning)
+                    if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
+                        currentBets = [];
+                        updateCurrentBetsUI();
+                    }
                     badge.style.display = 'none';
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = '';
@@ -661,6 +664,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: myName, newScore: myBalance })
             });
+            
+            // Clear currentBets after processing (prepare for next round)
+            currentBets = [];
+            updateCurrentBetsUI();
             
             // 顯示結果badge
             const badge = document.getElementById('resultBadge');
