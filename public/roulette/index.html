@@ -319,20 +319,26 @@
                 const data = await res.json();
                 
                 if (data.success) {
+                    console.log('Login success, setting up game UI');
                     myName = username;
                     myBalance = data.player.score;
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('gameSection').style.display = 'block';
                     document.getElementById('username').value = username;
+                    console.log('Calling drawWheel...');
                     drawWheel();
+                    console.log('drawWheel called, setting up polling');
                     currentBets = [];
                     historyBets = [];
                     lastProcessedSpinId = 0;
                     updateCurrentBetsUI();
                     updateHistoryUI();
+                    console.log('Calling initial pollStatus...');
                     pollStatus();
+                    console.log('Setting up poll interval');
                     pollInterval = setInterval(pollStatus, 1000);
+                    console.log('Setup complete');
                 } else {
                     msg.textContent = data.message;
                     msg.className = 'auth-msg';
