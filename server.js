@@ -69,7 +69,8 @@ let rouletteState = {
     spinTimer: null,
     betTimer: null,
     BETTING_TIME: 10000,
-    phaseStartTime: 0
+    phaseStartTime: 0,
+    hasPlayer: false
 };
 
 // ========== 骰子遊戲邏輯 ==========
@@ -202,18 +203,6 @@ function spinWheel() {
         rouletteState.spinTimer = setTimeout(startBetting, 5000);
     }, 3000);
 }
-
-// 輪盤遊戲狀態（單人，無需 WebSocket）
-let rouletteState = {
-    phase: 'waiting', // waiting, betting, spinning, result
-    result: null,
-    lastSpin: null,
-    spinTimer: null,
-    betTimer: null,
-    BETTING_TIME: 10000,
-    phaseStartTime: 0,
-    hasPlayer: false
-};
 
 // 當玩家登入時呼叫
 function playerJoined() {
