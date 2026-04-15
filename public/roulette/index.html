@@ -28,52 +28,53 @@
         .timer-box.waiting { border: 3px solid #666; }
         @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
         
-        .wheel-container { text-align: center; margin: 10px 0; position: relative; }
-        .wheel { width: 320px; height: 320px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; background: conic-gradient(
-            #009900 0deg 9.7deg,  /* 0 綠 */
-            #cc0000 9.7deg 19.4deg,  /* 32 紅 */
-            #1a1a1a 19.4deg 29.1deg, /* 15 黑 */
-            #cc0000 29.1deg 38.8deg,  /* 19 紅 */
-            #1a1a1a 38.8deg 48.5deg, /* 4 黑 */
-            #cc0000 48.5deg 58.2deg,  /* 21 紅 */
-            #1a1a1a 58.2deg 67.9deg,  /* 2 黑 */
-            #cc0000 67.9deg 77.6deg,  /* 25 紅 */
-            #1a1a1a 77.6deg 87.3deg,  /* 17 黑 */
-            #cc0000 87.3deg 97deg,     /* 34 紅 */
-            #1a1a1a 97deg 106.7deg,   /* 6 黑 */
-            #cc0000 106.7deg 116.4deg,/* 27 紅 */
-            #1a1a1a 116.4deg 126.1deg,/* 13 黑 */
-            #cc0000 126.1deg 135.8deg,/* 36 紅 */
-            #1a1a1a 135.8deg 145.5deg,/* 11 黑 */
-            #cc0000 145.5deg 155.2deg,/* 30 紅 */
-            #1a1a1a 155.2deg 164.9deg,/* 8 黑 */
-            #cc0000 164.9deg 174.6deg,/* 23 紅 */
-            #1a1a1a 174.6deg 184.3deg,/* 10 黑 */
-            #cc0000 184.3deg 194deg,  /* 5 紅 */
-            #1a1a1a 194deg 203.7deg,  /* 24 黑 */
-            #cc0000 203.7deg 213.4deg,/* 16 紅 */
-            #1a1a1a 213.4deg 223.1deg,/* 33 黑 */
-            #cc0000 223.1deg 232.8deg,/* 1 紅 */
-            #1a1a1a 232.8deg 242.5deg,/* 20 黑 */
-            #cc0000 242.5deg 252.2deg,/* 14 紅 */
-            #1a1a1a 252.2deg 261.9deg,/* 31 黑 */
-            #cc0000 261.9deg 271.6deg,/* 9 紅 */
-            #1a1a1a 271.6deg 281.3deg,/* 22 黑 */
-            #cc0000 281.3deg 291deg,  /* 18 紅 */
-            #1a1a1a 291deg 300.7deg,  /* 29 黑 */
-            #cc0000 300.7deg 310.4deg,/* 7 紅 */
-            #1a1a1a 310.4deg 320.1deg, /* 28 黑 */
-            #cc0000 320.1deg 329.8deg,/* 12 紅 */
-            #1a1a1a 329.8deg 339.5deg,/* 35 黑 */
-            #cc0000 339.5deg 349.2deg,/* 3 紅 */
-            #1a1a1a 349.2deg 360deg   /* 26 黑 */
-        ); position: relative; overflow: hidden; transition: transform 0.5s ease-out; }
-        .wheel.spinning { animation: spin 0.5s linear infinite; }
+        .wheel { width: 320px; height: 320px; border-radius: 50%; margin: 0 auto; border: 8px solid #ffd700; position: relative; }
+        .wheel-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(
+            #009900 0deg 9.73deg,   /* 0 綠 */
+            #cc0000 9.73deg 19.46deg,  /* 32 紅 */
+            #1a1a1a 19.46deg 29.19deg, /* 15 黑 */
+            #cc0000 29.19deg 38.92deg,  /* 19 紅 */
+            #1a1a1a 38.92deg 48.65deg, /* 4 黑 */
+            #cc0000 48.65deg 58.38deg,  /* 21 紅 */
+            #1a1a1a 58.38deg 68.11deg,  /* 2 黑 */
+            #cc0000 68.11deg 77.84deg,  /* 25 紅 */
+            #1a1a1a 77.84deg 87.57deg,  /* 17 黑 */
+            #cc0000 87.57deg 97.3deg,    /* 34 紅 */
+            #1a1a1a 97.3deg 107.03deg,  /* 6 黑 */
+            #cc0000 107.03deg 116.76deg, /* 27 紅 */
+            #1a1a1a 116.76deg 126.49deg, /* 13 黑 */
+            #cc0000 126.49deg 136.22deg, /* 36 紅 */
+            #1a1a1a 136.22deg 145.95deg, /* 11 黑 */
+            #cc0000 145.95deg 155.68deg, /* 30 紅 */
+            #1a1a1a 155.68deg 165.41deg, /* 8 黑 */
+            #cc0000 165.41deg 175.14deg, /* 23 紅 */
+            #1a1a1a 175.14deg 184.87deg, /* 10 黑 */
+            #cc0000 184.87deg 194.6deg,   /* 5 紅 */
+            #1a1a1a 194.6deg 204.33deg,  /* 24 黑 */
+            #cc0000 204.33deg 214.06deg,  /* 16 紅 */
+            #1a1a1a 214.06deg 223.79deg, /* 33 黑 */
+            #cc0000 223.79deg 233.52deg,  /* 1 紅 */
+            #1a1a1a 233.52deg 243.25deg, /* 20 黑 */
+            #cc0000 243.25deg 252.98deg,  /* 14 紅 */
+            #1a1a1a 252.98deg 262.71deg,  /* 31 黑 */
+            #cc0000 262.71deg 272.44deg,  /* 9 紅 */
+            #1a1a1a 272.44deg 282.17deg,  /* 22 黑 */
+            #cc0000 282.17deg 291.9deg,   /* 18 紅 */
+            #1a1a1a 291.9deg 301.63deg,   /* 29 黑 */
+            #cc0000 301.63deg 311.36deg,  /* 7 紅 */
+            #1a1a1a 311.36deg 321.09deg,  /* 28 黑 */
+            #cc0000 321.09deg 330.82deg,  /* 12 紅 */
+            #1a1a1a 330.82deg 340.55deg,  /* 35 黑 */
+            #cc0000 340.55deg 350.28deg,  /* 3 紅 */
+            #1a1a1a 350.28deg 360deg      /* 26 黑 */
+        ); }
+        .wheel.spinning .wheel-bg { animation: spin 0.5s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .wheel-number { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; font-family: Arial, sans-serif; transform: translate(-50%, -50%); }
-        .wheel-number.red { background: transparent; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-        .wheel-number.black { background: transparent; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-        .wheel-number.green { background: transparent; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .wheel-content { position: absolute; width: 100%; height: 100%; }
+        .wheel-number { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; font-family: Arial, sans-serif; transform: translate(-50%, -50%); color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .wheel-number.green { background: #009900; border: 2px solid #00cc00; }
+        .wheel-number.red { background: #cc0000; border: 2px solid #ff4444; }
+        .wheel-number.black { background: #1a1a1a; border: 2px solid #444; }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
         .result-display { text-align: center; font-size: 1.5rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
@@ -164,7 +165,8 @@
             <div class="wheel-container">
                 <div class="wheel-pointer">▼</div>
                 <div class="wheel" id="wheel">
-                    <div class="wheel-inner" id="wheelInner"></div>
+                    <div class="wheel-bg"></div>
+                    <div class="wheel-content" id="wheelContent"></div>
                 </div>
             </div>
             
@@ -240,17 +242,19 @@
         ];
         
         function initWheel() {
-            const inner = document.getElementById('wheelInner');
-            inner.innerHTML = '';
+            const content = document.getElementById('wheelContent');
+            content.innerHTML = '';
             // 數字在半徑125的位置，中心是160
             const radius = 125;
             const centerX = 160;
             const centerY = 160;
+            // 每個扇形9.73度，數字在中間
+            const anglePerSlot = 360 / wheelNumbers.length;
             
             wheelNumbers.forEach((item, i) => {
-                // 每個數字佔 360/37 = 9.73度
-                const angle = i * (360 / wheelNumbers.length);
-                const rad = (angle - 90) * Math.PI / 180;
+                // 每個數字的位置角度 - 從頂部開始 (-90度)，每個數字間隔 9.73度
+                const angle = -90 + i * anglePerSlot + anglePerSlot / 2;
+                const rad = angle * Math.PI / 180;
                 const x = Math.cos(rad) * radius + centerX;
                 const y = Math.sin(rad) * radius + centerY;
                 
@@ -259,21 +263,20 @@
                 div.style.left = x + 'px';
                 div.style.top = y + 'px';
                 div.textContent = item.num;
-                inner.appendChild(div);
+                content.appendChild(div);
             });
         }
         
         function rotateToResult(result) {
             const index = wheelNumbers.findIndex(n => n.num === result);
-            // 每個數字的角度
             const anglePerNumber = 360 / wheelNumbers.length;
-            // 指針在頂部(0度位置)，所以數字要對準頂部
-            // 由於數字是從頂部(-90度)開始排列，這裡要計算目標角度
-            const targetAngle = index * anglePerNumber;
-            // 隨機轉 5-8 圈，最後停在目標數字
+            // 指針在頂部，數字要對準頂部
+            // 從-90度開始，所以每個數字i的位置是 -90 + i*9.73 + 4.86（中點）
+            // 最終目標角度 = -90 + index * anglePerNumber + anglePerNumber/2
+            const targetAngle = -90 + index * anglePerNumber + anglePerNumber / 2;
+            // 轉 5-8 圈，最後剛好停在數字位置
             const spins = 5 + Math.floor(Math.random() * 4);
-            // 總旋轉角度 = 總圈數 + 目標角度
-            const totalRotation = spins * 360 + (360 - targetAngle);
+            const totalRotation = spins * 360 - targetAngle;
             
             const wheel = document.getElementById('wheel');
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
