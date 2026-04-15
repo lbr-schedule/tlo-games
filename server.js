@@ -26,7 +26,7 @@ try {
 
 // 輪盤遊戲資料庫（Turso）
 const rouletteDbUrl = process.env.ROULETTE_DATABASE_URL || 'libsql://lbr-roulette-lbr-schedule.aws-ap-northeast-1.turso.io';
-const rouletteDbAuthToken = process.env.ROULETTE_DATABASE_AUTH_TOKEN || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzYyNDA0MTIsImlkIjoiMDE5ZDkwMmUtYmYwMS03NzQ0LTlkZWYtYjEyM2Y4YWM4YTM1IiwicmlkIjoiNjY1Y2FiZDQtMTEzYS00NzY0LWEzYjUtODg2ZWZhMmNjZjlmIn0.ratx_Llo1inhrNog6Tg9HYNh5W8Knv3WL4hc4md-V8bpysiCpzs0877bhIKC8TEUagwduSKZ2lxdDUriMIBWDA';
+const rouletteDbAuthToken = process.env.ROULETTE_DATABASE_AUTH_TOKEN || '';
 
 let rouletteDb = null;
 let rouletteDbAvailable = false;
@@ -40,6 +40,16 @@ try {
     console.log('輪盤遊戲已连接到 Turso 数据库:', rouletteDbUrl);
 } catch(e) {
     console.log('輪盤遊戲 Turso 连接失败:', e.message);
+}
+
+// 測試輪盤資料庫連線
+if (rouletteDb) {
+    rouletteDb.execute({ sql: 'SELECT 1' }).then(() => {
+        console.log('輪盤資料庫連線測試成功');
+    }).catch(e => {
+        console.log('輪盤資料庫連線測試失敗:', e.message);
+        rouletteDbAvailable = false;
+    });
 }
 
 // 骰子遊戲用 WebSocket
@@ -240,15 +250,21 @@ app.post('/api/roulette/bet', (req, res) => {
 app.post('/api/roulette/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
-    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    if (!rouletteDbAvailable || !rouletteDb) {
+        console.log('輪盤資料庫不可用');
+        return res.json({ success: false, message: '伺服器維護中' });
+    }
     
     try {
-        await rouletteDb.execute({
+        console.log('嘗試註冊用戶:', username);
+        const result = await rouletteDb.execute({
             sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
             args: [username, password]
         });
+        console.log('註冊成功:', result);
         res.json({ success: true, message: '註冊成功！' });
     } catch(e) {
+        console.log('註冊失敗:', e.message);
         res.json({ success: false, message: '帳號已存在' });
     }
 });
