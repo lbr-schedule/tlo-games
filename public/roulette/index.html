@@ -25,12 +25,18 @@
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 8s cubic-bezier(0.15, 0.65, 0.25, 1); transform: rotate(-90deg); }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 45px solid #ffd700; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5)); }
         
-        .result-display { text-align: center; font-size: 1.3rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
+        .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; }
+        .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
+        .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
+        .result-display.waiting { background: rgba(255,255,255,0.1); }
+        .result-display.spinning { background: rgba(0,0,0,0.3); }
+        .result-display.result { background: rgba(0,0,0,0.5); }
+        .result-display.red, .result-display.black, .result-display.green { font-size: 1.5rem; }
         .result-display.red { background: rgba(204,0,0,0.5); }
         .result-display.black { background: rgba(50,50,50,0.5); }
         .result-display.green { background: rgba(0,170,0,0.5); }
@@ -553,6 +559,12 @@
             } catch(e) {
                 console.log('Poll error:', e.message);
             }
+            
+            // Update countdown display every poll
+            const cd = document.getElementById('betCountdown');
+            if (cd && data.remaining) {
+                cd.textContent = data.remaining + 's';
+            }
         }
         
         function updateUI(data) {
@@ -586,8 +598,8 @@
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = '';
                     if (!window.rouletteAnimating) {
-                        resultDisplay.className = 'result-display waiting';
-                        resultDisplay.textContent = '等待下注...';
+                        resultDisplay.className = 'result-display betting';
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
                     }
                     break;
                     
