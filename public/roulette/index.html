@@ -102,8 +102,10 @@
         .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
         
         .number-bet { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-        .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; }
+        .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; transition: all 0.2s; }
         .number-bet input:focus { border-color: #ffd700; outline: none; }
+        .number-bet input:disabled { opacity: 0.4; cursor: not-allowed; }
+        .number-bet input.active { border-color: #ffd700; background: #3a3a5a; }
         .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
         .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
         .number-bet button:hover:not(.disabled) { background: #ffdd44; }
@@ -249,13 +251,12 @@
                     <div class="bet-buttons" id="betButtons2">
                         <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span><span class="bet-amount"></span></button>
                         <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙數<span class="multi">2x</span><span class="bet-amount"></span></button>
-                        <button class="bet-btn number-btn disabled" onclick="placeNumberBet()">📌 數字<span class="multi">10x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn number-btn disabled" onclick="selectNumberBet()">📌 數字<span class="multi">10x</span><span class="bet-amount"></span></button>
                     </div>
                     
-                    <div style="font-size:0.8rem;color:#aaa;margin:8px 0 5px;text-align:center;">或輸入數字直接下注</div>
-                    <div class="number-bet" style="margin-top:5px; flex-wrap:wrap; justify-content:center;">
-                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #666; border-radius:8px; padding:8px; font-size:0.9rem; text-align:center;">
-                        <input type="number" id="betAmt" placeholder="$金額" min="10" value="100" style="width:90px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #666; border-radius:8px; padding:8px; font-size:0.9rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">>
+                    <div class="number-bet" id="numberBetArea" style="margin-top:5px; flex-wrap:wrap; justify-content:center; display: none;">
+                        <input type="number" id="betNum" placeholder="填數字" min="0" max="36" disabled style="width:70px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #ffd700; border-radius:8px; padding:8px; font-size:0.9rem; text-align:center;">
+                        <input type="number" id="betAmt" placeholder="金額" min="10" style="width:90px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #666; border-radius:8px; padding:8px; font-size:0.9rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">>
                         <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()" style="padding:10px 18px; background:#ffd700; border:none; border-radius:8px; font-weight:bold; font-size:0.9rem; color:#1a1a2e;">✔ 確認</button>
                     </div>
                 </div>
@@ -1299,9 +1300,27 @@
             } catch(e) {}
         }
         
+        // 選擇數字下注模式
+        function selectNumberBet() {
+            const numberBetArea = document.getElementById('numberBetArea');
+            const betNumInput = document.getElementById('betNum');
+            
+            // 顯示數字輸入區
+            numberBetArea.style.display = 'flex';
+            
+            // 啟用數字輸入框
+            betNumInput.disabled = false;
+            betNumInput.focus();
+            
+            // 標記選中狀態
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelector('.bet-btn.number-btn').classList.add('selected');
+        }
+        
         async function placeNumberBet() {
-            const num = parseInt(document.getElementById('betNum').value);
-            const amt = parseInt(document.getElementById('betAmt').value);
+            // 如果有自訂金額，用自訂金額；否則用 quickAmount
+            const customAmt = parseInt(document.getElementById('betAmt').value);
+            const amt = (!isNaN(customAmt) && customAmt >= 10) ? customAmt : quickAmount;
             
             // 防呆：數字選擇提示
             if (isNaN(num) || num < 0 || num > 36) { 
