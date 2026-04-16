@@ -264,6 +264,15 @@ app.post('/api/roulette/ping', (req, res) => {
     res.json({ success: true });
 });
 
+// 版本確認
+app.get('/api/version', (req, res) => {
+    res.json({ 
+        version: '2.5',
+        deployTime: new Date().toISOString(),
+        wsPath: '/dice/ws'
+    });
+});
+
 function startBetting() {
     if (!rouletteState.hasPlayer) {
         rouletteState.phase = 'waiting';
