@@ -30,17 +30,16 @@
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 45px solid #ffd700; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5)); }
         
-        .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; }
+        .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
         .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
         .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
-        .result-display.result { background: rgba(0,0,0,0.5); }
-        .result-display.red, .result-display.black, .result-display.green { font-size: 1.5rem; }
+        .result-display.result { background: rgba(0,0,0,0.6); font-size: 1.5rem; border: 2px solid #ffd700; }
+        .result-display.red, .result-display.black, .result-display.green { font-size: 1.5rem; border: 2px solid currentColor; }
         .result-display.red { background: rgba(204,0,0,0.5); }
         .result-display.black { background: rgba(50,50,50,0.5); }
         .result-display.green { background: rgba(0,170,0,0.5); }
-        .result-display.waiting { background: rgba(255,255,255,0.1); }
         
         .help-toggle { background: rgba(255,215,0,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; display: inline-block; font-size: 0.9rem; color: #ffd700; transition: background 0.2s; margin-right: 8px; }
         .help-toggle:hover { background: rgba(255,215,0,0.4); }
@@ -643,9 +642,11 @@
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
-            // 正確的計算：index 0 在頂端(-90deg)，旋轉到 index*slotAngle 度就會讓該數字到頂端
-            // 加上 spins*360 讓它多轉好幾圈
-            const totalRotation = spins * 360 + index * slotAngle;
+            // 轉盤初始是 0deg，index 0 在頂端(12點)
+            // 指針也在頂端，所以 index 0 預設就對準指針
+            // 當轉盤旋轉 clockwise θ 度，index 0 會移動到 (360-θ) 的位置
+            // 要讓 index X 到達頂端，需要計算：(360 - X*slotAngle) mod 360
+            const totalRotation = spins * 360 + (360 - index * slotAngle);
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
@@ -656,24 +657,24 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：5秒，最後階段更慢
-            wheel.style.transition = 'transform 5s cubic-bezier(0.1, 0.5, 0.2, 1)';
+            // 漸慢動畫：4秒，配合 server 的 spinning 時間
+            wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0.5, 0.2, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
-            // 標記動畫進行中，防止被 poll 清除
+            // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後才顯示結果（5.5秒後）
+            // 等轉動動畫完成後（4秒後）立即顯示結果
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
                 const colorName = colors[lastSpin.color];
                 const display = document.getElementById('resultDisplay');
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                display.className = 'result-display ' + lastSpin.color;
+                display.className = 'result-display result';
                 display.style.display = 'block';
                 processResult(lastSpin);
-            }, 3500);
+            }, 4100);
         }
         
         function processResult(lastSpin) {
