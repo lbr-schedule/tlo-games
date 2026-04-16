@@ -75,7 +75,7 @@
         .bet-btn.green { background: linear-gradient(135deg, #009900, #00cc00); color: white; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
-        .bet-btn.number-btn { background: linear-gradient(135deg, #666666, #999999); color: white; }
+        .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
         .bet-btn.disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
         .bet-btn .multi { display: block; font-size: 0.65rem; opacity: 0.8; }
         .bet-btn.selected { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,215,0,0.8); border: 2px solid #ffd700; }
@@ -646,11 +646,11 @@
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
-            // 轉盤初始是 0deg，index 0 在頂端(12點)
-            // 指針也在頂端(12點)，轉盤順時針旋轉
-            // 當轉盤順時針轉 θ 度，index 0 會移動到 (360-θ) 度位置
-            // 要讓 index X 到達頂端(0度)，需要：X*slotAngle 度（從 index 0 位置算）
-            const totalRotation = spins * 360 + index * slotAngle;
+            // Canvas 初始狀態：index 0 在頂端(-90度/12點鐘位置)
+            // 指針也在頂端。當轉盤旋轉 θ 度，頂端的數字會變成 index 0
+            // 要讓 index X 到達頂端，需要反方向旋轉 X*slotAngle 度
+            // 因此公式：totalRotation = spins*360 + (360 - X*slotAngle)
+            const totalRotation = spins * 360 + (360 - index * slotAngle);
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
