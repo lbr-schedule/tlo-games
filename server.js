@@ -78,7 +78,7 @@ let rouletteState = {
     lastSpin: null,
     spinTimer: null,
     betTimer: null,
-    BETTING_TIME: 10000,
+    BETTING_TIME: 8000,
     phaseStartTime: 0,
     hasPlayer: false
 };
@@ -242,11 +242,11 @@ function spinWheel() {
         time: Date.now() 
     };
     
-    // HTTP輪詢模式：spinning 5秒 → 結果顯示5秒 → 下注10秒 → 循環
+    // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
     setTimeout(() => {
         rouletteState.phase = 'result';
-        // 結果顯示5秒後進入下注時間
-        rouletteState.spinTimer = setTimeout(startBetting, 5000);
+        // 結果顯示3.5秒後進入下注時間
+        rouletteState.spinTimer = setTimeout(startBetting, 3500);
     }, 5000);
 }
 

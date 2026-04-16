@@ -29,7 +29,7 @@
         
         h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38.78px; box-sizing: border-box; }
         .balance { font-size: 0.95rem; }
         .balance span { color: #ffd700; font-weight: bold; }
         .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
@@ -113,7 +113,7 @@
         .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
         .current-bets-box h4 { color: #00ff88; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; }
         @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
-        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; max-height: 120px; overflow-y: auto; flex-shrink: 0; }
+        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; width: 316px; height: 307px; overflow-y: auto; flex-shrink: 0; box-sizing: border-box; }
         .history-bets-box h4 { color: #888; margin-bottom: 5px; font-size: 0.85rem; }
         
         .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
@@ -143,8 +143,8 @@
         
         .no-bets { color: #666; font-style: italic; font-size: clamp(0.8rem, 2.5vw, 0.85rem); text-align: center; padding: 8px; }
         
-        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; }
-        .game-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; }
+        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; width: 316px; height: 45px; box-sizing: border-box; }
+        .game-tab { width: 155.5px; height: 45px; padding: 0; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .game-tab.active { background: #ffd700; color: #1a1a2e; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -164,10 +164,22 @@
         .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: clamp(1rem, 3vw, 1.1rem); line-height: 1.6; }
         .broke-overlay button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
         .broke-overlay button:hover { transform: scale(1.05); }
+
+        /* 結算彈窗 */
+        .result-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; justify-content: center; align-items: center; }
+        .result-popup-overlay.show { display: flex; }
+        .result-popup-box { text-align: center; padding: clamp(25px, 6vw, 45px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 20px; max-width: clamp(280px, 90vw, 350px); box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+        .result-popup-box p { font-size: clamp(1.2rem, 4vw, 1.5rem); margin-bottom: 25px; line-height: 1.6; font-weight: bold; }
+        .result-popup-box button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ffd700, #ffaa00); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,215,0,0.4); transition: transform 0.2s; }
+        .result-popup-box button:hover { transform: scale(1.05); }
+        
+        .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
+        .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
+        .modal .guide-step p strong { color: #fff; }
     </style>
 </head>
 <body>
-    <h1>🎰 T-LO 俄羅斯輪盤 <span class="help-toggle" onclick="showHelp()">❓</span> <button onclick="leaveGame()" class="header-btn">🚪</button></h1>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO 俄羅斯輪盤</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -272,6 +284,48 @@
         </div>
     </div>
 
+    <!-- 結算彈窗 -->
+    <div class="result-popup-overlay" id="resultPopup">
+        <div class="result-popup-box">
+            <p id="resultPopupMsg"></p>
+            <button id="resultPopupBtn">確定</button>
+        </div>
+    </div>
+
+    <!-- 新手導引彈窗 -->
+    <div class="modal-overlay" id="guideModal">
+        <div class="modal">
+            <h2>🎮 新手導引</h2>
+            
+            <div class="guide-step" id="guideStep1">
+                <h3>📌 第一步：選擇金額</h3>
+                <p>在下方可以看到快捷金額按鈕：<br><strong>10 / 50 / 100 / 500</strong></p>
+                <p>也可以手動輸入金額</p>
+                <p style="margin-top:10px;color:#ffd700;">💡 點擊金額按鈕來選擇下注金額</p>
+            </div>
+            
+            <div class="guide-step" id="guideStep2" style="display:none;">
+                <h3>📌 第二步：選擇下注項目</h3>
+                <p>選擇你要押的項目：</p>
+                <p>🔴 <strong>紅</strong> / ⚫ <strong>黑</strong> - 2倍獎金</p>
+                <p>🟢 <strong>綠</strong>（0）- 10倍獎金</p>
+                <p>單 / 雙 - 2倍獎金</p>
+                <p>數字 0-36 - <strong>10倍獎金</strong></p>
+                <p style="margin-top:10px;color:#ffd700;">💡 點擊想押的項目完成下注</p>
+            </div>
+            
+            <div class="guide-step" id="guideStep3" style="display:none;">
+                <h3>📌 完成！</h3>
+                <p>✅ 已完成下注，等待開獎吧！</p>
+                <p style="margin-top:10px;">🎰 轉盤停止後，結果自動顯示</p>
+                <p>💰 猜對獲得獎金，猜錯沒收本金</p>
+                <p style="margin-top:10px;color:#aaa;">有任何問題，點擊右上角 ❓ 查看說明</p>
+            </div>
+            
+            <button id="guideNextBtn" onclick="nextGuide(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一步</button>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
             <h2>🎰 俄羅斯輪盤 玩法</h2>
@@ -357,6 +411,13 @@
             pollInterval = setInterval(pollStatus, 1000);
             // 通知伺服器玩家上線
             fetch('/api/roulette/ping', { method: 'POST' });
+            
+            // 第一次使用顯示新手導引（如果這個帳號還沒看過）
+            const guideKey = 'rouletteGuided_' + myName;
+            if (!localStorage.getItem(guideKey)) {
+                console.log('=== SHOWING GUIDE for user:', myName, '===');
+                setTimeout(() => showGuide(), 1000);
+            }
         }
         
         function showAuth(tab) {
@@ -410,7 +471,12 @@
                     pollStatus();
                     console.log('Setting up poll interval');
                     pollInterval = setInterval(pollStatus, 1000);
-                    console.log('Setup complete');
+                    
+                    // 第一次登入顯示新手導引（如果這個帳號還沒看過）
+                    const guideKey = 'rouletteGuided_' + username;
+                    if (!localStorage.getItem(guideKey)) {
+                        setTimeout(() => showGuide(), 1000);
+                    }
                 } else {
                     msg.textContent = data.message;
                     msg.className = 'auth-msg';
@@ -690,13 +756,13 @@
             void wheel.offsetWidth;
             
             // 滾輪過渡時間 = 5秒，等 CSS transition 結束後顯示文字
-            wheel.style.transition = 'transform 5s cubic-bezier(0.15, 0.85, 0.35, 1)';
+            wheel.style.transition = 'transform 5s cubic-bezier(0.1, 0.5, 0.2, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 等 CSS transition 完成後（5.2秒）顯示結果，結果顯示5秒
+            // 等 CSS transition 完成後（5秒）顯示結果，結果顯示3.5秒
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
@@ -758,6 +824,12 @@
             console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
             updateBalanceUI();
+            
+            // 顯示結算彈窗（玩家有下注才顯示）
+            if (roundBet > 0) {
+                const netWin = roundWin - roundBet;
+                setTimeout(() => showResultPopup(netWin, roundBet), 100);
+            }
             
             // 檢查餘額是否歸零
             if (myBalance <= 0) {
@@ -901,6 +973,53 @@
             document.getElementById('brokeOverlay').classList.remove('show');
         }
         
+        // 顯示結算彈窗
+        function showResultPopup(netWin, totalBet) {
+            const popup = document.getElementById('resultPopup');
+            const msg = document.getElementById('resultPopupMsg');
+            const btn = document.getElementById('resultPopupBtn');
+            
+            if (netWin > 0) {
+                msg.innerHTML = '🎉 恭喜！<br>贏了 <span style="color:#00ff00;font-size:1.4rem">+$' + netWin + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
+                msg.style.color = '#00ff00';
+            } else if (netWin < 0) {
+                msg.innerHTML = '😢 很遺憾<br>輸了 <span style="color:#ff4444;font-size:1.4rem">-$' + Math.abs(netWin) + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
+                msg.style.color = '#ff6666';
+            } else {
+                msg.innerHTML = '➖ 平手<br><small style="color:#aaa">沒輸沒贏</small>';
+                msg.style.color = '#ffd700';
+            }
+            
+            popup.classList.add('show');
+            btn.onclick = () => popup.classList.remove('show');
+        }
+        
+        // 新手導引功能
+        function showGuide() {
+            const modal = document.getElementById('guideModal');
+            modal.classList.add('show');
+        }
+        
+        function hideGuide() {
+            document.getElementById('guideModal').classList.remove('show');
+            // 記住這個帳號看過了
+            localStorage.setItem('rouletteGuided_' + myName, 'true');
+        }
+        
+        function nextGuide(step) {
+            document.querySelectorAll('.guide-step').forEach((s, i) => {
+                s.style.display = (i + 1) === step ? 'block' : 'none';
+            });
+            const btn = document.getElementById('guideNextBtn');
+            if (step === 2) {
+                btn.textContent = '下一步';
+                btn.onclick = () => nextGuide(3);
+            } else if (step === 3) {
+                btn.textContent = '我知道了';
+                btn.onclick = hideGuide;
+            }
+        }
+        
         function updateSelectedUI(btnClass, isSelected) {
             // Find the button by its class and toggle selected state
             document.querySelectorAll('.bet-btn').forEach(b => {
@@ -969,7 +1088,9 @@
             
             console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
-            showToast('已下注 $' + amount + ' [' + choice + ']', 'success');
+            const choiceNames = { red: '紅', black: '黑', green: '綠', odd: '單', even: '雙' };
+            const choiceName = choiceNames[choice] || choice;
+            showToast('已下注 $' + amount + ' 押' + choiceName, 'success');
             
             try {
                 await fetch('/api/roulette/bet', {
@@ -1028,6 +1149,8 @@
                 numberBtn.classList.add('selected', 'has-bet');
                 numberBtn.querySelector('.bet-amount').textContent = '已押 $' + amt;
             }
+            
+            showToast('已下注 $' + amt + ' 押 #' + num, 'success');
             
             try {
                 await fetch('/api/roulette/bet', {
