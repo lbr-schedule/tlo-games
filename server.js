@@ -31,18 +31,28 @@ const rouletteDbAuthToken = process.env.ROULETTE_DATABASE_AUTH_TOKEN || '';
 let rouletteDb = null;
 let rouletteDbAvailable = false;
 
-try {
-    rouletteDb = createClient({
-        url: rouletteDbUrl,
-        authToken: rouletteDbAuthToken
-    });
-    console.log('輪盤遊戲 Turso client 已建立');
-} catch(e) {
-    console.log('輪盤遊戲 Turso client 建立失敗:', e.message);
+// 本地測試模式：使用記憶體資料庫
+const LOCAL_TEST_MODE = !process.env.ROULETTE_DATABASE_URL;
+const localPlayers = {}; // { username: { password, score } }
+const localHistory = [];  // [{ username, result, color, win, amount }]
+
+if (LOCAL_TEST_MODE) {
+    console.log('⚠️ 本地測試模式：使用記憶體資料庫（所有資料重啟後消失）');
+    rouletteDbAvailable = true; // 假設可用，因為使用記憶體模式
+} else {
+    try {
+        rouletteDb = createClient({
+            url: rouletteDbUrl,
+            authToken: rouletteDbAuthToken
+        });
+        console.log('輪盤遊戲 Turso client 已建立');
+    } catch(e) {
+        console.log('輪盤遊戲 Turso client 建立失敗:', e.message);
+    }
 }
 
 // 測試輪盤資料庫連線
-if (rouletteDb) {
+if (rouletteDb && !LOCAL_TEST_MODE) {
     rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
         console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
         rouletteDbAvailable = true;
@@ -312,6 +322,17 @@ app.post('/api/roulette/register', async (req, res) => {
         console.log('缺少帳號或密碼');
         return res.json({ success: false, message: '請填寫帳號和密碼' });
     }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            return res.json({ success: false, message: '帳號已存在' });
+        }
+        localPlayers[username] = { password, score: 1000 };
+        console.log('本地測試模式：註冊成功, username:', username);
+        return res.json({ success: true, message: '註冊成功！' });
+    }
+    
     if (!rouletteDbAvailable || !rouletteDb) {
         console.log('輪盤資料庫不可用');
         return res.json({ success: false, message: '伺服器維護中' });
@@ -342,6 +363,17 @@ app.post('/api/roulette/register', async (req, res) => {
 // 輪盤遊戲 - 登入
 app.post('/api/roulette/login', async (req, res) => {
     const { username, password } = req.body;
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username] && localPlayers[username].password === password) {
+            console.log('本地測試模式：登入成功, username:', username, 'score:', localPlayers[username].score);
+            playerJoined();
+            return res.json({ success: true, player: { username, score: localPlayers[username].score } });
+        }
+        return res.json({ success: false, message: '帳號或密碼錯誤' });
+    }
+    
     if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
     
     try {
@@ -370,6 +402,15 @@ app.post('/api/roulette/update-score', async (req, res) => {
     if (!username || typeof newScore !== 'number') {
         return res.json({ success: false, message: '參數錯誤' });
     }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            localPlayers[username].score = newScore;
+        }
+        return res.json({ success: true });
+    }
+    
     if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
     
     try {
@@ -391,6 +432,15 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     if (!username || newScore === undefined) {
         return res.json({ success: false, message: '請提供 username 和 newScore' });
     }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            localPlayers[username].score = newScore;
+        }
+        return res.json({ success: true, message: `已將 ${username} 的餘額更新為 ${newScore}` });
+    }
+    
     if (!rouletteDbAvailable || !rouletteDb) {
         return res.json({ success: false, message: '資料庫不可用' });
     }
@@ -414,6 +464,14 @@ app.post('/api/roulette/save-history', async (req, res) => {
     if (!username) {
         return res.json({ success: false, message: '參數錯誤' });
     }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        localHistory.unshift({ username, result, color, win, amount });
+        if (localHistory.length > 100) localHistory.pop();
+        return res.json({ success: true });
+    }
+    
     if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
     
     try {
@@ -446,6 +504,13 @@ setInterval(cleanupOldHistory, 3600000);
 // 輪盤遊戲 - 取得歷史記錄
 app.get('/api/roulette/history/:username', async (req, res) => {
     const { username } = req.params;
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        const userHistory = localHistory.filter(h => h.username === username).slice(0, 100);
+        return res.json({ history: userHistory });
+    }
+    
     if (!rouletteDbAvailable) return res.json({ history: [] });
     
     try {
