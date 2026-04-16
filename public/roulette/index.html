@@ -631,9 +631,9 @@
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
-            // 正確的計算：index 0 已在頂端(-90deg)，需旋轉 (360 - index*slotAngle) 度才會讓 index 到頂端
+            // 正確的計算：index 0 在頂端(-90deg)，旋轉到 index*slotAngle 度就會讓該數字到頂端
             // 加上 spins*360 讓它多轉好幾圈
-            const totalRotation = spins * 360 + (360 - index * slotAngle);
+            const totalRotation = spins * 360 + index * slotAngle;
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
@@ -644,14 +644,14 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：3秒，配合 server 的 spinning 時間
-            wheel.style.transition = 'transform 3s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 漸慢動畫：5秒，最後階段更慢
+            wheel.style.transition = 'transform 5s cubic-bezier(0.1, 0.5, 0.2, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中，防止被 poll 清除
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後才顯示結果（3.5秒後）
+            // 等轉動動畫完成後才顯示結果（5.5秒後）
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };

@@ -235,12 +235,12 @@ function spinWheel() {
         time: Date.now() 
     };
     
-    // HTTP輪詢模式不需要廣播，等待3秒後進入結果
+    // HTTP輪詢模式不需要廣播，等待5秒後進入結果（配合前端動畫）
     setTimeout(() => {
         rouletteState.phase = 'result';
         // 5秒後自動開始下一局
         rouletteState.spinTimer = setTimeout(startBetting, 5000);
-    }, 3000);
+    }, 5000);
 }
 
 // 當玩家登入時呼叫
