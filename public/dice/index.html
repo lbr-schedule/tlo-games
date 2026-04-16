@@ -190,7 +190,7 @@
         
         function connect() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(protocol + '//' + location.host);
+            ws = new WebSocket(protocol + '//' + location.host + '/dice/ws');
             
             ws.onopen = () => {
                 document.getElementById('connectionStatus').className = 'connection-status online';
