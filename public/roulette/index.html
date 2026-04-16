@@ -649,10 +649,12 @@
             // 測試用：印出 index 和 totalRotation
             console.log('Result:', result, 'index:', index, 'slotAngle:', slotAngle);
             
-            // 測試不同的公式：
-            // A: spins * 360 + index * slotAngle (測試1)
-            // B: spins * 360 - index * slotAngle (測試2)
-            const totalRotation = spins * 360 + index * slotAngle;
+            // 修正旋轉公式：
+            // 轉盤轉動時，要讓特定數字停在箭頭(12點)位置
+            // 箭頭指的方向 = 轉盤最終停止時，箭頭對準的數字
+            // 轉盤順時針轉 → 數字從箭頭左側進入、右側離開
+            // 停在上方(箭頭處) = 需轉 360 - index*slotAngle
+            const totalRotation = spins * 360 + (360 - index * slotAngle);
             console.log('totalRotation (formula A):', totalRotation);
             
             const wheel = document.getElementById('wheel');
@@ -671,7 +673,7 @@
             // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後（4.8秒後）顯示結果，確保轉盤完全停止
+            // 等轉動動畫完成後（6.2秒後）顯示結果，確保轉盤完全停止
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
