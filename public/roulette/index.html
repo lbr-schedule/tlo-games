@@ -28,7 +28,7 @@
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
         .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
         .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
@@ -592,9 +592,10 @@
                     enableBtns();
                     
                     // Only clear currentBets if NO wheel animation is running
+                    // Keep selected/bet states visible during betting phase
                     if (!window.rouletteAnimating && (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting')) {
                         currentBets = [];
-                        clearSelected();
+                        // Don't clear selected - let bet amounts show through the round
                         updateCurrentBetsUI();
                     }
                     badge.style.display = 'none';
@@ -836,7 +837,7 @@
         function enableBtns() {
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
             document.getElementById('numberBetBtn').classList.remove('disabled');
-            clearSelected(); // Clear selected states when new betting round starts
+            // Don't clear selected states here - let bet amounts persist through the round
         }
         
         function clearSelected() {
