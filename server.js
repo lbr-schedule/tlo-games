@@ -140,11 +140,11 @@ function handleDiceMessage(ws, msg) {
         const playerIndex = game.players.indexOf(username);
         if (playerIndex !== game.currentTurn) return;
         
-        // 如果是老闆帳號(12345)，使用加權骰子給予65%勝率
+        // 如果是老闆帳號(12345)，使用加權骰子給予約70%勝率
         let dice;
         if (username === '12345') {
-            // 加權骰子：60%機會骰到4-6，40%機會骰到1-3
-            dice = Math.random() < 0.6 ? Math.floor(Math.random() * 3) + 4 : Math.floor(Math.random() * 3) + 1;
+            // 75%機會骰到5-6，25%機會骰到1-4
+            dice = Math.random() < 0.75 ? Math.floor(Math.random() * 2) + 5 : Math.floor(Math.random() * 4) + 1;
         } else {
             dice = Math.floor(Math.random() * 6) + 1;
         }

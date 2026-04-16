@@ -650,11 +650,10 @@
             console.log('Result:', result, 'index:', index, 'slotAngle:', slotAngle);
             
             // 測試不同的公式：
-            // A: spins * 360 - index * slotAngle
-            // B: spins * 360 + index * slotAngle  
-            // C: (37 - index) * slotAngle + spins * 360
-            const totalRotation = spins * 360 + (37 - index) * slotAngle;
-            console.log('totalRotation:', totalRotation);
+            // A: spins * 360 + index * slotAngle (測試1)
+            // B: spins * 360 - index * slotAngle (測試2)
+            const totalRotation = spins * 360 + index * slotAngle;
+            console.log('totalRotation (formula A):', totalRotation);
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
