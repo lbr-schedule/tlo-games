@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎰 T-LO 俄羅斯輪盤 B版（仿真）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a18, #1a1a2e); min-height: 100vh; color: white; }
+        .container { max-width: 420px; margin: 0 auto; padding: 10px; }
+        
+        h1 { text-align: center; padding: 10px; color: #ffd700; font-size: 1.5rem; }
+        h1 .version { font-size: 0.8rem; color: #888; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 10px; }
+        .balance { font-size: 1.3rem; }
+        .balance span { color: #ffd700; font-weight: bold; }
+        .result-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1rem; min-width: 80px; text-align: center; display: none; }
+        .result-badge.show { display: inline-block; }
+        .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
+        .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
+        .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
+        
+        .timer-box { text-align: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
+        .timer-box .phase { font-size: 1rem; margin-bottom: 5px; }
+        .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
+        .timer-box.betting { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .timer-box.spinning { border: 3px solid #ff6600; animation: glow 0.5s infinite; }
+        .timer-box.result { border: 3px solid #00aa00; }
+        .timer-box.waiting { border: 3px solid #666; }
+        @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
+        
+        /* 仿真輪盤樣式 */
+        .roulette-table { position: relative; width: 320px; height: 320px; margin: 10px auto; }
+        
+        /* 外圈（軌道） */
+        .wheel-track { 
+            width: 320px; height: 320px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            position: absolute;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        /* 轉盤 */
+        .wheel-container { 
+            width: 300px; height: 300px; 
+            border-radius: 50%; 
+            position: absolute; 
+            left: 10px; top: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .wheel { 
+            width: 300px; height: 300px; 
+            border-radius: 50%; 
+            transform-origin: 150px 150px; 
+            transition: transform 8s cubic-bezier(0.1, 0.4, 0.2, 1);
+            transform: rotate(0deg);
+        }
+        .wheel.spinning { 
+            animation: wheel-fast-spin 0.15s linear infinite; 
+        }
+        @keyframes wheel-fast-spin { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
+        }
+        
+        /* 小球 */
+        .ball { 
+            width: 16px; height: 16px; 
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border-radius: 50%;
+            position: absolute;
+            left: 152px; top: 10px;
+            transform-origin: 8px 150px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            z-index: 20;
+        }
+        .ball.spinning {
+            animation: ball-spin 0.15s linear infinite;
+        }
+        @keyframes ball-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+        
+        /* 指針（頂部向下） */
+        .ball-pointer {
+            width: 0; height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 25px solid #ffd700;
+            position: absolute;
+            top: -5px;
+            left: 148px;
+            z-index: 15;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        }
+        
+        /* 結果顯示 */
+        .result-display { text-align: center; font-size: 1.3rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
+        .result-display.red { background: rgba(204,0,0,0.5); }
+        .result-display.black { background: rgba(50,50,50,0.5); }
+        .result-display.green { background: rgba(0,170,0,0.5); }
+        .result-display.waiting { background: rgba(255,255,255,0.1); }
+        
+        .help-toggle { background: rgba(255,215,0,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; display: inline-block; font-size: 0.9rem; color: #ffd700; transition: background 0.2s; margin-right: 8px; }
+        .help-toggle:hover { background: rgba(255,215,0,0.4); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; }
+        .modal h2 { color: #ffd700; text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
+        .modal h3 { color: #ffd700; margin: 12px 0 8px; font-size: 1rem; }
+        .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin: 5px 0; }
+        .modal .close-btn { width: 100%; padding: 12px; background: #ffd700; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 15px; }
+        .modal .close-btn:hover { background: #ffdd44; }
+        .modal .bet-demo span { display: inline-block; padding: 5px 10px; border-radius: 5px; margin: 2px; font-size: 0.85rem; }
+        .modal .bet-demo .red { background: #cc0000; }
+        .modal .bet-demo .black { background: #333; }
+        .modal .bet-demo .green { background: #009900; }
+        .modal .bet-demo .odd { background: #0066cc; }
+        .modal .bet-demo .even { background: #660066; }
+        
+        .bet-section { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
+        
+        .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
+        .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
+        .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
+        .bet-btn.green { background: linear-gradient(135deg, #009900, #00cc00); color: white; }
+        .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
+        .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
+        .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+        .bet-btn .multi { display: block; font-size: 0.7rem; opacity: 0.8; }
+        .bet-btn.selected { transform: scale(1.08); box-shadow: 0 0 20px rgba(255,215,0,0.8); border: 3px solid #ffd700; }
+        
+        .quick-bet { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; }
+        .quick-bet button { padding: 10px 15px; background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+        .quick-bet button:hover { background: #444; }
+        .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
+        
+        .number-bet { display: flex; gap: 8px; }
+        .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; }
+        .number-bet input:focus { border-color: #ffd700; outline: none; }
+        .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
+        .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .current-bets-box { background: rgba(0,200,100,0.1); border: 2px solid rgba(0,200,100,0.3); padding: 12px; border-radius: 12px; }
+        .current-bets-box h4 { color: #00c864; margin-bottom: 8px; font-size: 0.95rem; }
+        
+        .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
+        .bet-row.total { border-top: 1px dashed #444; margin-top: 5px; padding-top: 8px; font-weight: bold; }
+        
+        .auth-section { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px; text-align: center; }
+        .auth-tabs { display: flex; margin-bottom: 15px; }
+        .auth-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; color: #aaa; cursor: pointer; font-size: 1rem; }
+        .auth-tab:first-child { border-radius: 10px 0 0 10px; }
+        .auth-tab:last-child { border-radius: 0 10px 10px 0; }
+        .auth-tab.active { background: #ffd700; color: #1a1a2e; font-weight: bold; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-form input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: 1rem; text-align: center; }
+        .auth-form input:focus { border-color: #ffd700; outline: none; }
+        .auth-form button { width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; }
+        .auth-form button:hover { background: linear-gradient(135deg, #ffdd44, #ffa020); }
+        .auth-msg { color: #ff6666; margin-top: 10px; font-size: 0.9rem; }
+        .auth-msg.success { color: #00ff00; }
+        
+        .no-bets { color: #666; font-style: italic; font-size: 0.85rem; text-align: center; padding: 10px; }
+        
+        .game-tabs { display: flex; margin-bottom: 10px; gap: 5px; }
+        .game-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.95rem; font-weight: bold; }
+        .game-tab.active { background: #ffd700; color: #1a1a2e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .leave-btn { width: 100%; padding: 12px; background: rgba(255,100,100,0.2); border: 2px solid #ff6666; border-radius: 10px; color: #ff6666; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .leave-btn:hover { background: rgba(255,100,100,0.4); }
+        
+        .balance.low span { color: #ff6666 !important; animation: blink 1s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .broke-overlay.show { display: flex; }
+        .broke-overlay > div { text-align: center; padding: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: 320px; box-shadow: 0 0 30px rgba(255,100,100,0.3); }
+        .broke-overlay h2 { color: #ff6666; font-size: 2rem; margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
+        .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: 1.1rem; line-height: 1.6; }
+        .broke-overlay button { padding: 15px 40px; background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
+        .broke-overlay button:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <h1>🎰 T-LO 俄羅斯輪盤 <span class="version">B版（仿真）</span> <span class="help-toggle" onclick="showHelp()">❓</span></h1>
+    
+    <div class="container">
+        <div class="top-bar" id="topBar" style="display:none;">
+            <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
+            <div>
+                <span class="result-badge neutral" id="resultBadge">-</span>
+            </div>
+        </div>
+        
+        <div class="timer-box waiting" id="timerBox" style="display:none;">
+            <div class="phase" id="phaseText">載入中...</div>
+            <div class="countdown" id="countdown">-</div>
+        </div>
+        
+        <div class="auth-section" id="authSection">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showAuth('login')">登入</button>
+                <button class="auth-tab" onclick="showAuth('register')">註冊</button>
+            </div>
+            <div class="auth-form active" id="loginForm">
+                <input type="text" id="loginUsername" placeholder="帳號">
+                <input type="password" id="loginPassword" placeholder="密碼">
+                <button onclick="doLogin()">登入</button>
+                <div class="auth-msg" id="loginMsg"></div>
+            </div>
+            <div class="auth-form" id="registerForm">
+                <input type="text" id="regUsername" placeholder="帳號">
+                <input type="password" id="regPassword" placeholder="密碼">
+                <button onclick="doRegister()">註冊</button>
+                <div class="auth-msg" id="regMsg"></div>
+            </div>
+        </div>
+        
+        <div class="game-section" id="gameSection" style="display:none;">
+            <div class="game-tabs">
+                <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
+                <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
+            </div>
+            
+            <div class="tab-content active" id="gameTab">
+                <div class="roulette-table">
+                    <div class="wheel-track"></div>
+                    <div class="wheel-container">
+                        <canvas id="wheelCanvas" width="300" height="300" class="wheel"></canvas>
+                    </div>
+                    <div class="ball-pointer"></div>
+                    <div class="ball" id="ball"></div>
+                </div>
+                
+                <div class="result-display waiting" id="resultDisplay">等待開始...</div>
+                
+                <div class="bet-section">
+                    <h3>💰 選擇下注</h3>
+                    <div class="quick-bet">
+                        <button onclick="setQuickAmount(10)">10</button>
+                        <button onclick="setQuickAmount(50)">50</button>
+                        <button onclick="setQuickAmount(100)" class="active">100</button>
+                        <button onclick="setQuickAmount(500)">500</button>
+                    </div>
+                    <div class="bet-buttons" id="betButtons">
+                        <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span></button>
+                        <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span></button>
+                        <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span></button>
+                        <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span></button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')" style="flex:1">雙數<span class="multi">2x</span></button>
+                    </div>
+                    <div class="number-bet">
+                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px">
+                        <input type="number" id="betAmt" placeholder="金額(最低10)" min="10" value="100" style="flex:1">
+                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">📌 數字 10x</button>
+                    </div>
+                </div>
+                
+                <div class="current-bets-box">
+                    <h4>🎯 本局下注 <span id="betTotal">0</span></h4>
+                    <div id="currentBetsList"><span class="no-bets">點擊上方按鈕下注</span></div>
+                </div>
+                
+                <button class="leave-btn" onclick="leaveGame()">🚪 離開遊戲</button>
+            </div>
+            
+            <div class="tab-content" id="historyTab">
+                <div class="current-bets-box" style="max-height:none;">
+                    <h4>📜 遊戲歷史記錄</h4>
+                    <div id="historyBetsList"><span class="no-bets">尚無記錄</span></div>
+                </div>
+                <button class="leave-btn" onclick="doLogout()">🚪 登出</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="broke-overlay" id="brokeOverlay">
+        <div>
+            <h2>💸 餘額不足</h2>
+            <p>您的餘額不足，無法繼續遊戲。</p>
+            <button onclick="hideBrokeOverlay()">確定</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <h2>🎰 俄羅斯輪盤 B版（仿真）</h2>
+            <h3>📌 遊戲流程</h3>
+            <p>1. 下注時間結束後，小球和轉盤開始旋轉</p>
+            <p>2. 小球慢慢減速，最後停在數字上</p>
+            <p>3. 該數字就是結果</p>
+            <h3>🎯 下注類型</h3>
+            <div class="bet-demo"><span class="red">🔴 紅色</span> - 2倍獎金</div>
+            <div class="bet-demo"><span class="black">⚫ 黑色</span> - 2倍獎金</div>
+            <div class="bet-demo"><span class="green">🟢 綠色（0）</span> - 10倍獎金</div>
+            <div class="bet-demo"><span class="odd">單數</span> - 2倍獎金</div>
+            <div class="bet-demo"><span class="even">雙數</span> - 2倍獎金</div>
+            <button class="close-btn" onclick="hideHelp()">知道了！</button>
+        </div>
+    </div>
+
+    <script>
+        const wheelNumbers = [
+            { num: 0, color: 'green' },
+            { num: 32, color: 'red' }, { num: 15, color: 'black' }, { num: 19, color: 'red' }, { num: 4, color: 'black' },
+            { num: 21, color: 'red' }, { num: 2, color: 'black' }, { num: 25, color: 'red' }, { num: 17, color: 'black' },
+            { num: 34, color: 'red' }, { num: 6, color: 'black' }, { num: 27, color: 'red' }, { num: 13, color: 'black' },
+            { num: 36, color: 'red' }, { num: 11, color: 'black' }, { num: 30, color: 'red' }, { num: 8, color: 'black' },
+            { num: 23, color: 'red' }, { num: 10, color: 'black' }, { num: 5, color: 'red' }, { num: 24, color: 'black' },
+            { num: 16, color: 'red' }, { num: 33, color: 'black' }, { num: 1, color: 'red' }, { num: 20, color: 'black' },
+            { num: 14, color: 'red' }, { num: 31, color: 'black' }, { num: 9, color: 'red' }, { num: 22, color: 'black' },
+            { num: 18, color: 'red' }, { num: 29, color: 'black' }, { num: 7, color: 'red' }, { num: 28, color: 'black' },
+            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' }
+        ];
+        
+        const savedUsername = localStorage.getItem('rouletteUsername');
+        const savedBalance = localStorage.getItem('rouletteBalance');
+        
+        let myName = savedUsername || '';
+        let myBalance = savedBalance ? parseInt(savedBalance) : 1000;
+        let gamePhase = 'waiting';
+        let currentBets = [];
+        let historyBets = [];
+        let quickAmount = 100;
+        let pollInterval;
+        let lastProcessedSpinId = 0;
+        let selectedBets = [];
+        
+        if (savedUsername && savedBalance) {
+            document.getElementById('balance').textContent = myBalance;
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('topBar').style.display = 'flex';
+            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('gameSection').style.display = 'block';
+            drawWheel();
+            updateCurrentBetsUI();
+            loadHistoryFromDB();
+            pollStatus();
+            pollInterval = setInterval(pollStatus, 1000);
+            fetch('/api/roulette/ping', { method: 'POST' });
+        }
+        
+        function showAuth(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.auth-tab:nth-child(1)').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.auth-tab:nth-child(2)').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+        
+        async function doLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const msg = document.getElementById('loginMsg');
+            if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; return; }
+            try {
+                const res = await fetch('/api/roulette/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    myName = username;
+                    myBalance = data.player.score;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    localStorage.setItem('rouletteUsername', username);
+                    document.getElementById('balance').textContent = myBalance;
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('topBar').style.display = 'flex';
+                    document.getElementById('timerBox').style.display = 'block';
+                    document.getElementById('gameSection').style.display = 'block';
+                    currentBets = [];
+                    historyBets = [];
+                    lastProcessedSpinId = 0;
+                    updateCurrentBetsUI();
+                    updateHistoryUI();
+                    drawWheel();
+                    pollStatus();
+                    pollInterval = setInterval(pollStatus, 1000);
+                } else {
+                    msg.textContent = data.message;
+                }
+            } catch(e) { msg.textContent = '連線失敗'; }
+        }
+        
+        async function doRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const msg = document.getElementById('regMsg');
+            if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; return; }
+            try {
+                const res = await fetch('/api/roulette/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.textContent = '註冊成功！請登入';
+                    msg.className = 'auth-msg success';
+                    setTimeout(() => showAuth('login'), 1500);
+                } else {
+                    msg.textContent = data.message;
+                }
+            } catch(e) { msg.textContent = '連線失敗'; }
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tab === 'game') {
+                document.querySelector('.game-tab:nth-child(1)').classList.add('active');
+                document.getElementById('gameTab').classList.add('active');
+            } else {
+                document.querySelector('.game-tab:nth-child(2)').classList.add('active');
+                document.getElementById('historyTab').classList.add('active');
+            }
+        }
+        
+        async function loadHistoryFromDB() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/history/' + myName);
+                const data = await res.json();
+                historyBets = (data.history || []).map(row => ({
+                    result: row.result, color: row.color, win: row.win === 1, amount: row.amount
+                })).slice(0, 5);
+                updateHistoryUI();
+            } catch(e) {}
+        }
+        
+        function doLogout() {
+            if (pollInterval) clearInterval(pollInterval);
+            myName = '';
+            myBalance = 1000;
+            localStorage.removeItem('rouletteUsername');
+            localStorage.removeItem('rouletteBalance');
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('topBar').style.display = 'none';
+            document.getElementById('timerBox').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'none';
+            showAuth('login');
+        }
+        
+        function leaveGame() { if (confirm('確定要離開遊戲嗎？')) doLogout(); }
+        
+        function setQuickAmount(amt) {
+            quickAmount = amt;
+            document.getElementById('betAmt').value = amt;
+            document.querySelectorAll('.quick-bet button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function drawWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const centerX = 150, centerY = 150, radius = 140;
+            const slotAngle = (2 * Math.PI) / 37;
+            
+            ctx.clearRect(0, 0, 300, 300);
+            
+            wheelNumbers.forEach((item, i) => {
+                const startAngle = i * slotAngle - Math.PI / 2;
+                const endAngle = startAngle + slotAngle;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = item.color === 'red' ? '#cc0000' : (item.color === 'black' ? '#1a1a1a' : '#009900');
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                const textAngle = startAngle + slotAngle / 2;
+                const textRadius = radius * 0.85;
+                const textX = centerX + Math.cos(textAngle) * textRadius;
+                const textY = centerY + Math.sin(textAngle) * textRadius;
+                ctx.save();
+                ctx.translate(textX, textY);
+                ctx.rotate(textAngle + Math.PI / 2);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.num, 0, 0);
+                ctx.restore();
+            });
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffd700';
+            ctx.fill();
+        }
+        
+        async function pollStatus() {
+            try {
+                const res = await fetch('/api/roulette/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                updateUI(data);
+            } catch(e) {}
+        }
+        
+        function updateUI(data) {
+            const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
+            const timerBox = document.getElementById('timerBox');
+            const phaseText = document.getElementById('phaseText');
+            const countdown = document.getElementById('countdown');
+            const wheel = document.getElementById('wheelCanvas');
+            const ball = document.getElementById('ball');
+            const badge = document.getElementById('resultBadge');
+            
+            timerBox.className = 'timer-box';
+            wheel.classList.remove('spinning');
+            ball.classList.remove('spinning');
+            
+            switch(data.phase) {
+                case 'waiting':
+                    phaseText.textContent = '⏳ 等待開始';
+                    countdown.textContent = '-';
+                    timerBox.classList.add('waiting');
+                    badge.style.display = 'none';
+                    disableBtns();
+                    break;
+                case 'betting':
+                    phaseText.textContent = '⏰ 下注時間！';
+                    countdown.textContent = (data.remaining || 0) + 's';
+                    timerBox.classList.add('betting');
+                    enableBtns();
+                    if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
+                        currentBets = [];
+                        clearSelected();
+                        updateCurrentBetsUI();
+                    }
+                    badge.style.display = 'none';
+                    break;
+                case 'spinning':
+                    phaseText.textContent = '🎰 轉動中...';
+                    countdown.textContent = '❓';
+                    timerBox.classList.add('spinning');
+                    wheel.classList.add('spinning');
+                    ball.classList.add('spinning');
+                    disableBtns();
+                    document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
+                    document.getElementById('resultDisplay').className = 'result-display waiting';
+                    break;
+                case 'result':
+                    phaseText.textContent = '📌 結果出爐';
+                    countdown.textContent = (data.remaining || 0) + 's';
+                    timerBox.classList.add('result');
+                    wheel.classList.remove('spinning');
+                    ball.classList.remove('spinning');
+                    disableBtns();
+                    if (data.lastSpin) {
+                        const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
+                        if (spinId !== lastProcessedSpinId) {
+                            lastProcessedSpinId = spinId;
+                            spinBallAndWheel(data.lastSpin.result, data.lastSpin);
+                        }
+                    }
+                    break;
+            }
+            gamePhase = data.phase;
+        }
+        
+        function spinBallAndWheel(result, lastSpin) {
+            const index = wheelNumbers.findIndex(n => n.num === result);
+            const slotAngle = 360 / 37;
+            
+            // 小球最終位置（在頂端往下看的話，index 0-1-2... 是順時針）
+            // 指針在頂部（12點方向），小球的最終位置要讓 index 對準頂部
+            // 小球半徑是 150（半徑-8）
+            const ballTargetAngle = -90 - (index * slotAngle + slotAngle / 2);
+            
+            // 轉盤最終位置（比小球多轉幾圈）
+            const spins = 6 + Math.floor(Math.random() * 4);
+            const wheelTargetAngle = spins * 360 + (360 - index * slotAngle);
+            
+            const wheel = document.getElementById('wheelCanvas');
+            const ball = document.getElementById('ball');
+            
+            // 重置
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            ball.style.transition = 'none';
+            ball.style.transform = 'rotate(0deg)';
+            void wheel.offsetWidth;
+            void ball.offsetWidth;
+            
+            // 小球先快速轉（動畫）
+            ball.style.transition = 'transform 10s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            ball.style.transform = 'rotate(' + (ballTargetAngle - 360 * 8) + 'deg)';
+            
+            // 轉盤慢慢轉（落後於小球）
+            wheel.style.transition = 'transform 8s cubic-bezier(0.1, 0.4, 0.2, 1)';
+            wheel.style.transform = 'rotate(' + wheelTargetAngle + 'deg)';
+            
+            // 8秒後顯示結果
+            setTimeout(() => {
+                const colorName = colors[lastSpin.color];
+                const display = document.getElementById('resultDisplay');
+                display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
+                display.className = 'result-display ' + lastSpin.color;
+                processResult(lastSpin);
+            }, 8500);
+        }
+        
+        function processResult(lastSpin) {
+            if (currentBets.length === 0) return;
+            
+            const betsToProcess = [...currentBets];
+            currentBets = [];
+            updateCurrentBetsUI();
+            
+            let roundWin = 0, roundBet = 0;
+            
+            for (const bet of betsToProcess) {
+                roundBet += bet.amount;
+                let win = false;
+                if (bet.type === 'color' && bet.color === lastSpin.color) win = true;
+                if (bet.type === 'odd_even') {
+                    if (bet.choice === 'odd' && lastSpin.result % 2 === 1 && lastSpin.result !== 0) win = true;
+                    if (bet.choice === 'even' && lastSpin.result % 2 === 0 && lastSpin.result !== 0) win = true;
+                }
+                if (bet.type === 'number' && bet.number === lastSpin.result) win = true;
+                
+                if (win) {
+                    const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
+                    roundWin += prize;
+                }
+            }
+            
+            myBalance = myBalance - roundBet + roundWin;
+            localStorage.setItem('rouletteBalance', myBalance);
+            updateBalanceUI();
+            
+            if (myBalance <= 0) {
+                setTimeout(() => { document.getElementById('brokeOverlay').classList.add('show'); }, 1500);
+            }
+            
+            fetch('/api/roulette/update-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: myName, newScore: myBalance })
+            });
+            
+            const badge = document.getElementById('resultBadge');
+            if (roundWin > 0) {
+                badge.textContent = '+' + roundWin;
+                badge.className = 'result-badge show win';
+            } else if (roundBet > 0) {
+                badge.textContent = '-' + roundBet;
+                badge.className = 'result-badge show lose';
+            }
+            
+            if (roundBet > 0) {
+                historyBets.unshift({ result: lastSpin.result, color: lastSpin.color, win: roundWin > 0, amount: roundWin > 0 ? roundWin : -roundBet });
+                if (historyBets.length > 5) historyBets = historyBets.slice(0, 5);
+                updateHistoryUI();
+                
+                fetch('/api/roulette/save-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, result: lastSpin.result, color: lastSpin.color, win: roundWin > 0, amount: roundWin > 0 ? roundWin : -roundBet })
+                });
+            }
+        }
+        
+        function updateCurrentBetsUI() {
+            const list = document.getElementById('currentBetsList');
+            const totalEl = document.getElementById('betTotal');
+            let total = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            totalEl.textContent = total;
+            if (currentBets.length === 0) { list.innerHTML = '<span class="no-bets">點擊上方按鈕下注</span>'; return; }
+            let html = '';
+            for (const bet of currentBets) {
+                html += '<div class="bet-row"><span>' + bet.info + '</span><span>' + bet.amount + '</span></div>';
+            }
+            html += '<div class="bet-row total"><span>總計</span><span style="color:#ffd700">' + total + '</span></div>';
+            list.innerHTML = html;
+        }
+        
+        function updateHistoryUI() {
+            const list = document.getElementById('historyBetsList');
+            if (historyBets.length === 0) { list.innerHTML = '<span class="no-bets">尚無記錄</span>'; return; }
+            const colors = { red: '🔴', black: '⚫', green: '🟢' };
+            let html = '';
+            for (const record of historyBets) {
+                const amountText = record.amount > 0 ? '+' + record.amount : record.amount;
+                const rowClass = record.amount > 0 ? 'win' : 'lose';
+                html += '<div class="bet-row ' + rowClass + '"><span>' + record.result + ' ' + colors[record.color] + '</span><span>' + amountText + '</span></div>';
+            }
+            list.innerHTML = html;
+        }
+        
+        function disableBtns() {
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('numberBetBtn').classList.add('disabled');
+        }
+        
+        function enableBtns() {
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
+            document.getElementById('numberBetBtn').classList.remove('disabled');
+            clearSelected();
+        }
+        
+        function clearSelected() {
+            selectedBets = [];
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+        }
+        
+        function checkBalance() {
+            if (myBalance <= 0) { document.getElementById('brokeOverlay').classList.add('show'); return false; }
+            document.getElementById('balanceBox').classList.add('low');
+            return true;
+        }
+        
+        function updateBalanceUI() {
+            document.getElementById('balance').textContent = myBalance;
+            if (myBalance <= 0) document.getElementById('balanceBox').classList.add('low');
+            else document.getElementById('balanceBox').classList.remove('low');
+        }
+        
+        function hideBrokeOverlay() { document.getElementById('brokeOverlay').classList.remove('show'); }
+        
+        async function placeBet(type, amount, choice) {
+            if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            if (myBalance < amount) { document.getElementById('brokeOverlay').classList.add('show'); return; }
+            
+            const bet = { type, amount, info: choice };
+            if (type === 'color') bet.color = choice;
+            if (type === 'odd_even') bet.choice = choice;
+            currentBets.push(bet);
+            
+            const btnClass = type === 'number' ? 'green' : choice;
+            selectedBets.push(btnClass);
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                if (b.classList.contains(btnClass)) b.classList.add('selected');
+            });
+            
+            updateCurrentBetsUI();
+            try { await fetch('/api/roulette/bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: myName, betType: type, amount, color: choice, choice }) }); } catch(e) {}
+        }
+        
+        async function placeNumberBet() {
+            const num = parseInt(document.getElementById('betNum').value);
+            const amt = parseInt(document.getElementById('betAmt').value);
+            if (isNaN(num) || num < 0 || num > 36) { alert('請選0-36'); return; }
+            if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
+            if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            if (myBalance < amt) { document.getElementById('brokeOverlay').classList.add('show'); return; }
+            
+            currentBets.push({ type: 'number', amount: amt, info: '#' + num, number: num });
+            updateCurrentBetsUI();
+            try { await fetch('/api/roulette/bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num }) }); } catch(e) {}
+        }
+        
+        function showHelp() { document.getElementById('helpModal').classList.add('show'); }
+        function hideHelp() { document.getElementById('helpModal').classList.remove('show'); }
+    </script>
+</body>
+</html>
