@@ -32,8 +32,8 @@
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 3s ease-out; transform: rotate(-90deg); }
-        .wheel.spinning-anim { animation: wheel-spin 0.5s linear infinite; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 4.5s cubic-bezier(0.17, 0.67, 0.12, 0.99); transform: rotate(-90deg); }
+        .wheel.spinning-anim { animation: wheel-spin 0.12s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { font-size: 2.5rem; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
@@ -58,6 +58,7 @@
         .modal .bet-demo span { display: inline-block; padding: 5px 10px; border-radius: 5px; margin: 2px; font-size: 0.85rem; }
         .modal .bet-demo .red { background: #cc0000; }
         .modal .bet-demo .black { background: #333; }
+        .modal .bet-demo .green { background: #009900; }
         .modal .bet-demo .odd { background: #0066cc; }
         .modal .bet-demo .even { background: #660066; }
         .modal .bet-demo .num { background: #ffd700; color: #1a1a2e; }
@@ -74,6 +75,12 @@
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
         .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
         .bet-btn .multi { display: block; font-size: 0.7rem; opacity: 0.8; }
+        .bet-btn.selected { transform: scale(1.08); box-shadow: 0 0 20px rgba(255,215,0,0.8); border: 3px solid #ffd700; }
+        .bet-btn.red.selected { box-shadow: 0 0 20px rgba(200,0,0,0.9); border-color: #ff4444; }
+        .bet-btn.black.selected { box-shadow: 0 0 20px rgba(100,100,100,0.9); border-color: #888; }
+        .bet-btn.green.selected { box-shadow: 0 0 20px rgba(0,150,0,0.9); border-color: #00ff00; }
+        .bet-btn.odd.selected { box-shadow: 0 0 20px rgba(0,100,200,0.9); border-color: #00aaff; }
+        .bet-btn.even.selected { box-shadow: 0 0 20px rgba(150,0,150,0.9); border-color: #aa00aa; }
         
         .quick-bet { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; }
         .quick-bet button { padding: 10px 15px; background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
@@ -129,8 +136,10 @@
         .leave-btn { width: 100%; padding: 12px; background: rgba(255,100,100,0.2); border: 2px solid #ff6666; border-radius: 10px; color: #ff6666; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .leave-btn:hover { background: rgba(255,100,100,0.4); }
         
-        .logout-btn { padding: 8px 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; color: #aaa; cursor: pointer; font-size: 0.85rem; }
         .logout-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+        
+        .balance.low span { color: #ff6666 !important; animation: blink 1s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -138,7 +147,7 @@
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
-            <div class="balance">💰 餘額: <span id="balance">1000</span></div>
+            <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
             <div>
                 <span class="result-badge neutral" id="resultBadge">-</span>
             </div>
@@ -203,15 +212,19 @@
                     <div class="bet-buttons" id="betButtons">
                         <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span></button>
                         <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span></button>
+                        <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span></button>
                         <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span></button>
-                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙數<span class="multi">2x</span></button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')" style="flex:1">雙數<span class="multi">2x</span></button>
                     </div>
                     
                     <div class="number-bet">
                         <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px">
-                        <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1">
-                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">數字 10x</button>
+                        <input type="number" id="betAmt" placeholder="金額(最低10)" min="10" value="100" style="flex:1">
+                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">📌 數字 10x</button>
                     </div>
+                    <p style="color:#888; font-size:0.75rem; text-align:center; margin-top:6px;">💡 也可以直接在數字轉盤上點擊下注</p>
                 </div>
                 
                 <div class="current-bets-box">
@@ -233,6 +246,19 @@
         </div>
     </div>
 
+    <div class="broke-overlay" id="brokeOverlay">
+        <h2>💸 餘額不足</h2>
+        <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
+        <button onclick="hideBrokeOverlay()">確定</button>
+    </div>
+
+    <div class="broke-overlay" id="brokeOverlay">
+        <h2>💸 餘額不足</h2>
+        <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
+        <button onclick="hideBrokeOverlay()">確定</button>
+    </div>
+
+
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
             <h2>🎰 俄羅斯輪盤 玩法</h2>
@@ -252,6 +278,9 @@
             </div>
             <div class="bet-demo">
                 <span class="black">⚫ 黑色</span> - 2倍獎金（18個數字）
+            </div>
+            <div class="bet-demo">
+                <span class="green">🟢 綠色（數字0）</span> - 10倍獎金（僅1個數字）
             </div>
             <div class="bet-demo">
                 <span class="odd">單數</span> - 2倍獎金（1,3,5...35）
@@ -298,6 +327,7 @@
         let quickAmount = 100;
         let pollInterval;
         let lastProcessedSpinId = 0;
+        let selectedBets = []; // Track which bet options are selected
         
         if (savedUsername && savedBalance) {
             // 已登入，恢復 session
@@ -566,6 +596,7 @@
                     // Clear currentBets when starting NEW round (previous phase was result/spinning)
                     if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
                         currentBets = [];
+                        clearSelected();
                         updateCurrentBetsUI();
                     }
                     badge.style.display = 'none';
@@ -677,7 +708,14 @@
             myBalance = myBalance - roundBet + roundWin;
             console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
-            document.getElementById('balance').textContent = myBalance;
+            updateBalanceUI();
+            
+            // 檢查餘額是否歸零
+            if (myBalance <= 0) {
+                setTimeout(() => {
+                    document.getElementById('brokeOverlay').classList.add('show');
+                }, 1500); // Show after result display
+            }
             
             // 更新資料庫余額
             fetch('/api/roulette/update-score', {
@@ -772,15 +810,65 @@
         function enableBtns() {
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
             document.getElementById('numberBetBtn').classList.remove('disabled');
+            clearSelected(); // Clear selected states when new betting round starts
+        }
+        
+        function clearSelected() {
+            selectedBets = [];
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+        }
+        
+        function checkBalance() {
+            if (myBalance <= 0) {
+                document.getElementById('brokeOverlay').classList.add('show');
+                return false;
+            }
+            document.getElementById('balanceBox').classList.add('low');
+            return true;
+        }
+        
+        function updateBalanceUI() {
+            document.getElementById('balance').textContent = myBalance;
+            if (myBalance <= 0) {
+                document.getElementById('balanceBox').classList.add('low');
+            } else {
+                document.getElementById('balanceBox').classList.remove('low');
+            }
+        }
+        
+        function hideBrokeOverlay() {
+            document.getElementById('brokeOverlay').classList.remove('show');
+        }
+        
+        function updateSelectedUI(btnClass, isSelected) {
+            // Find the button by its class and toggle selected state
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                if (isSelected && b.classList.contains(btnClass)) {
+                    b.classList.add('selected');
+                }
+            });
         }
         
         async function placeBet(type, amount, choice) {
             if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            
+            // Check if player can afford this bet
+            if (myBalance < amount) {
+                alert('餘額不足！您只剩 ' + myBalance + ' 元');
+                return;
+            }
             
             const bet = { type, amount, info: choice };
             if (type === 'color') bet.color = choice;
             if (type === 'odd_even') bet.choice = choice;
             currentBets.push(bet);
+            
+            // Track selected button
+            const btnClass = type === 'number' ? 'green' : choice;
+            selectedBets.push(btnClass);
+            updateSelectedUI(btnClass, true);
+            
             console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
             
@@ -799,9 +887,19 @@
             if (isNaN(num) || num < 0 || num > 36) { alert('請選0-36'); return; }
             if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
             if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            
+            if (myBalance < amt) {
+                alert('餘額不足！您只剩 ' + myBalance + ' 元');
+                return;
+            }
             
             currentBets.push({ type: 'number', amount: amt, info: '#' + num, number: num });
             updateCurrentBetsUI();
+            
+            // Mark the 0 button as selected when player bets on a number
+            selectedBets.push('number-' + num);
+            updateSelectedUI('green', true);
             
             try {
                 await fetch('/api/roulette/bet', {

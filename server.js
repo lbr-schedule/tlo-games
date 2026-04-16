@@ -194,30 +194,36 @@ function getRouletteColor(num) {
 function spinWheel() {
     rouletteState.phase = 'spinning';
     
-    // 庄家勝率65%的機率分布
-    // P(0 green) = 0.30 -> 庄家贏（閒家下注顏色必輸）
-    // P(red) = 0.35
-    // P(black) = 0.35
-    // 下注紅色時：庄家贏率 = P(0) + P(black) = 0.30 + 0.35 = 0.65 (65%)
-    // 下注黑色時：庄家贏率 = P(0) + P(red) = 0.30 + 0.35 = 0.65 (65%)
-    // 下注單數時：庄家贏率 = P(0) + P(even non-0) ≈ 0.30 + 0.32 ≈ 0.62
-    // 下注雙數時：庄家贏率 = P(0) + P(odd non-0) ≈ 0.30 + 0.32 ≈ 0.62
-    const rnd = Math.random();
-    let result;
+    // 真正的隨機轉盤结果（0-36，均等概率）
+    // 庄家優勢體現在：0幾乎必定虧損（顏色投注必定輸）
+    // 真實輪盤：0 green, 18 red, 18 black → 庄家在顏色投注時有2.7%基本優勢
+    // 加上顏色不平衡時的額外優勢，我們採用真實比例但稍微調整
+    const allNumbers = [
+        {num:0,color:'green'},
+        {num:32,color:'red'},{num:15,color:'black'},{num:19,color:'red'},{num:4,color:'black'},
+        {num:21,color:'red'},{num:2,color:'black'},{num:25,color:'red'},{num:17,color:'black'},
+        {num:34,color:'red'},{num:6,color:'black'},{num:27,color:'red'},{num:13,color:'black'},
+        {num:36,color:'red'},{num:11,color:'black'},{num:30,color:'red'},{num:8,color:'black'},
+        {num:23,color:'red'},{num:10,color:'black'},{num:5,color:'red'},{num:24,color:'black'},
+        {num:16,color:'red'},{num:33,color:'black'},{num:1,color:'red'},{num:20,color:'black'},
+        {num:14,color:'red'},{num:31,color:'black'},{num:9,color:'red'},{num:22,color:'black'},
+        {num:18,color:'red'},{num:29,color:'black'},{num:7,color:'red'},{num:28,color:'black'},
+        {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'}
+    ];
     
-    if (rnd < 0.30) {
-        result = 0;
-    } else if (rnd < 0.65) {
-        // 0.30 ~ 0.65 -> red (35%)
-        const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-        result = reds[Math.floor(Math.random() * reds.length)];
-    } else {
-        // 0.65 ~ 1.00 -> black (35%)
-        const blacks = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
-        result = blacks[Math.floor(Math.random() * blacks.length)];
-    }
+    // 純隨機選擇（每個數字均等概率）
+    const selectedIndex = Math.floor(Math.random() * 37);
+    const selected = allNumbers[selectedIndex];
     
-    rouletteState.lastSpin = { result, color: getRouletteColor(result), time: Date.now() };
+    // 庄家優勢實現：當結果是0時幾乎所有下注都輸
+    // 真實輪盤機率：P(0)=1/37≈2.7%, P(red)=18/37≈48.6%, P(black)=18/37≈48.6%
+    // 這導致顏色下注時庄家優勢為 2.7%（真實比例）
+    
+    rouletteState.lastSpin = { 
+        result: selected.num, 
+        color: selected.color, 
+        time: Date.now() 
+    };
     
     // HTTP輪詢模式不需要廣播，等待3秒後進入結果
     setTimeout(() => {
