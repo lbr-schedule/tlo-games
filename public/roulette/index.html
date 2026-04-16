@@ -28,7 +28,7 @@
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 40px solid #ffd700; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
         .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
         .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
@@ -561,14 +561,14 @@
                 const data = await res.json();
                 console.log('Poll data:', data);
                 updateUI(data);
+                
+                // Update countdown display every poll
+                const cd = document.getElementById('betCountdown');
+                if (cd && data.remaining) {
+                    cd.textContent = data.remaining + 's';
+                }
             } catch(e) {
                 console.log('Poll error:', e.message);
-            }
-            
-            // Update countdown display every poll
-            const cd = document.getElementById('betCountdown');
-            if (cd && data.remaining) {
-                cd.textContent = data.remaining + 's';
             }
         }
         
@@ -645,7 +645,16 @@
             const index = wheelNumbers.findIndex(n => n.num === result);
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
-            const totalRotation = spins * 360 + index * slotAngle;
+            
+            // 測試用：印出 index 和 totalRotation
+            console.log('Result:', result, 'index:', index, 'slotAngle:', slotAngle);
+            
+            // 測試不同的公式：
+            // A: spins * 360 - index * slotAngle
+            // B: spins * 360 + index * slotAngle  
+            // C: (37 - index) * slotAngle + spins * 360
+            const totalRotation = spins * 360 + (37 - index) * slotAngle;
+            console.log('totalRotation:', totalRotation);
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
@@ -656,14 +665,14 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：4秒，配合 server 的 spinning 時間
-            wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0.5, 0.2, 1)';
+            // 漸慢動畫：4.5秒，配合 server 的 spinning 時間（5秒）
+            wheel.style.transition = 'transform 4.5s cubic-bezier(0.15, 0.65, 0.25, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後（4秒後）立即顯示結果
+            // 等轉動動畫完成後（4.8秒後）顯示結果，確保轉盤完全停止
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
@@ -673,7 +682,7 @@
                 display.className = 'result-display ' + lastSpin.color;
                 display.style.display = 'block';
                 processResult(lastSpin);
-            }, 4100);
+            }, 4800);
         }
         
         function processResult(lastSpin) {

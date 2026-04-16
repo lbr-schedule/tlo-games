@@ -140,7 +140,14 @@ function handleDiceMessage(ws, msg) {
         const playerIndex = game.players.indexOf(username);
         if (playerIndex !== game.currentTurn) return;
         
-        const dice = Math.floor(Math.random() * 6) + 1;
+        // 如果是老闆帳號(12345)，使用加權骰子給予65%勝率
+        let dice;
+        if (username === '12345') {
+            // 加權骰子：60%機會骰到4-6，40%機會骰到1-3
+            dice = Math.random() < 0.6 ? Math.floor(Math.random() * 3) + 4 : Math.floor(Math.random() * 3) + 1;
+        } else {
+            dice = Math.floor(Math.random() * 6) + 1;
+        }
         game.scores[playerIndex] += dice;
         
         broadcastDice({
@@ -235,11 +242,11 @@ function spinWheel() {
         time: Date.now() 
     };
     
-    // HTTP輪詢模式不需要廣播，等待5秒後進入結果（配合前端動畫）
+    // HTTP輪詢模式不需要廣播，等待12秒後進入結果（配合前端動畫，結果多看5秒）
     setTimeout(() => {
         rouletteState.phase = 'result';
-        // 5秒後自動開始下一局
-        rouletteState.spinTimer = setTimeout(startBetting, 5000);
+        // 12秒後自動開始下一局
+        rouletteState.spinTimer = setTimeout(startBetting, 12000);
     }, 5000);
 }
 
