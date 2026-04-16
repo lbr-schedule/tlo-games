@@ -533,8 +533,8 @@
             timerBox.className = 'timer-box';
             wheel.classList.remove('spinning');
             ball.classList.remove('spinning');
-            // Only clear result display when entering betting or waiting
-            if (data.phase === 'betting' || data.phase === 'waiting') {
+            // Only clear result display when entering betting/waiting AND no animation in progress
+            if ((data.phase === 'betting' || data.phase === 'waiting') && !window.rouletteAnimating) {
                 document.getElementById('resultDisplay').className = 'result-display waiting';
                 document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
             }
@@ -552,7 +552,8 @@
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('betting');
                     enableBtns();
-                    if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
+                    // Only clear currentBets if NO animation is running
+                    if (!window.rouletteAnimating && (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting')) {
                         currentBets = [];
                         clearSelected();
                         updateCurrentBetsUI();
@@ -617,17 +618,21 @@
             ball.style.transform = 'rotate(' + (ballTargetAngle - 360 * 8) + 'deg)';
             
             // 轉盤慢慢轉（落後於小球）
-            wheel.style.transition = 'transform 8s cubic-bezier(0.1, 0.4, 0.2, 1)';
+            wheel.style.transition = 'transform 10s cubic-bezier(0.1, 0.4, 0.2, 1)';
             wheel.style.transform = 'rotate(' + wheelTargetAngle + 'deg)';
             
-            // 8秒後顯示結果
+            // 標記動畫進行中
+            window.rouletteAnimating = true;
+            
+            // 10.5秒後顯示結果
             setTimeout(() => {
+                window.rouletteAnimating = false;
                 const colorName = colors[lastSpin.color];
                 const display = document.getElementById('resultDisplay');
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
                 display.className = 'result-display ' + lastSpin.color;
                 processResult(lastSpin);
-            }, 8500);
+            }, 10500);
         }
         
         function processResult(lastSpin) {

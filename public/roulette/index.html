@@ -20,14 +20,9 @@
         .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
         
-        .timer-box { text-align: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
-        .timer-box .phase { font-size: 1rem; margin-bottom: 5px; }
+        .timer-box { text-align: center; padding: 15px 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
         .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
-        .timer-box.betting { border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
-        .timer-box.spinning { border: 3px solid #ff6600; animation: glow 0.5s infinite; }
-        .timer-box.result { border: 3px solid #00aa00; }
-        .timer-box.waiting { border: 3px solid #666; }
-        @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
+        .timer-box.waiting .countdown { font-size: 1.5rem; color: #888; }
         
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
@@ -163,7 +158,6 @@
         </div>
         
         <div class="timer-box waiting" id="timerBox" style="display:none;">
-            <div class="phase" id="phaseText">載入中...</div>
             <div class="countdown" id="countdown">-</div>
         </div>
         
@@ -579,30 +573,35 @@
             timerBox.className = 'timer-box';
             wheel.classList.remove('spinning', 'spinning-anim');
             wheel.style.animation = '';
-            // Only clear result display when entering betting or waiting (not every poll)
-            const prevPhase = gamePhase;
-            if (data.phase === 'betting' || data.phase === 'waiting') {
+            // Only clear result display when entering betting/waiting AND no animation in progress
+            if ((data.phase === 'betting' || data.phase === 'waiting') && !window.rouletteAnimating) {
+                document.getElementById('resultDisplay').className = 'result-display waiting';
+                document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
+            }
+            
+            timerBox.className = 'timer-box';
+            wheel.classList.remove('spinning', 'spinning-anim');
+            wheel.style.animation = '';
+            // Only clear result display when entering betting/waiting AND no animation in progress
+            if ((data.phase === 'betting' || data.phase === 'waiting') && !window.rouletteAnimating) {
                 document.getElementById('resultDisplay').className = 'result-display waiting';
                 document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
             }
             
             switch(data.phase) {
                 case 'waiting':
-                    phaseText.textContent = '⏳ 等待開始';
-                    countdown.textContent = '-';
                     timerBox.classList.add('waiting');
                     badge.style.display = 'none';
                     disableBtns();
                     break;
                     
                 case 'betting':
-                    phaseText.textContent = '⏰ 下注時間！';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('betting');
                     enableBtns();
                     
-                    // Clear currentBets when starting NEW round (previous phase was result/spinning)
-                    if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
+                    // Only clear currentBets if NO wheel animation is running
+                    if (!window.rouletteAnimating && (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting')) {
                         currentBets = [];
                         clearSelected();
                         updateCurrentBetsUI();
@@ -613,7 +612,6 @@
                     break;
                     
                 case 'spinning':
-                    phaseText.textContent = '🎰 轉動中...';
                     countdown.textContent = '❓';
                     timerBox.classList.add('spinning');
                     wheel.classList.remove('spinning', 'spinning-anim');
@@ -629,8 +627,11 @@
                     break;
                     
                 case 'result':
-                    phaseText.textContent = '📌 結果出爐';
-                    countdown.textContent = (data.remaining || 0) + 's';
+                    // Only show countdown if no animation is running
+                    // If animation IS running, keep showing "❓" until animation completes
+                    if (!window.rouletteAnimating) {
+                        countdown.textContent = (data.remaining || 0) + 's';
+                    }
                     timerBox.classList.add('result');
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = 'none';
@@ -671,19 +672,23 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：8秒，cubic-bezier 實現自然減速
-            wheel.style.transition = 'transform 8s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 漸慢動畫：10秒，cubic-bezier 實現自然減速
+            wheel.style.transition = 'transform 10s cubic-bezier(0.15, 0.65, 0.25, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
-            // 等轉動動畫完成後才顯示結果（8.5秒後）
+            // 標記動畫進行中，防止被 poll 清除
+            window.rouletteAnimating = true;
+            
+            // 等轉動動畫完成後才顯示結果（10.5秒後）
             setTimeout(() => {
+                window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
                 const colorName = colors[lastSpin.color];
                 const display = document.getElementById('resultDisplay');
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
                 display.className = 'result-display ' + lastSpin.color;
                 processResult(lastSpin);
-            }, 8500);
+            }, 10500);
         }
         
         function processResult(lastSpin) {
