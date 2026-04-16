@@ -89,8 +89,10 @@
         .number-bet button:hover:not(.disabled) { background: #ffdd44; }
         
         .bets-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .current-bets-box { background: rgba(0,200,100,0.1); border: 2px solid rgba(0,200,100,0.3); padding: 12px; border-radius: 12px; }
-        .current-bets-box h4 { color: #00c864; margin-bottom: 8px; font-size: 0.95rem; }
+        .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 15px; border-radius: 15px; margin: 10px 0; transition: all 0.3s ease; }
+        .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
+        .current-bets-box h4 { color: #00ff88; margin-bottom: 10px; font-size: 1.1rem; font-weight: bold; letter-spacing: 1px; }
+        @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
         .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; max-height: 150px; overflow-y: auto; }
         .history-bets-box h4 { color: #888; margin-bottom: 8px; font-size: 0.9rem; }
         
@@ -642,14 +644,14 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：12秒，cubic-bezier 實現自然減速
-            wheel.style.transition = 'transform 12s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 漸慢動畫：15秒，cubic-bezier 實現自然減速
+            wheel.style.transition = 'transform 15s cubic-bezier(0.15, 0.65, 0.25, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中，防止被 poll 清除
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後才顯示結果（12.5秒後）
+            // 等轉動動畫完成後才顯示結果（15.5秒後）
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
@@ -659,7 +661,7 @@
                 display.className = 'result-display ' + lastSpin.color;
                 display.style.display = 'block';
                 processResult(lastSpin);
-            }, 12500);
+            }, 15500);
         }
         
         function processResult(lastSpin) {
@@ -767,13 +769,17 @@
         function updateCurrentBetsUI() {
             const list = document.getElementById('currentBetsList');
             const totalEl = document.getElementById('betTotal');
+            const box = document.querySelector('.current-bets-box');
             let total = currentBets.reduce((sum, b) => sum + b.amount, 0);
             totalEl.textContent = total;
             
             if (currentBets.length === 0) {
-                list.innerHTML = '<span class="no-bets">點擊上方按鈕下注</span>';
+                list.innerHTML = '<span class="no-bets">選擇上方按鈕下注</span>';
+                if (box) box.classList.remove('has-bets');
                 return;
             }
+            
+            if (box) box.classList.add('has-bets');
             
             let html = '';
             for (const bet of currentBets) {
