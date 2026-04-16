@@ -30,8 +30,10 @@
         .timer-box.waiting { border: 3px solid #666; }
         @keyframes glow { 0%,100% { box-shadow: 0 0 10px #ff6600; } 50% { box-shadow: 0 0 25px #ff6600; } }
         
-        /* 仿真輪盤 */
+        /* 仿真輪盤樣式 */
         .roulette-table { position: relative; width: 320px; height: 320px; margin: 10px auto; }
+        
+        /* 外圈（軌道） */
         .wheel-track { 
             width: 320px; height: 320px; 
             border-radius: 50%; 
@@ -39,6 +41,8 @@
             position: absolute;
             box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
         }
+        
+        /* 轉盤 */
         .wheel-container { 
             width: 300px; height: 300px; 
             border-radius: 50%; 
@@ -50,27 +54,47 @@
             width: 300px; height: 300px; 
             border-radius: 50%; 
             transform-origin: 150px 150px; 
+            transition: transform 8s cubic-bezier(0.1, 0.4, 0.2, 1);
             transform: rotate(0deg);
         }
-        
-        /* 小球 - 絕對定位在轉盤外圍 */
-        .ball-track {
-            width: 300px; height: 300px;
-            border-radius: 50%;
-            position: absolute;
-            left: 10px; top: 10px;
+        .wheel.spinning { 
+            animation: wheel-fast-spin 0.15s linear infinite; 
         }
-        .ball {
-            width: 18px; height: 18px;
-            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+        @keyframes wheel-fast-spin { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
+        }
+        
+        /* 小球 */
+        .ball { 
+            width: 16px; height: 16px; 
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
             border-radius: 50%;
             position: absolute;
-            top: 0;
-            left: 50%;
-            margin-left: -9px;
-            box-shadow: 0 0 15px rgba(255,255,255,0.9), 0 2px 5px rgba(0,0,0,0.5);
+            left: 152px; top: 10px;
+            transform-origin: 8px 150px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
             z-index: 20;
-            transform-origin: 9px 150px;
+        }
+        .ball.spinning {
+            animation: ball-spin 0.15s linear infinite;
+        }
+        @keyframes ball-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+        
+        /* 指針（頂部向下） */
+        .ball-pointer {
+            width: 0; height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 25px solid #ffd700;
+            position: absolute;
+            top: -5px;
+            left: 148px;
+            z-index: 15;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
         }
         
         /* 結果顯示 */
@@ -169,7 +193,7 @@
     </style>
 </head>
 <body>
-    <h1>🎰 T-LO 俄羅斯輪盤 <span class="version">B版</span> <span class="help-toggle" onclick="showHelp()">❓</span></h1>
+    <h1>🎰 T-LO 俄羅斯輪盤 <span class="version">B版（仿真）</span> <span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -213,11 +237,10 @@
                 <div class="roulette-table">
                     <div class="wheel-track"></div>
                     <div class="wheel-container">
-                        <canvas id="wheelCanvas" class="wheel" width="300" height="300"></canvas>
+                        <canvas id="wheelCanvas" width="300" height="300" class="wheel"></canvas>
                     </div>
-                    <div class="ball-track" id="ballTrack">
-                        <div class="ball" id="ball"></div>
-                    </div>
+                    <div class="ball-pointer"></div>
+                    <div class="ball" id="ball"></div>
                 </div>
                 
                 <div class="result-display waiting" id="resultDisplay">等待開始...</div>
@@ -274,11 +297,11 @@
 
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
-            <h2>🎰 俄羅斯輪盤 B版</h2>
+            <h2>🎰 俄羅斯輪盤 B版（仿真）</h2>
             <h3>📌 遊戲流程</h3>
-            <p>1. 下注結束後，輪盤和小球開始旋轉</p>
-            <p>2. 小球慢慢減速，最後停在結果數字</p>
-            <p>3. 結果以小球位置為準</p>
+            <p>1. 下注時間結束後，小球和轉盤開始旋轉</p>
+            <p>2. 小球慢慢減速，最後停在數字上</p>
+            <p>3. 該數字就是結果</p>
             <h3>🎯 下注類型</h3>
             <div class="bet-demo"><span class="red">🔴 紅色</span> - 2倍獎金</div>
             <div class="bet-demo"><span class="black">⚫ 黑色</span> - 2倍獎金</div>
@@ -315,13 +338,6 @@
         let pollInterval;
         let lastProcessedSpinId = 0;
         let selectedBets = [];
-        
-        // Animation state
-        let wheelAngle = 0;
-        let ballAngle = 0;
-        let wheelVelocity = 0;
-        let ballVelocity = 0;
-        let animationId = null;
         
         if (savedUsername && savedBalance) {
             document.getElementById('balance').textContent = myBalance;
@@ -377,7 +393,6 @@
                     updateCurrentBetsUI();
                     updateHistoryUI();
                     drawWheel();
-                    resetWheelPosition();
                     pollStatus();
                     pollInterval = setInterval(pollStatus, 1000);
                 } else {
@@ -497,26 +512,6 @@
             ctx.fill();
         }
         
-        function updateWheelRotation(angle) {
-            const wheel = document.getElementById('wheelCanvas');
-            wheel.style.transform = 'rotate(' + angle + 'deg)';
-        }
-        
-        function updateBallRotation(angle) {
-            const ball = document.getElementById('ball');
-            ball.style.transform = 'rotate(' + angle + 'deg)';
-        }
-        
-        function resetWheelPosition() {
-            wheelAngle = 0;
-            ballAngle = 0;
-            wheelVelocity = 0;
-            ballVelocity = 0;
-            if (animationId) cancelAnimationFrame(animationId);
-            updateWheelRotation(0);
-            updateBallRotation(0);
-        }
-        
         async function pollStatus() {
             try {
                 const res = await fetch('/api/roulette/status');
@@ -531,9 +526,13 @@
             const timerBox = document.getElementById('timerBox');
             const phaseText = document.getElementById('phaseText');
             const countdown = document.getElementById('countdown');
+            const wheel = document.getElementById('wheelCanvas');
+            const ball = document.getElementById('ball');
             const badge = document.getElementById('resultBadge');
             
             timerBox.className = 'timer-box';
+            wheel.classList.remove('spinning');
+            ball.classList.remove('spinning');
             
             switch(data.phase) {
                 case 'waiting':
@@ -542,7 +541,6 @@
                     timerBox.classList.add('waiting');
                     badge.style.display = 'none';
                     disableBtns();
-                    if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
                     break;
                 case 'betting':
                     phaseText.textContent = '⏰ 下注時間！';
@@ -553,7 +551,6 @@
                         currentBets = [];
                         clearSelected();
                         updateCurrentBetsUI();
-                        resetWheelPosition();
                     }
                     badge.style.display = 'none';
                     break;
@@ -561,6 +558,8 @@
                     phaseText.textContent = '🎰 轉動中...';
                     countdown.textContent = '❓';
                     timerBox.classList.add('spinning');
+                    wheel.classList.add('spinning');
+                    ball.classList.add('spinning');
                     disableBtns();
                     document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
                     document.getElementById('resultDisplay').className = 'result-display waiting';
@@ -569,12 +568,14 @@
                     phaseText.textContent = '📌 結果出爐';
                     countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('result');
+                    wheel.classList.remove('spinning');
+                    ball.classList.remove('spinning');
                     disableBtns();
                     if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
-                            startSpinAnimation(data.lastSpin.result, data.lastSpin);
+                            spinBallAndWheel(data.lastSpin.result, data.lastSpin);
                         }
                     }
                     break;
@@ -582,82 +583,46 @@
             gamePhase = data.phase;
         }
         
-        function startSpinAnimation(result, lastSpin) {
+        function spinBallAndWheel(result, lastSpin) {
             const index = wheelNumbers.findIndex(n => n.num === result);
             const slotAngle = 360 / 37;
             
-            // 小球的目標角度（讓小球最後停在 index 位置，頂端為0度）
-            // 當 ballAngle = 0 時，小球在頂端
-            // 當 ballAngle = index * slotAngle 時，小球對應到轉盤上的那個數字
-            const ballTargetAngle = index * slotAngle;
+            // 小球最終位置（在頂端往下看的話，index 0-1-2... 是順時針）
+            // 指針在頂部（12點方向），小球的最終位置要讓 index 對準頂部
+            // 小球半徑是 150（半徑-8）
+            const ballTargetAngle = -90 - (index * slotAngle + slotAngle / 2);
             
-            // 轉盤多轉幾圈
+            // 轉盤最終位置（比小球多轉幾圈）
             const spins = 6 + Math.floor(Math.random() * 4);
-            const wheelTargetAngle = spins * 360 + ballTargetAngle;
+            const wheelTargetAngle = spins * 360 + (360 - index * slotAngle);
             
-            // 初始速度（降低，動畫更慢）
-            wheelVelocity = 15;
-            ballVelocity = 20;
+            const wheel = document.getElementById('wheelCanvas');
+            const ball = document.getElementById('ball');
             
-            // 摩擦力（更慢衰減）
-            const friction = 0.992;
+            // 重置
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            ball.style.transition = 'none';
+            ball.style.transform = 'rotate(0deg)';
+            void wheel.offsetWidth;
+            void ball.offsetWidth;
             
-            // 記錄當前角度
-            wheelAngle = 0;
-            ballAngle = 0;
+            // 小球先快速轉（動畫）
+            ball.style.transition = 'transform 10s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            ball.style.transform = 'rotate(' + (ballTargetAngle - 360 * 8) + 'deg)';
             
-            let lastTime = performance.now();
+            // 轉盤慢慢轉（落後於小球）
+            wheel.style.transition = 'transform 8s cubic-bezier(0.1, 0.4, 0.2, 1)';
+            wheel.style.transform = 'rotate(' + wheelTargetAngle + 'deg)';
             
-            function animate(currentTime) {
-                const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // 正規化到60fps
-                lastTime = currentTime;
-                
-                // 應用摩擦力
-                wheelVelocity *= friction;
-                ballVelocity *= friction;
-                
-                // 更新角度
-                wheelAngle += wheelVelocity * deltaTime;
-                ballAngle += ballVelocity * deltaTime;
-                
-                // 應用變換
-                updateWheelRotation(wheelAngle);
-                updateBallRotation(ballAngle);
-                
-                // 計算到目標的距離
-                const wheelDist = Math.abs(wheelTargetAngle - wheelAngle);
-                const ballDist = Math.abs(ballTargetAngle - ballAngle);
-                
-                // 當速度足夠低且接近目標時，停止
-                if (wheelVelocity < 0.5 && wheelDist < 5) {
-                    wheelAngle = wheelTargetAngle;
-                    updateWheelRotation(wheelAngle);
-                }
-                
-                if (ballVelocity < 0.5 && ballDist < 5) {
-                    ballAngle = ballTargetAngle;
-                    updateBallRotation(ballAngle);
-                }
-                
-                // 檢查是否完成
-                const wheelDone = Math.abs(wheelAngle - wheelTargetAngle) < 5 && wheelVelocity < 0.5;
-                const ballDone = Math.abs(ballAngle - ballTargetAngle) < 5 && ballVelocity < 0.5;
-                
-                if (!wheelDone || !ballDone) {
-                    animationId = requestAnimationFrame(animate);
-                } else {
-                    animationId = null;
-                    // 顯示結果
-                    const colorName = colors[lastSpin.color];
-                    const display = document.getElementById('resultDisplay');
-                    display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                    display.className = 'result-display ' + lastSpin.color;
-                    processResult(lastSpin);
-                }
-            }
-            
-            if (animationId) cancelAnimationFrame(animationId);
-            animationId = requestAnimationFrame(animate);
+            // 8秒後顯示結果
+            setTimeout(() => {
+                const colorName = colors[lastSpin.color];
+                const display = document.getElementById('resultDisplay');
+                display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
+                display.className = 'result-display ' + lastSpin.color;
+                processResult(lastSpin);
+            }, 8500);
         }
         
         function processResult(lastSpin) {
