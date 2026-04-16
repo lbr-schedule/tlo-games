@@ -65,11 +65,12 @@
             background: radial-gradient(circle at 30% 30%, #fff, #ddd);
             border-radius: 50%;
             position: absolute;
-            top: -5px;
+            top: 0;
             left: 50%;
             margin-left: -9px;
             box-shadow: 0 0 15px rgba(255,255,255,0.9), 0 2px 5px rgba(0,0,0,0.5);
             z-index: 20;
+            transform-origin: 9px 150px;
         }
         
         /* 結果顯示 */
@@ -502,15 +503,8 @@
         }
         
         function updateBallRotation(angle) {
-            const ballTrack = document.getElementById('ballTrack');
-            // 小球在半徑 150 的圓上移動
-            const radius = 150;
-            const rad = (angle - 90) * Math.PI / 180;
-            const x = 150 + radius * Math.cos(rad);
-            const y = 150 + radius * Math.sin(rad);
-            ballTrack.style.left = (x - 150) + 'px';
-            ballTrack.style.top = (y - 150) + 'px';
-            ballTrack.style.transform = 'rotate(' + angle + 'deg)';
+            const ball = document.getElementById('ball');
+            ball.style.transform = 'rotate(' + angle + 'deg)';
         }
         
         function resetWheelPosition() {
@@ -601,12 +595,12 @@
             const spins = 6 + Math.floor(Math.random() * 4);
             const wheelTargetAngle = spins * 360 + ballTargetAngle;
             
-            // 初始速度
-            wheelVelocity = 35; // 轉盤初始速度（度/幀）
-            ballVelocity = 45;   // 小球初始速度（比轉盤快）
+            // 初始速度（降低，動畫更慢）
+            wheelVelocity = 15;
+            ballVelocity = 20;
             
-            // 摩擦力
-            const friction = 0.985;
+            // 摩擦力（更慢衰減）
+            const friction = 0.992;
             
             // 記錄當前角度
             wheelAngle = 0;
