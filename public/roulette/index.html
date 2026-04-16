@@ -67,10 +67,11 @@
         .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
         
         .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
-        .bet-btn:hover:not(.disabled) { transform: scale(1.05); }
+        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
-        .bet-btn.black { background: linear-gradient(135deg, #333, #666); color: white; }
+        .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
+        .bet-btn.green { background: linear-gradient(135deg, #009900, #00cc00); color: white; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
         .bet-btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
@@ -140,6 +141,13 @@
         
         .balance.low span { color: #ff6666 !important; animation: blink 1s infinite; }
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; flex-direction: column; }
+        .broke-overlay.show { display: flex; }
+        .broke-overlay h2 { color: #ff6666; font-size: 2rem; margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
+        .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: 1.1rem; line-height: 1.6; }
+        .broke-overlay button { padding: 15px 40px; background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
+        .broke-overlay button:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -246,7 +254,11 @@
         </div>
     </div>
 
-    <div class="broke-overlay" id="brokeOverlay">
+        <h2>💸 餘額不足</h2>
+        <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
+        <button onclick="hideBrokeOverlay()">確定</button>
+    </div>
+
         <h2>💸 餘額不足</h2>
         <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
         <button onclick="hideBrokeOverlay()">確定</button>
@@ -257,7 +269,6 @@
         <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
         <button onclick="hideBrokeOverlay()">確定</button>
     </div>
-
 
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
