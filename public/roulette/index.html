@@ -142,8 +142,9 @@
         .balance.low span { color: #ff6666 !important; animation: blink 1s infinite; }
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         
-        .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; flex-direction: column; }
+        .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; }
         .broke-overlay.show { display: flex; }
+        .broke-overlay > div { margin: auto; text-align: center; padding: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: 320px; }
         .broke-overlay h2 { color: #ff6666; font-size: 2rem; margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
         .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: 1.1rem; line-height: 1.6; }
         .broke-overlay button { padding: 15px 40px; background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
@@ -265,9 +266,11 @@
     </div>
 
     <div class="broke-overlay" id="brokeOverlay">
-        <h2>💸 餘額不足</h2>
-        <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
-        <button onclick="hideBrokeOverlay()">確定</button>
+        <div>
+            <h2>💸 餘額不足</h2>
+            <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
+            <button onclick="hideBrokeOverlay()">確定</button>
+        </div>
     </div>
 
     <div class="modal-overlay" id="helpModal">
