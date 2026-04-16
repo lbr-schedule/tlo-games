@@ -44,7 +44,7 @@
         .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
@@ -698,15 +698,13 @@
                     
                 case 'spinning':
                     wheel.classList.remove('spinning', 'spinning-anim');
-                    void wheel.offsetWidth;
-                    wheel.classList.add('spinning-anim');
                     disableBtns();
                     clearSelected(); // 開始旋轉時清除選中狀態
                     resultDisplay.className = 'result-display spinning';
                     resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
                     
-                    // 結果在 spinning 階段就已經確定了，現在就開始轉盤動畫
+                    // 開始轉盤減速動畫（由快到慢）
                     if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
@@ -717,12 +715,10 @@
                     break;
                     
                 case 'result':
-                    // result phase 只是為了相容性，轉盤動畫在 spinning 階段就開始了
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = 'none';
                     disableBtns();
                     resultDisplay.style.display = 'block';
-                    // 不需要再呼叫 rotateToResult，動畫已在 spinning 階段啟動
                     break;
                     
                 default:
@@ -733,48 +729,76 @@
             gamePhase = data.phase;
         }
         
+        
         function rotateToResult(result, lastSpin) {
             const index = wheelNumbers.findIndex(n => n.num === result);
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
-            // 測試用：印出 index 和 totalRotation
-            console.log('Result:', result, 'index:', index, 'slotAngle:', slotAngle);
-            
-            // 角度邏輯修正：指針要停在每一格的正中央
-            // 每格角度 = 360/37, 需要加 slotAngle/2 才能對準格子中心
-            const totalRotation = spins * 360 + (360 - (index + 0.5) * slotAngle);
-            console.log('totalRotation (formula A):', totalRotation);
+            // 最終位置：指針要停在每一格的正中央
+            const finalRotation = spins * 360 + (360 - (index + 0.5) * slotAngle);
+            console.log('Result:', result, 'index:', index, 'finalRotation:', finalRotation);
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
-            wheel.style.animation = '';
+            wheel.style.animation = 'none';
             
-            // 強制重置
+            // 重置到 0 度，從頭開始轉
             wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 滾輪過渡時間 = 5秒，等 CSS transition 結束後顯示文字
-            wheel.style.transition = 'transform 5s cubic-bezier(0.1, 0.5, 0.2, 1)';
-            wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
+            // 物理動畫參數：使用 easeOut 曲線做到由快到慢
+            const totalDuration = 4500; // 動畫總時間 4.5 秒
+            const startTime = performance.now();
             
-            // 標記動畫進行中
+            let currentRotation = 0;
+            let done = false;
+            
+            wheel.style.willChange = 'transform';
             window.rouletteAnimating = true;
             
-            // 等 CSS transition 完成後（5秒）顯示結果，結果顯示3.5秒
-            setTimeout(() => {
-                window.rouletteAnimating = false;
-                const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
-                const colorName = colors[lastSpin.color];
-                const display = document.getElementById('resultDisplay');
-                if (display) {
-                    display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                    display.className = 'result-display ' + lastSpin.color;
-                    display.style.display = 'block';
+            function animate() {
+                if (done) return;
+                
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
+                
+                // easeOut 曲線：一開始快，結尾慢
+                // 公式：1 - (1 - t)^2
+                const easeOut = 1 - Math.pow(1 - progress, 2);
+                
+                // 用 easeOut 計算總旋轉角度（積分）
+                // 因為速度是遞減的，角度 = initialV * (1 - (1-t)^2) * duration
+                currentRotation = easeOut * (finalRotation);
+                
+                wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
+                
+                // 動畫完成
+                if (progress >= 1) {
+                    done = true;
+                    wheel.style.willChange = 'auto';
+                    wheel.style.transform = 'rotate(' + finalRotation + 'deg)';
+                    
+                    setTimeout(() => {
+                        window.rouletteAnimating = false;
+                        const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
+                        const colorName = colors[lastSpin.color];
+                        const display = document.getElementById('resultDisplay');
+                        if (display) {
+                            display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
+                            display.className = 'result-display ' + lastSpin.color;
+                            display.style.display = 'block';
+                        }
+                        processResult(lastSpin);
+                    }, 100);
+                    return;
                 }
-                processResult(lastSpin);
-            }, 5200);
+                
+                requestAnimationFrame(animate);
+            }
+            
+            requestAnimationFrame(animate);
         }
         
         function processResult(lastSpin) {
