@@ -23,8 +23,7 @@
         .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; }
         
         .timer-box { text-align: center; padding: 15px 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
-        .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
-        .timer-box.waiting .countdown { font-size: 1.5rem; color: #888; }
+        .timer-box.waiting { opacity: 0.5; }
         
         /* 仿真輪盤樣式 */
         .roulette-table { position: relative; width: 320px; height: 320px; margin: 10px auto; }
@@ -519,7 +518,7 @@
         function updateUI(data) {
             const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
             const timerBox = document.getElementById('timerBox');
-            const countdown = document.getElementById('countdown');
+            const timerBox = document.getElementById('timerBox');
             const wheel = document.getElementById('wheelCanvas');
             const ball = document.getElementById('ball');
             const badge = document.getElementById('resultBadge');
@@ -532,7 +531,6 @@
             switch(data.phase) {
                 case 'waiting':
                     timerBox.classList.add('waiting');
-                    countdown.textContent = '';
                     badge.style.display = 'none';
                     disableBtns();
                     if (!window.rouletteAnimating) {
@@ -541,7 +539,6 @@
                     }
                     break;
                 case 'betting':
-                    countdown.textContent = (data.remaining || 0) + 's';
                     timerBox.classList.add('betting');
                     enableBtns();
                     // Only clear currentBets if NO animation is running
@@ -557,7 +554,6 @@
                     }
                     break;
                 case 'spinning':
-                    countdown.textContent = '❓';
                     timerBox.classList.add('spinning');
                     wheel.classList.add('spinning');
                     ball.classList.add('spinning');
@@ -569,9 +565,6 @@
                     resultDisplay.style.display = 'block';
                     break;
                 case 'result':
-                    if (!window.rouletteAnimating) {
-                        countdown.textContent = (data.remaining || 0) + 's';
-                    }
                     timerBox.classList.add('result');
                     wheel.classList.remove('spinning');
                     ball.classList.remove('spinning');
@@ -614,17 +607,17 @@
             void ball.offsetWidth;
             
             // 小球先快速轉（動畫）
-            ball.style.transition = 'transform 10s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            ball.style.transition = 'transform 12s cubic-bezier(0.15, 0.65, 0.25, 1)';
             ball.style.transform = 'rotate(' + (ballTargetAngle - 360 * 8) + 'deg)';
             
             // 轉盤慢慢轉（落後於小球）
-            wheel.style.transition = 'transform 10s cubic-bezier(0.1, 0.4, 0.2, 1)';
+            wheel.style.transition = 'transform 12s cubic-bezier(0.1, 0.4, 0.2, 1)';
             wheel.style.transform = 'rotate(' + wheelTargetAngle + 'deg)';
             
             // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 10.5秒後顯示結果
+            // 12.5秒後顯示結果
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colorName = colors[lastSpin.color];
@@ -633,7 +626,7 @@
                 display.className = 'result-display ' + lastSpin.color;
                 display.style.display = 'block';
                 processResult(lastSpin);
-            }, 10500);
+            }, 12500);
         }
         
         function processResult(lastSpin) {
