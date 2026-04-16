@@ -242,12 +242,12 @@ function spinWheel() {
         time: Date.now() 
     };
     
-    // HTTP輪詢模式：spinning 6秒 → 結果顯示5秒 → 下注10秒
+    // HTTP輪詢模式：spinning 5秒 → 結果顯示5秒 → 下注10秒 → 循環
     setTimeout(() => {
         rouletteState.phase = 'result';
         // 結果顯示5秒後進入下注時間
         rouletteState.spinTimer = setTimeout(startBetting, 5000);
-    }, 6000);
+    }, 5000);
 }
 
 // 當玩家登入時呼叫

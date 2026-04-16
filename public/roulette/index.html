@@ -6,44 +6,60 @@
     <title>🎰 T-LO 俄羅斯輪盤</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: white; }
-        .container { max-width: 420px; margin: 0 auto; padding: 10px; }
+        html { height: 100%; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            height: 100vh; 
+            height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
+            color: white; 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+        .container { 
+            max-width: 100%; 
+            margin: 0 auto; 
+            padding: 0.5rem; 
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
         
-        h1 { text-align: center; padding: 10px; color: #ffd700; font-size: 1.5rem; }
+        h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 10px; }
-        .balance { font-size: 1.3rem; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; }
+        .balance { font-size: 0.95rem; }
         .balance span { color: #ffd700; font-weight: bold; }
-        .result-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 1rem; min-width: 80px; text-align: center; display: none; }
+        .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
         .result-badge.show { display: inline-block; }
         .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
         .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
-        .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; font-size: 1.2rem; }
+        .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; }
         
+        .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
         
-        .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
-        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
+        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
+        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 40px solid #ffd700; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
-        .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
-        .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
+        .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
+        .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
         .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
-        .result-display.red { background: rgba(180,0,0,0.7); border: 3px solid #ff4444; font-size: 1.5rem; }
-        .result-display.black { background: rgba(50,50,50,0.8); border: 3px solid #888; font-size: 1.5rem; }
-        .result-display.green { background: rgba(0,120,0,0.7); border: 3px solid #00ff00; font-size: 1.5rem; }
-        .result-display.red { background: rgba(204,0,0,0.5); }
-        .result-display.black { background: rgba(50,50,50,0.5); }
-        .result-display.green { background: rgba(0,170,0,0.5); }
+        .result-display.red { background: rgba(180,0,0,0.7); border: 2px solid #ff4444; font-size: 1.1rem; }
+        .result-display.black { background: rgba(50,50,50,0.8); border: 2px solid #888; font-size: 1.1rem; }
+        .result-display.green { background: rgba(0,120,0,0.7); border: 2px solid #00ff00; font-size: 1.1rem; }
         
-        .help-toggle { background: rgba(255,215,0,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; display: inline-block; font-size: 0.9rem; color: #ffd700; transition: background 0.2s; margin-right: 8px; }
-        .help-toggle:hover { background: rgba(255,215,0,0.4); }
+        .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; cursor: pointer; display: inline-block; font-size: 0.75rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 3px; border: 1px solid rgba(255,255,255,0.25); min-width: 50px; text-align: center; }
+        .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
         .modal-overlay.show { display: flex; }
@@ -62,13 +78,13 @@
         .modal .bet-demo .even { background: #660066; }
         .modal .bet-demo .num { background: #ffd700; color: #1a1a2e; }
         
-        .bet-section { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
-        .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
+        .bet-section { background: rgba(255,255,255,0.05); padding: clamp(8px, 2vw, 12px); border-radius: 12px; margin-bottom: 8px; }
+        .bet-section h3 { color: #ffd700; margin-bottom: 8px; font-size: clamp(0.9rem, 3vw, 1rem); }
         
-        .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
-        .bet-btn { padding: 10px 3px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+        .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(4px, 1vw, 6px); margin-bottom: clamp(4px, 1vw, 6px); }
+        .bet-btn { padding: clamp(8px, 2vw, 12px) 3px; border: none; border-radius: 10px; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; cursor: pointer; width: 100%; min-height: clamp(45px, 10vw, 55px); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
         .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
-        .bet-btn .bet-amount { font-size: 0.8rem; color: #ffd700; display: none; margin-top: 3px; }
+        .bet-btn .bet-amount { font-size: clamp(0.7rem, 2vw, 0.8rem); color: #ffd700; display: none; margin-top: 2px; }
         .bet-btn.has-bet .bet-amount { display: block; }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
@@ -77,21 +93,15 @@
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
         .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
         .bet-btn.disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-        .bet-btn .multi { display: block; font-size: 0.65rem; opacity: 0.8; }
+        .bet-btn .multi { display: block; font-size: clamp(0.6rem, 1.8vw, 0.65rem); opacity: 0.8; }
         .bet-btn.selected { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,215,0,0.8); border: 2px solid #ffd700; }
-        .bet-btn.red.selected { box-shadow: 0 0 15px rgba(200,0,0,0.9); }
-        .bet-btn.black.selected { box-shadow: 0 0 15px rgba(100,100,100,0.9); }
-        .bet-btn.green.selected { box-shadow: 0 0 15px rgba(0,150,0,0.9); }
-        .bet-btn.odd.selected { box-shadow: 0 0 15px rgba(0,100,200,0.9); }
-        .bet-btn.even.selected { box-shadow: 0 0 15px rgba(150,0,150,0.9); }
-        .bet-btn.number-btn.selected { box-shadow: 0 0 15px rgba(200,200,200,0.9); }
         
-        .quick-bet { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; }
-        .quick-bet button { padding: 10px 15px; background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+        .quick-bet { display: flex; gap: clamp(4px, 1vw, 6px); margin-bottom: 8px; justify-content: center; flex-wrap: wrap; }
+        .quick-bet button { padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 15px); background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 0.9rem); font-weight: bold; }
         .quick-bet button:hover { background: #444; }
         .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
         
-        .number-bet { display: flex; gap: 8px; }
+        .number-bet { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; }
         .number-bet input:focus { border-color: #ffd700; outline: none; }
         .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
@@ -99,47 +109,47 @@
         .number-bet button:hover:not(.disabled) { background: #ffdd44; }
         
         .bets-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 15px; border-radius: 15px; margin: 10px 0; transition: all 0.3s ease; }
+        .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 8px; border-radius: 12px; margin: 6px 0; transition: all 0.3s ease; flex-shrink: 0; }
         .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
-        .current-bets-box h4 { color: #00ff88; margin-bottom: 10px; font-size: 1.1rem; font-weight: bold; letter-spacing: 1px; }
+        .current-bets-box h4 { color: #00ff88; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; }
         @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
-        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; max-height: 150px; overflow-y: auto; }
-        .history-bets-box h4 { color: #888; margin-bottom: 8px; font-size: 0.9rem; }
+        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; max-height: 120px; overflow-y: auto; flex-shrink: 0; }
+        .history-bets-box h4 { color: #888; margin-bottom: 5px; font-size: 0.85rem; }
         
-        .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
+        .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
         .bet-row.total { border-top: 1px dashed #444; margin-top: 5px; padding-top: 8px; font-weight: bold; }
-        .history-row { padding: 5px 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-row { padding: 5px 0; font-size: clamp(0.75rem, 2.2vw, 0.85rem); border-bottom: 1px solid rgba(255,255,255,0.05); }
         .history-row:last-child { border-bottom: none; }
         .history-row .result-num { font-weight: bold; margin-right: 5px; }
         .history-row.win { color: #00ff00; }
         .history-row.lose { color: #ff6666; }
         
-        .auth-section { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px; text-align: center; }
+        .auth-section { background: rgba(255,255,255,0.1); padding: clamp(15px, 4vw, 25px); border-radius: 15px; text-align: center; }
         .auth-tabs { display: flex; margin-bottom: 15px; }
-        .auth-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; color: #aaa; cursor: pointer; font-size: 1rem; }
+        .auth-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; color: #aaa; cursor: pointer; font-size: clamp(0.9rem, 3vw, 1rem); }
         .auth-tab:first-child { border-radius: 10px 0 0 10px; }
         .auth-tab:last-child { border-radius: 0 10px 10px 0; }
         .auth-tab.active { background: #ffd700; color: #1a1a2e; font-weight: bold; }
         .auth-form { display: none; }
         .auth-form.active { display: block; }
-        .auth-form input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: 1rem; text-align: center; }
+        .auth-form input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: clamp(0.9rem, 3vw, 1rem); text-align: center; }
         .auth-form input:focus { border-color: #ffd700; outline: none; }
-        .auth-form button { width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; }
+        .auth-form button { width: 100%; padding: clamp(12px, 3vw, 14px); background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; }
         .auth-form button:hover { background: linear-gradient(135deg, #ffdd44, #ffa020); }
         .auth-form button:disabled { opacity: 0.5; cursor: not-allowed; }
         .auth-msg { color: #ff6666; margin-top: 10px; font-size: 0.9rem; }
         .auth-msg.success { color: #00ff00; }
-        .auth-section p { color: #aaa; margin-bottom: 15px; font-size: 0.9rem; }
+        .auth-section p { color: #aaa; margin-bottom: 15px; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
         
-        .no-bets { color: #666; font-style: italic; font-size: 0.85rem; text-align: center; padding: 10px; }
+        .no-bets { color: #666; font-style: italic; font-size: clamp(0.8rem, 2.5vw, 0.85rem); text-align: center; padding: 8px; }
         
-        .game-tabs { display: flex; margin-bottom: 10px; gap: 5px; }
-        .game-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.95rem; font-weight: bold; }
+        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; }
+        .game-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; }
         .game-tab.active { background: #ffd700; color: #1a1a2e; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        .leave-btn { width: 100%; padding: 12px; background: rgba(255,100,100,0.2); border: 2px solid #ff6666; border-radius: 10px; color: #ff6666; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .leave-btn { width: 100%; padding: 12px; background: rgba(255,100,100,0.2); border: 2px solid #ff6666; border-radius: 10px; color: #ff6666; font-size: clamp(0.9rem, 3vw, 1rem); font-weight: bold; cursor: pointer; margin-top: 8px; }
         .leave-btn:hover { background: rgba(255,100,100,0.4); }
         
         .logout-btn:hover { background: rgba(255,255,255,0.2); color: white; }
@@ -149,15 +159,15 @@
         
         .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
         .broke-overlay.show { display: flex; }
-        .broke-overlay > div { text-align: center; padding: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: 320px; box-shadow: 0 0 30px rgba(255,100,100,0.3); }
-        .broke-overlay h2 { color: #ff6666; font-size: 2rem; margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
-        .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: 1.1rem; line-height: 1.6; }
-        .broke-overlay button { padding: 15px 40px; background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
+        .broke-overlay > div { text-align: center; padding: clamp(20px, 5vw, 40px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: clamp(280px, 90vw, 320px); box-shadow: 0 0 30px rgba(255,100,100,0.3); }
+        .broke-overlay h2 { color: #ff6666; font-size: clamp(1.5rem, 5vw, 2rem); margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
+        .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: clamp(1rem, 3vw, 1.1rem); line-height: 1.6; }
+        .broke-overlay button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
         .broke-overlay button:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
-    <h1>🎰 T-LO 俄羅斯輪盤 <span class="help-toggle" onclick="showHelp()">❓</span></h1>
+    <h1>🎰 T-LO 俄羅斯輪盤 <span class="help-toggle" onclick="showHelp()">❓</span> <button onclick="leaveGame()" class="header-btn">🚪</button></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -189,6 +199,7 @@
         
         <!-- 遊戲區塊 -->
         <div class="game-section" id="gameSection" style="display:none;">
+            
             <div class="game-tabs">
                 <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
                 <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
@@ -196,6 +207,8 @@
             
             <!-- 遊戲 Tab -->
             <div class="tab-content active" id="gameTab">
+                <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
+                
                 <div class="wheel-container">
                     <div class="wheel-border"></div>
                     <div class="wheel-pointer"></div>
@@ -205,8 +218,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
                 
                 <div class="bet-section">
                     <h3>💰 選擇下注</h3>
@@ -229,10 +240,11 @@
                         <button class="bet-btn number-btn disabled" onclick="placeNumberBet()">📌 數字<span class="multi">10x</span><span class="bet-amount"></span></button>
                     </div>
                     
-                    <div class="number-bet">
-                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:rgba(255,255,255,0.1); color:white; border:2px solid rgba(255,255,255,0.3); border-radius:8px; padding:10px;">
-                        <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:2px solid rgba(255,255,255,0.3); border-radius:8px; padding:10px;">
-                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">送出</button>
+                    <div style="font-size:0.8rem;color:#aaa;margin:8px 0 5px;text-align:center;">或輸入數字直接下注</div>
+                    <div class="number-bet" style="margin-top:5px; flex-wrap:wrap; justify-content:center;">
+                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #666; border-radius:8px; padding:8px; font-size:0.9rem; text-align:center;">
+                        <input type="number" id="betAmt" placeholder="$金額" min="10" value="100" style="width:90px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #666; border-radius:8px; padding:8px; font-size:0.9rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">>
+                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()" style="padding:10px 18px; background:#ffd700; border:none; border-radius:8px; font-weight:bold; font-size:0.9rem; color:#1a1a2e;">✔ 確認</button>
                     </div>
                 </div>
                 
@@ -240,8 +252,6 @@
                     <h4>🎯 本局下注 <span id="betTotal">0</span></h4>
                     <div id="currentBetsList"><span class="no-bets">點擊上方按鈕下注</span></div>
                 </div>
-                
-                <button class="leave-btn" onclick="leaveGame()">🚪 離開遊戲</button>
             </div>
             
             <!-- 歷史 Tab -->
@@ -250,7 +260,6 @@
                     <h4>📜 遊戲歷史記錄</h4>
                     <div id="historyBetsList"><span class="no-bets">尚無記錄</span></div>
                 </div>
-                <button class="leave-btn" onclick="doLogout()">🚪 登出</button>
             </div>
         </div>
     </div>
@@ -564,8 +573,16 @@
                 
                 // Update countdown display every poll
                 const cd = document.getElementById('betCountdown');
-                if (cd && data.remaining) {
+                if (cd && data.remaining !== undefined) {
                     cd.textContent = data.remaining + 's';
+                    // 防呆：下注時間的最後3秒，顯示警示
+                    if (data.remaining <= 3 && data.phase === 'betting') {
+                        cd.style.color = '#ff4444';
+                        cd.style.fontSize = '1.6rem';
+                    } else {
+                        cd.style.color = '#ffd700';
+                        cd.style.fontSize = '1.4rem';
+                    }
                 }
             } catch(e) {
                 console.log('Poll error:', e.message);
@@ -573,6 +590,10 @@
         }
         
         function updateUI(data) {
+            // 先更新 gamePhase，避免在切換階段時錯誤清除 currentBets
+            const prevPhase = gamePhase;
+            gamePhase = data.phase;
+            
             const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
             const badge = document.getElementById('resultBadge');
             const wheel = document.getElementById('wheel');
@@ -593,15 +614,16 @@
                 case 'betting':
                     enableBtns();
                     
-                    // Only clear currentBets if NO wheel animation is running
-                    // Keep selected/bet states visible during betting phase
-                    if (!window.rouletteAnimating && (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting')) {
+                    // 只有從非betting進入betting時，才清除上一局的狀態
+                    if (prevPhase !== 'betting') {
+                        clearSelected();
                         currentBets = [];
                         updateCurrentBetsUI();
+                        // 新回合開始時，重置 lastProcessedSpinId 以接收新的 spin 结果
+                        lastProcessedSpinId = 0;
                     }
                     badge.style.display = 'none';
-                    wheel.classList.remove('spinning', 'spinning-anim');
-                    wheel.style.animation = '';
+                    // 如果轉盤動畫還在進行中（結果即將顯示），不要覆蓋 resultDisplay
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display betting';
                         resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
@@ -613,17 +635,12 @@
                     void wheel.offsetWidth;
                     wheel.classList.add('spinning-anim');
                     disableBtns();
+                    clearSelected(); // 開始旋轉時清除選中狀態
                     resultDisplay.className = 'result-display spinning';
                     resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
-                    break;
                     
-                case 'result':
-                    wheel.classList.remove('spinning', 'spinning-anim');
-                    wheel.style.animation = 'none';
-                    disableBtns();
-                    resultDisplay.style.display = 'block';
-                    
+                    // 結果在 spinning 階段就已經確定了，現在就開始轉盤動畫
                     if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
@@ -631,6 +648,15 @@
                             rotateToResult(data.lastSpin.result, data.lastSpin);
                         }
                     }
+                    break;
+                    
+                case 'result':
+                    // result phase 只是為了相容性，轉盤動畫在 spinning 階段就開始了
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    wheel.style.animation = 'none';
+                    disableBtns();
+                    resultDisplay.style.display = 'block';
+                    // 不需要再呼叫 rotateToResult，動畫已在 spinning 階段啟動
                     break;
                     
                 default:
@@ -649,12 +675,9 @@
             // 測試用：印出 index 和 totalRotation
             console.log('Result:', result, 'index:', index, 'slotAngle:', slotAngle);
             
-            // 修正旋轉公式：
-            // 轉盤轉動時，要讓特定數字停在箭頭(12點)位置
-            // 箭頭指的方向 = 轉盤最終停止時，箭頭對準的數字
-            // 轉盤順時針轉 → 數字從箭頭左側進入、右側離開
-            // 停在上方(箭頭處) = 需轉 360 - index*slotAngle
-            const totalRotation = spins * 360 + (360 - index * slotAngle);
+            // 角度邏輯修正：指針要停在每一格的正中央
+            // 每格角度 = 360/37, 需要加 slotAngle/2 才能對準格子中心
+            const totalRotation = spins * 360 + (360 - (index + 0.5) * slotAngle);
             console.log('totalRotation (formula A):', totalRotation);
             
             const wheel = document.getElementById('wheel');
@@ -666,24 +689,26 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：4.5秒，配合 server 的 spinning 時間（5秒）
-            wheel.style.transition = 'transform 4.5s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 滾輪過渡時間 = 5秒，等 CSS transition 結束後顯示文字
+            wheel.style.transition = 'transform 5s cubic-bezier(0.15, 0.85, 0.35, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後（6.2秒後）顯示結果，確保轉盤完全停止
+            // 等 CSS transition 完成後（5.2秒）顯示結果，結果顯示5秒
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
                 const colorName = colors[lastSpin.color];
                 const display = document.getElementById('resultDisplay');
-                display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                display.className = 'result-display ' + lastSpin.color;
-                display.style.display = 'block';
+                if (display) {
+                    display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
+                    display.className = 'result-display ' + lastSpin.color;
+                    display.style.display = 'block';
+                }
                 processResult(lastSpin);
-            }, 4800);
+            }, 5200);
         }
         
         function processResult(lastSpin) {
@@ -841,10 +866,8 @@
         function enableBtns() {
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
             document.getElementById('numberBetBtn').classList.remove('disabled');
-            // Only clear selections if starting a completely new round (prev phase was result/spinning)
-            if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
-                clearSelected();
-            }
+            // 只在新回合開始時清除選擇（從result/spinning等到betting）
+            // 不要在betting中清除，否則用戶下注後馬上又消失
         }
         
         function clearSelected() {
@@ -887,13 +910,36 @@
             });
         }
         
+        // 防呆：防止快速連點（1秒內不能重複下注）
+        let lastBetTime = 0;
+        
         async function placeBet(type, amount, choice) {
             if (gamePhase !== 'betting') return;
             if (!checkBalance()) return;
             
-            // Check if player can afford this bet
+            // 防呆：1秒內不能重複下注
+            const now = Date.now();
+            if (now - lastBetTime < 1000) {
+                showToast('請稍等一下再下注');
+                return;
+            }
+            lastBetTime = now;
+            
+            // 防呆：金額至少10
+            if (amount < 10) {
+                showToast('金額至少 $10');
+                return;
+            }
+            
+            // 防呆：餘額不足
             if (myBalance < amount) {
-                document.getElementById('brokeOverlay').classList.add('show');
+                showToast('餘額不足！目前餘額 $' + myBalance);
+                return;
+            }
+            
+            // 防呆：單次下注不能超過餘額
+            if (amount > myBalance) {
+                showToast('下注金額不能超過餘額');
                 return;
             }
             
@@ -923,6 +969,7 @@
             
             console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
+            showToast('已下注 $' + amount + ' [' + choice + ']', 'success');
             
             try {
                 await fetch('/api/roulette/bet', {
@@ -936,13 +983,39 @@
         async function placeNumberBet() {
             const num = parseInt(document.getElementById('betNum').value);
             const amt = parseInt(document.getElementById('betAmt').value);
-            if (isNaN(num) || num < 0 || num > 36) { alert('請選0-36'); return; }
-            if (isNaN(amt) || amt < 10) { alert('金額至少10'); return; }
+            
+            // 防呆：數字選擇提示
+            if (isNaN(num) || num < 0 || num > 36) { 
+                showToast('請選擇數字 0-36');
+                return; 
+            }
+            
+            // 防呆：金額提示
+            if (isNaN(amt) || amt < 10) { 
+                showToast('金額至少 $10');
+                return; 
+            }
+            
             if (gamePhase !== 'betting') return;
             if (!checkBalance()) return;
             
+            // 防呆：1秒內不能重複下注
+            const now = Date.now();
+            if (now - lastBetTime < 1000) {
+                showToast('請稍等一下再下注');
+                return;
+            }
+            lastBetTime = now;
+            
+            // 防呆：餘額不足
             if (myBalance < amt) {
-                document.getElementById('brokeOverlay').classList.add('show');
+                showToast('餘額不足！目前餘額 $' + myBalance);
+                return;
+            }
+            
+            // 防呆：單次下注不能超過餘額
+            if (amt > myBalance) {
+                showToast('下注金額不能超過餘額');
                 return;
             }
             
@@ -971,6 +1044,27 @@
         
         function hideHelp() {
             document.getElementById('helpModal').classList.remove('show');
+        }
+        
+        // Toast 提示功能
+        function showToast(msg, type = 'error') {
+            let toast = document.getElementById('toastMsg');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toastMsg';
+                toast.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: ${type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)'};
+                    color: white; padding: 15px 25px; border-radius: 10px;
+                    font-size: 1rem; z-index: 9999; text-align: center;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-width: 80%;
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.background = type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)';
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
         }
     </script>
 </body>
