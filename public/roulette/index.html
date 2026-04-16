@@ -32,7 +32,7 @@
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 6.5s cubic-bezier(0.15, 0.65, 0.25, 1); transform: rotate(-90deg); }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 8s cubic-bezier(0.15, 0.65, 0.25, 1); transform: rotate(-90deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
@@ -663,11 +663,11 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：6.5秒，cubic-bezier 實現自然減速
-            wheel.style.transition = 'transform 6.5s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 漸慢動畫：8秒，cubic-bezier 實現自然減速
+            wheel.style.transition = 'transform 8s cubic-bezier(0.15, 0.65, 0.25, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
-            // 等轉動動畫完成後才顯示結果（6.5秒後）
+            // 等轉動動畫完成後才顯示結果（8.5秒後）
             setTimeout(() => {
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
                 const colorName = colors[lastSpin.color];
