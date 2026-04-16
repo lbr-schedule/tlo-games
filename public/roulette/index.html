@@ -230,8 +230,8 @@
                     </div>
                     
                     <div class="number-bet">
-                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:#ffd700; color:#1a1a2e; border:none; border-radius:8px; padding:10px; font-weight:bold;">
-                        <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1; background:#2a2a4a; color:white; border:2px solid #555; border-radius:8px; padding:10px;">
+                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:rgba(255,255,255,0.1); color:white; border:2px solid rgba(255,255,255,0.3); border-radius:8px; padding:10px;">
+                        <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:2px solid rgba(255,255,255,0.3); border-radius:8px; padding:10px;">
                         <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">送出</button>
                     </div>
                 </div>
@@ -645,12 +645,7 @@
             const index = wheelNumbers.findIndex(n => n.num === result);
             const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
-            
-            // Canvas 初始狀態：index 0 在頂端(-90度/12點鐘位置)
-            // 指針也在頂端。當轉盤旋轉 θ 度，頂端的數字會變成 index 0
-            // 要讓 index X 到達頂端，需要反方向旋轉 X*slotAngle 度
-            // 因此公式：totalRotation = spins*360 + (360 - X*slotAngle)
-            const totalRotation = spins * 360 + (360 - index * slotAngle);
+            const totalRotation = spins * 360 + index * slotAngle;
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
