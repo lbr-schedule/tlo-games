@@ -258,7 +258,7 @@
     <div class="broke-overlay" id="brokeOverlay">
         <div>
             <h2>💸 餘額不足</h2>
-            <p>您的餘額為 0 或低於 0，無法繼續遊戲。<br>請聯繫客服充值後再試。</p>
+            <p>您的餘額不足，無法繼續遊戲。</p>
             <button onclick="hideBrokeOverlay()">確定</button>
         </div>
     </div>
@@ -859,7 +859,7 @@
             
             // Check if player can afford this bet
             if (myBalance < amount) {
-                alert('餘額不足！您只剩 ' + myBalance + ' 元');
+                document.getElementById('brokeOverlay').classList.add('show');
                 return;
             }
             
@@ -894,7 +894,7 @@
             if (!checkBalance()) return;
             
             if (myBalance < amt) {
-                alert('餘額不足！您只剩 ' + myBalance + ' 元');
+                document.getElementById('brokeOverlay').classList.add('show');
                 return;
             }
             
