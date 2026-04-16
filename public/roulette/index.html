@@ -21,8 +21,6 @@
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
         .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; font-size: 1.2rem; }
         
-        .timer-box { text-align: center; padding: 15px 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
-        .timer-box.waiting { opacity: 0.5; }
         
         .wheel-container { text-align: center; margin: 10px auto; position: relative; width: 316px; height: 316px; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
@@ -157,11 +155,7 @@
             </div>
         </div>
         
-        <div class="timer-box waiting" id="timerBox" style="display:none;">
-            <div class="countdown" id="countdown">-</div>
-        </div>
-        
-        <!-- 登入/註冊區塊 -->
+<!-- 登入/註冊區塊 -->
         <div class="auth-section" id="authSection">
             <div class="auth-tabs">
                 <button class="auth-tab active" onclick="showAuth('login')">登入</button>
@@ -332,7 +326,7 @@
             document.getElementById('balance').textContent = myBalance;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('topBar').style.display = 'flex';
-            document.getElementById('timerBox').style.display = 'block';
+            document.getElementById('resultDisplay').style.display = 'block';
             document.getElementById('gameSection').style.display = 'block';
             drawWheel();
             updateCurrentBetsUI();
@@ -379,7 +373,7 @@
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('topBar').style.display = 'flex';
-                    document.getElementById('timerBox').style.display = 'block';
+                    document.getElementById('resultDisplay').style.display = 'block';
                     document.getElementById('gameSection').style.display = 'block';
                     console.log('Calling drawWheel...');
                     loadHistoryFromDB();
@@ -472,7 +466,6 @@
             localStorage.removeItem('rouletteBalance');
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('topBar').style.display = 'none';
-            document.getElementById('timerBox').style.display = 'none';
             document.getElementById('gameSection').style.display = 'none';
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
@@ -562,18 +555,14 @@
         
         function updateUI(data) {
             const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
-            const timerBox = document.getElementById('timerBox');
             const badge = document.getElementById('resultBadge');
             const wheel = document.getElementById('wheel');
             const resultDisplay = document.getElementById('resultDisplay');
             
-            timerBox.className = 'timer-box';
             wheel.classList.remove('spinning', 'spinning-anim');
             wheel.style.animation = '';
-            
             switch(data.phase) {
                 case 'waiting':
-                    timerBox.classList.add('waiting');
                     badge.style.display = 'none';
                     disableBtns();
                     if (!window.rouletteAnimating) {
@@ -583,7 +572,6 @@
                     break;
                     
                 case 'betting':
-                    timerBox.classList.add('betting');
                     enableBtns();
                     
                     // Only clear currentBets if NO wheel animation is running
@@ -602,7 +590,6 @@
                     break;
                     
                 case 'spinning':
-                    timerBox.classList.add('spinning');
                     wheel.classList.remove('spinning', 'spinning-anim');
                     void wheel.offsetWidth;
                     wheel.classList.add('spinning-anim');
@@ -615,7 +602,6 @@
                     break;
                     
                 case 'result':
-                    timerBox.classList.add('result');
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = 'none';
                     disableBtns();
