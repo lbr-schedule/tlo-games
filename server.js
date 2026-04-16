@@ -78,7 +78,7 @@ let rouletteState = {
     lastSpin: null,
     spinTimer: null,
     betTimer: null,
-    BETTING_TIME: 20000,
+    BETTING_TIME: 10000,
     phaseStartTime: 0,
     hasPlayer: false
 };
