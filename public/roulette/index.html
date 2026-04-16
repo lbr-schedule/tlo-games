@@ -19,6 +19,7 @@
         .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
         .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
+        .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; font-size: 1.2rem; }
         
         .timer-box { text-align: center; padding: 15px 12px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 10px; }
         .timer-box .countdown { font-size: 2.5rem; font-weight: bold; color: #ffd700; }
@@ -200,7 +201,7 @@
                     </div>
                 </div>
                 
-                <div class="result-display waiting" id="resultDisplay">等待開始...</div>
+                <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
                 
                 <div class="bet-section">
                     <h3>💰 選擇下注</h3>
@@ -563,36 +564,25 @@
         function updateUI(data) {
             const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
             const timerBox = document.getElementById('timerBox');
-            const phaseText = document.getElementById('phaseText');
             const countdown = document.getElementById('countdown');
-            const btns = document.querySelectorAll('.bet-btn');
-            const numberBtn = document.getElementById('numberBetBtn');
             const badge = document.getElementById('resultBadge');
             const wheel = document.getElementById('wheel');
+            const resultDisplay = document.getElementById('resultDisplay');
             
             timerBox.className = 'timer-box';
             wheel.classList.remove('spinning', 'spinning-anim');
             wheel.style.animation = '';
-            // Only clear result display when entering betting/waiting AND no animation in progress
-            if ((data.phase === 'betting' || data.phase === 'waiting') && !window.rouletteAnimating) {
-                document.getElementById('resultDisplay').className = 'result-display waiting';
-                document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
-            }
-            
-            timerBox.className = 'timer-box';
-            wheel.classList.remove('spinning', 'spinning-anim');
-            wheel.style.animation = '';
-            // Only clear result display when entering betting/waiting AND no animation in progress
-            if ((data.phase === 'betting' || data.phase === 'waiting') && !window.rouletteAnimating) {
-                document.getElementById('resultDisplay').className = 'result-display waiting';
-                document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
-            }
             
             switch(data.phase) {
                 case 'waiting':
                     timerBox.classList.add('waiting');
+                    countdown.textContent = '';
                     badge.style.display = 'none';
                     disableBtns();
+                    if (!window.rouletteAnimating) {
+                        resultDisplay.className = 'result-display waiting';
+                        resultDisplay.textContent = '等待開始...';
+                    }
                     break;
                     
                 case 'betting':
@@ -609,6 +599,10 @@
                     badge.style.display = 'none';
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = '';
+                    if (!window.rouletteAnimating) {
+                        resultDisplay.className = 'result-display waiting';
+                        resultDisplay.textContent = '等待下注...';
+                    }
                     break;
                     
                 case 'spinning':
@@ -618,17 +612,14 @@
                     void wheel.offsetWidth;
                     wheel.classList.add('spinning-anim');
                     disableBtns();
-                    // Only update result display text if it doesn't already show "轉動中"
-                    if (!document.getElementById('resultDisplay').textContent.includes('轉動中')) {
-                        document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
-                        document.getElementById('resultDisplay').className = 'result-display waiting';
+                    if (!resultDisplay.textContent.includes('轉動中') && !resultDisplay.textContent.includes('結果')) {
+                        resultDisplay.textContent = '🎰 轉動中...';
+                        resultDisplay.className = 'result-display waiting';
                     }
-                    // Do NOT clear currentBets here - we need them for result calculation!
+                    resultDisplay.style.display = 'block';
                     break;
                     
                 case 'result':
-                    // Only show countdown if no animation is running
-                    // If animation IS running, keep showing "❓" until animation completes
                     if (!window.rouletteAnimating) {
                         countdown.textContent = (data.remaining || 0) + 's';
                     }
@@ -636,6 +627,7 @@
                     wheel.classList.remove('spinning', 'spinning-anim');
                     wheel.style.animation = 'none';
                     disableBtns();
+                    resultDisplay.style.display = 'block';
                     
                     if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
@@ -687,6 +679,7 @@
                 const display = document.getElementById('resultDisplay');
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
                 display.className = 'result-display ' + lastSpin.color;
+                display.style.display = 'block';
                 processResult(lastSpin);
             }, 10500);
         }
@@ -756,11 +749,14 @@
             // 顯示結果badge
             const badge = document.getElementById('resultBadge');
             if (roundWin > 0) {
-                badge.textContent = '+' + roundWin;
+                badge.textContent = '🎯 ' + lastSpin.result + ' +' + roundWin;
                 badge.className = 'result-badge show win';
             } else if (roundBet > 0) {
-                badge.textContent = '-' + roundBet;
+                badge.textContent = '🎯 ' + lastSpin.result + ' -' + roundBet;
                 badge.className = 'result-badge show lose';
+            } else {
+                badge.textContent = '🎯 ' + lastSpin.result;
+                badge.className = 'result-badge show result';
             }
             
             if (roundBet > 0) {
