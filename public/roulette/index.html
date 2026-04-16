@@ -66,9 +66,9 @@
         .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
         
         .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
-        .bet-btn { padding: 10px 3px; border: none; border-radius: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+        .bet-btn { padding: 10px 3px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
         .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
-        .bet-btn .bet-amount { font-size: 0.7rem; color: #ffd700; display: none; margin-top: 2px; }
+        .bet-btn .bet-amount { font-size: 0.8rem; color: #ffd700; display: none; margin-top: 3px; }
         .bet-btn.has-bet .bet-amount { display: block; }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
@@ -230,8 +230,8 @@
                     </div>
                     
                     <div class="number-bet">
-                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px">
-                        <input type="number" id="betAmt" placeholder="金額(最低10)" min="10" value="100" style="flex:1">
+                        <input type="number" id="betNum" placeholder="0-36" min="0" max="36" style="width:70px; background:#ffd700; color:#1a1a2e; border:none; border-radius:8px; padding:10px; font-weight:bold;">
+                        <input type="number" id="betAmt" placeholder="金額" min="10" value="100" style="flex:1; background:#2a2a4a; color:white; border:2px solid #555; border-radius:8px; padding:10px;">
                         <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()">送出</button>
                     </div>
                 </div>
@@ -597,7 +597,6 @@
                     // Keep selected/bet states visible during betting phase
                     if (!window.rouletteAnimating && (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting')) {
                         currentBets = [];
-                        // Don't clear selected - let bet amounts show through the round
                         updateCurrentBetsUI();
                     }
                     badge.style.display = 'none';
@@ -837,7 +836,10 @@
         function enableBtns() {
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
             document.getElementById('numberBetBtn').classList.remove('disabled');
-            clearSelected();
+            // Only clear selections if starting a completely new round (prev phase was result/spinning)
+            if (gamePhase === 'result' || gamePhase === 'spinning' || gamePhase === '' || gamePhase === 'waiting') {
+                clearSelected();
+            }
         }
         
         function clearSelected() {
