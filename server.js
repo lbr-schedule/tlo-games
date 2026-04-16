@@ -348,11 +348,24 @@ app.post('/api/roulette/register', async (req, res) => {
     try {
         console.log('嘗試註冊用戶到輪盤資料庫:', username);
         
-        // 加入 timeout 防止永久等待
+        // 先檢查帳號是否已存在
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('資料庫操作超時')), 5000);
         });
         
+        const checkPromise = rouletteDb.execute({
+            sql: `SELECT id FROM players WHERE username = ?`,
+            args: [username]
+        });
+        
+        const checkResult = await Promise.race([checkPromise, timeoutPromise]);
+        
+        if (checkResult.rows && checkResult.rows.length > 0) {
+            console.log('帳號已存在, username:', username);
+            return res.json({ success: false, message: '帳號已存在，請換一個' });
+        }
+        
+        // 帳號不存在，執行註冊
         const executePromise = rouletteDb.execute({
             sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
             args: [username, password]
@@ -363,7 +376,7 @@ app.post('/api/roulette/register', async (req, res) => {
         res.json({ success: true, message: '註冊成功！' });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
-        res.json({ success: false, message: '帳號已存在' });
+        res.json({ success: false, message: '帳號已存在，請換一個' });
     }
 });
 
