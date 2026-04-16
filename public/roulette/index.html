@@ -28,15 +28,16 @@
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 45px solid #ffd700; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
         .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
         .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
         .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
-        .result-display.result { background: rgba(0,0,0,0.6); font-size: 1.5rem; border: 2px solid #ffd700; }
-        .result-display.red, .result-display.black, .result-display.green { font-size: 1.5rem; border: 2px solid currentColor; }
+        .result-display.red { background: rgba(180,0,0,0.7); border: 3px solid #ff4444; font-size: 1.5rem; }
+        .result-display.black { background: rgba(50,50,50,0.8); border: 3px solid #888; font-size: 1.5rem; }
+        .result-display.green { background: rgba(0,120,0,0.7); border: 3px solid #00ff00; font-size: 1.5rem; }
         .result-display.red { background: rgba(204,0,0,0.5); }
         .result-display.black { background: rgba(50,50,50,0.5); }
         .result-display.green { background: rgba(0,170,0,0.5); }
@@ -65,8 +66,11 @@
         .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
         
         .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
         .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
+        .bet-btn .bet-info { font-size: 0.7rem; opacity: 0.9; }
+        .bet-btn .bet-amount { font-size: 0.75rem; color: #ffd700; display: none; margin-top: 2px; }
+        .bet-btn.has-bet .bet-amount { display: block; }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
         .bet-btn.green { background: linear-gradient(135deg, #009900, #00cc00); color: white; }
@@ -214,13 +218,13 @@
                     </div>
                     
                     <div class="bet-buttons" id="betButtons">
-                        <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span></button>
-                        <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span></button>
-                        <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span></button>
-                        <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span></button>
+                        <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span><span class="bet-amount"></span></button>
                     </div>
                     <div style="display:flex; gap:8px; margin-bottom:10px;">
-                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')" style="flex:1">雙數<span class="multi">2x</span></button>
+                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')" style="flex:1">雙數<span class="multi">2x</span><span class="bet-amount"></span></button>
                     </div>
                     
                     <div class="number-bet">
@@ -607,10 +611,8 @@
                     void wheel.offsetWidth;
                     wheel.classList.add('spinning-anim');
                     disableBtns();
-                    if (!resultDisplay.textContent.includes('轉動中') && !resultDisplay.textContent.includes('結果')) {
-                        resultDisplay.textContent = '🎰 轉動中...';
-                        resultDisplay.className = 'result-display waiting';
-                    }
+                    resultDisplay.className = 'result-display spinning';
+                    resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
                     break;
                     
@@ -643,10 +645,12 @@
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
             // 轉盤初始是 0deg，index 0 在頂端(12點)
-            // 指針也在頂端，所以 index 0 預設就對準指針
-            // 當轉盤旋轉 clockwise θ 度，index 0 會移動到 (360-θ) 的位置
-            // 要讓 index X 到達頂端，需要計算：(360 - X*slotAngle) mod 360
-            const totalRotation = spins * 360 + (360 - index * slotAngle);
+            // 指針也在頂端(12點)，轉盤順時針旋轉時：
+            //   - index 0 會轉到右邊，再到底部，再到左邊
+            //   - 轉 θ 度後，index 0 在 360-θ 度位置（從頂部算順時針）
+            //   - 要讓 index X 到達頂端(0度)，需要：X*slotAngle 度（從 index 0 算）
+            //   - 所以 index X 最終位置 = index*slotAngle
+            const totalRotation = spins * 360 + index * slotAngle;
             
             const wheel = document.getElementById('wheel');
             wheel.classList.remove('spinning', 'spinning-anim');
@@ -671,7 +675,7 @@
                 const colorName = colors[lastSpin.color];
                 const display = document.getElementById('resultDisplay');
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                display.className = 'result-display result';
+                display.className = 'result-display ' + lastSpin.color;
                 display.style.display = 'block';
                 processResult(lastSpin);
             }, 4100);
@@ -837,7 +841,11 @@
         
         function clearSelected() {
             selectedBets = [];
-            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                b.classList.remove('selected', 'has-bet');
+                const amt = b.querySelector('.bet-amount');
+                if (amt) amt.textContent = '';
+            });
         }
         
         function checkBalance() {
@@ -886,10 +894,19 @@
             if (type === 'odd_even') bet.choice = choice;
             currentBets.push(bet);
             
-            // Track selected button
+            // Track selected button and update amount display
             const btnClass = type === 'number' ? 'green' : choice;
             selectedBets.push(btnClass);
             updateSelectedUI(btnClass, true);
+            
+            // Update button amount display
+            const totalForType = currentBets.filter(b => (type === 'number' ? 'green' : (b.type === 'color' ? b.color : b.choice)) === btnClass).reduce((sum, b) => sum + b.amount, 0);
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                if (b.classList.contains(btnClass)) {
+                    b.classList.add('has-bet');
+                    b.querySelector('.bet-amount').textContent = '已押 $' + totalForType;
+                }
+            });
             
             console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
