@@ -579,7 +579,12 @@
             timerBox.className = 'timer-box';
             wheel.classList.remove('spinning', 'spinning-anim');
             wheel.style.animation = '';
-            document.getElementById('resultDisplay').className = 'result-display';
+            // Only clear result display when entering betting or waiting (not every poll)
+            const prevPhase = gamePhase;
+            if (data.phase === 'betting' || data.phase === 'waiting') {
+                document.getElementById('resultDisplay').className = 'result-display waiting';
+                document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
+            }
             
             switch(data.phase) {
                 case 'waiting':
@@ -615,8 +620,11 @@
                     void wheel.offsetWidth;
                     wheel.classList.add('spinning-anim');
                     disableBtns();
-                    document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
-                    document.getElementById('resultDisplay').className = 'result-display waiting';
+                    // Only update result display text if it doesn't already show "轉動中"
+                    if (!document.getElementById('resultDisplay').textContent.includes('轉動中')) {
+                        document.getElementById('resultDisplay').textContent = '🎰 轉動中...';
+                        document.getElementById('resultDisplay').className = 'result-display waiting';
+                    }
                     // Do NOT clear currentBets here - we need them for result calculation!
                     break;
                     
@@ -675,7 +683,7 @@
                 display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
                 display.className = 'result-display ' + lastSpin.color;
                 processResult(lastSpin);
-            }, 6500);
+            }, 8500);
         }
         
         function processResult(lastSpin) {

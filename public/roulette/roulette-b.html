@@ -533,6 +533,11 @@
             timerBox.className = 'timer-box';
             wheel.classList.remove('spinning');
             ball.classList.remove('spinning');
+            // Only clear result display when entering betting or waiting
+            if (data.phase === 'betting' || data.phase === 'waiting') {
+                document.getElementById('resultDisplay').className = 'result-display waiting';
+                document.getElementById('resultDisplay').textContent = data.phase === 'waiting' ? '等待開始...' : '等待下注...';
+            }
             
             switch(data.phase) {
                 case 'waiting':
