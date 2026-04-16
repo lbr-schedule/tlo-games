@@ -28,7 +28,7 @@
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transition: transform 5s cubic-bezier(0.1, 0.5, 0.2, 1); transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 35px solid #ffd700; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
         .result-display { text-align: center; font-size: 1.3rem; padding: 15px 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; min-height: 55px; transition: all 0.3s ease; }
         .result-display .countdown { font-size: 2rem; color: #ffd700; display: block; }
@@ -65,8 +65,8 @@
         .bet-section { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
         .bet-section h3 { color: #ffd700; margin-bottom: 10px; font-size: 1rem; }
         
-        .bet-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .bet-btn { padding: 12px 5px; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+        .bet-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
+        .bet-btn { padding: 10px 3px; border: none; border-radius: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: 100%; min-height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
         .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
         .bet-btn .bet-info { font-size: 0.7rem; opacity: 0.9; }
         .bet-btn .bet-amount { font-size: 0.75rem; color: #ffd700; display: none; margin-top: 2px; }
@@ -222,9 +222,7 @@
                         <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span><span class="bet-amount"></span></button>
                         <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span><span class="bet-amount"></span></button>
                         <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span><span class="bet-amount"></span></button>
-                    </div>
-                    <div style="display:flex; gap:8px; margin-bottom:10px;">
-                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')" style="flex:1">雙數<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙數<span class="multi">2x</span><span class="bet-amount"></span></button>
                     </div>
                     
                     <div class="number-bet">
@@ -837,7 +835,7 @@
         function enableBtns() {
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
             document.getElementById('numberBetBtn').classList.remove('disabled');
-            // Don't clear selected states here - let bet amounts persist through the round
+            clearSelected();
         }
         
         function clearSelected() {
