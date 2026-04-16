@@ -644,14 +644,14 @@
             wheel.style.transform = 'rotate(0deg)';
             void wheel.offsetWidth;
             
-            // 漸慢動畫：15秒，cubic-bezier 實現自然減速
-            wheel.style.transition = 'transform 15s cubic-bezier(0.15, 0.65, 0.25, 1)';
+            // 漸慢動畫：3秒，配合 server 的 spinning 時間
+            wheel.style.transition = 'transform 3s cubic-bezier(0.15, 0.65, 0.25, 1)';
             wheel.style.transform = 'rotate(' + totalRotation + 'deg)';
             
             // 標記動畫進行中，防止被 poll 清除
             window.rouletteAnimating = true;
             
-            // 等轉動動畫完成後才顯示結果（15.5秒後）
+            // 等轉動動畫完成後才顯示結果（3.5秒後）
             setTimeout(() => {
                 window.rouletteAnimating = false;
                 const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
@@ -661,7 +661,7 @@
                 display.className = 'result-display ' + lastSpin.color;
                 display.style.display = 'block';
                 processResult(lastSpin);
-            }, 15500);
+            }, 3500);
         }
         
         function processResult(lastSpin) {
