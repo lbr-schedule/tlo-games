@@ -411,6 +411,10 @@
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
+            // 更新積分顯示
+            myScore += scoreChange;
+            document.getElementById('playerScore').textContent = myScore;
+            
             // rollBtn 變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
