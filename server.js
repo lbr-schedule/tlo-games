@@ -120,18 +120,30 @@ function handleDiceMessage(ws, msg) {
     }
     
     if (msg.type === 'join') {
-        // If already in a game, ignore
-        if (diceState.players.has(username) && diceState.players.get(username).gameId) {
+        const player = diceState.players.get(username);
+        
+        // If already in a game, re-send game_start with current game info
+        if (player?.gameId) {
+            const game = diceState.games.get(player.gameId);
+            if (game) {
+                const opponent = game.players[1 - game.players.indexOf(username)];
+                sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: player.gameId, myIndex: game.players.indexOf(username) });
+                return;
+            }
+        }
+        
+        // If already in waiting list, just re-send waiting message
+        if (diceState.waitingPlayers.includes(username)) {
+            sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
             return;
         }
         
         // Remove from waiting list (prevent duplicates)
-        const wasInWaiting = diceState.waitingPlayers.includes(username);
         diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
         
         // If there are other waiting players, match immediately
         if (diceState.waitingPlayers.length > 0) {
-            const opponent = diceState.waitingPlayers.shift(); // Get first waiting player
+            const opponent = diceState.waitingPlayers.shift();
             const game = createDiceGame(opponent, username);
             diceState.games.set(game.id, game);
             
