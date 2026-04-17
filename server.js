@@ -213,6 +213,7 @@ function handleDiceMessage(ws, msg) {
             });
         }
     }
+    }
     
     if (msg.type === 'rematch') {
         const player = diceState.players.get(username);
@@ -246,13 +247,6 @@ function handleDiceMessage(ws, msg) {
         }
     }
         
-        for (const p of game.players) {
-            const pData = diceState.players.get(p);
-            if (pData) pData.gameId = newGame.id;
-            sendToPlayer(p, { type: 'game_start', opponent: game.players[1 - game.players.indexOf(p)], gameId: newGame.id, myIndex: game.players.indexOf(p) });
-        }
-    }
-}
 
 // JSON 解析
 app.use(express.json());
