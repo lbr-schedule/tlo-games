@@ -356,7 +356,7 @@ app.post('/api/roulette/ping', (req, res) => {
 // 版本確認
 app.get('/api/version', (req, res) => {
     res.json({ 
-        version: '2.5',
+        version: '2.5-FIXED',
         deployTime: new Date().toISOString(),
         wsPath: '/dice'
     });
