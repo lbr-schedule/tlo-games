@@ -144,7 +144,6 @@
                 </div>
                 
                 <button class="btn-dice" id="rollBtn" onclick="doAction()" disabled>等待擲骰...</button>
-                <button class="btn-secondary" onclick="doLeave()" style="margin-top:10px;">離開對戰</button>
             </div>
             
             <!-- 排行區域 -->
@@ -161,6 +160,7 @@
         let pollInterval = null;
         let myName = '';
         let myBalance = 0;
+        let myIndex = 0;
         let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
@@ -260,7 +260,8 @@
                     
                 case 'game_start':
                     setMatchingState(false);
-                    showBattle(data.opponent);
+                    myIndex = data.myIndex ?? 0;  // Store my index (0 or 1)
+                    showBattle(data.opponent, data.myIndex);
                     // Ensure match button is hidden in battle view
                     document.getElementById('matchBtn').style.display = 'none';
                     break;
@@ -346,12 +347,13 @@
             resetMatchButton();
         }
         
-        function showBattle(opponent) {
+        function showBattle(opponent, index) {
             if (myBalance < 10) { showToast('金額不足，無法遊戲'); showMatch(); return; }
             gameStarted = true; // Game has started, don't reset button from now on
             inGame = true;
             canPlay = true;
             gameEnded = false;
+            myIndex = index ?? 0;
             gamePlayers = [myName, opponent]; // Store players for this game
             document.getElementById('matchView').style.display = 'none';
             document.getElementById('battleView').style.display = 'block';
@@ -387,8 +389,8 @@
                 document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
                 document.getElementById('rollBtn').disabled = false;
             }, 3500);
-            const myScore = data.scores[0] || 0;
-            const oppScore = data.scores[1] || 0;
+            const myScore = data.scores[myIndex] || 0;
+            const oppScore = data.scores[1 - myIndex] || 0;
             let resultText = '';
             if (data.isDraw) {
                 resultText = '🤝 平手！';
