@@ -453,7 +453,7 @@
             
             // 顯示結果彈窗 - 白字黃底透明+閃動
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
-            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;background:rgba(255,215,0,0.85);border-radius:15px;animation:blink 0.8s infinite;box-shadow:0 0 20px rgba(255,215,0,0.5);">' +
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;background:transparent;border:2px solid rgba(255,255,255,0.3);border-radius:15px;">' +
                 '<h2 style="color:#1a1a2e;font-size:1.6em;font-weight:bold;text-shadow:0 0 10px rgba(255,255,255,0.5);">' + resultText + ' ' + changeText + '</h2>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
