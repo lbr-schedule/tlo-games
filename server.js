@@ -109,6 +109,35 @@ function sendToPlayer(username, msg) {
     }
 }
 
+
+// 骰子遊戲 - 更新玩家積分
+async function updateDicePlayerScore(winner, loser, betAmount) {
+    if (LOCAL_TEST_MODE) {
+        // 本地測試模式
+        if (localPlayers[winner]) localPlayers[winner].score += betAmount;
+        if (localPlayers[loser]) localPlayers[loser].score = Math.max(0, localPlayers[loser].score - betAmount);
+        return;
+    }
+    
+    if (!dbAvailable) return;
+    
+    try {
+        // 贏家加積分
+        await db.execute({
+            sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+            args: [betAmount, winner]
+        });
+        // 輸家扣積分
+        await db.execute({
+            sql: `UPDATE players SET score = CASE WHEN score < ? THEN 0 ELSE score - ? END WHERE username = ?`,
+            args: [betAmount, betAmount, loser]
+        });
+        console.log('骰子遊戲積分結算:', winner, '+' + betAmount, loser, '-' + betAmount);
+    } catch(e) {
+        console.log('更新骰子遊戲積分失敗:', e.message);
+    }
+}
+
 function handleDiceMessage(ws, msg) {
     const username = msg.username || 'Player';
 
@@ -211,6 +240,12 @@ function handleDiceMessage(ws, msg) {
                 winner: game.winner,
                 isDraw: game.isDraw
             });
+            
+            // 非平手時更新積分
+            if (game.winner && !game.isDraw) {
+                const loser = game.players.find(p => p !== game.winner);
+                updateDicePlayerScore(game.winner, loser, 10); // 預設10積分
+            }
         }
     }
     
