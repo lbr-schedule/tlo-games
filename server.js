@@ -252,7 +252,7 @@ function handleDiceMessage(ws, msg) {
         
         // 一局 = 雙方各擲一次 = 2次roll
         // 2 rolls per round, then end round
-        if (game.round >= 2) {
+        if (game.round >= 3) {
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
             game.status = 'finished';
             game.winner = winner >= 0 ? game.players[winner] : null;

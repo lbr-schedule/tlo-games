@@ -152,7 +152,7 @@
                 <button class="btn-primary" onclick="loadRank()" style="margin-top:15px;">🔄 刷新</button>
             </div>
             
-            <div class="switch-btn"><a onclick="doLogout()">登出</a></div>
+            <div class="switch-btn" id="logoutBtn"><a onclick="doLogout()">登出</a></div>
         </div>
     </div>
 
@@ -349,6 +349,7 @@
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = true;
             document.getElementById('rollBtn').textContent = '等待擲骰...';
+            document.getElementById('logoutBtn').style.display = 'inline-block'; // 匹配階段顯示登出
             resetMatchButton();
         }
         
@@ -367,6 +368,7 @@
             document.getElementById('battleView').style.display = 'block';
             document.getElementById('rankView').style.display = 'none';
             document.getElementById('opponentDisplay').textContent = opponent;
+            document.getElementById('logoutBtn').style.display = 'none'; // 對戰中不顯示登出
             resetDice();
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = false;
@@ -386,6 +388,8 @@
             gameEnded = true;
             canPlay = false;
             
+            // 伺服器發的 winner 是根據 player index 判斷的
+            // data.winner === myName 表示我贏了
             let resultText = '';
             let scoreChange = 0;
             if (data.isDraw) {
@@ -399,15 +403,15 @@
                 scoreChange = -10;
             }
             
-            // 顯示結果彈窗（積分增減）- 只有文字，按鈕統一用 rollBtn
+            // 顯示結果彈窗
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
             document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;">' +
                 '<h2 style="color:#ffd700;margin-bottom:15px;">' + resultText + ' ' + changeText + '</h2>' +
-                '<p style="color:#aaa;margin-top:10px;">請按「再來一局」按鈕繼續</p>' +
+                '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;">🚪 離開遊戲</button>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
-            // rollBtn 變成「再來一局」- 這是唯一的按鈕
+            // rollBtn 變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
         }
