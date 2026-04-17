@@ -178,6 +178,37 @@
         .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
         .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
         .modal .guide-step p strong { color: #fff; }
+
+        /* 手機響應式 - 高度自適應 */
+        @media (max-height: 700px) {
+            .container { padding: 0.3rem; }
+            h1 { font-size: 0.85rem; padding: 0.2rem; }
+            .wheel-container, .wheel-outer, .wheel { width: 240px !important; height: 240px !important; }
+            .wheel-border { width: 240px !important; height: 240px !important; }
+            .wheel { transform-origin: 120px 120px !important; }
+            .wheel-outer { left: 0 !important; top: 0 !important; }
+            .wheel-pointer { top: -3px !important; }
+            .result-display { font-size: 0.8rem; min-height: 35px; padding: 0.3rem; }
+            .top-bar { height: 32px !important; padding: 0.3rem 0.5rem !important; }
+            .bet-section { padding: 0.5rem !important; }
+            .bet-btn { min-height: 40px !important; padding: 6px 3px !important; font-size: 0.8rem !important; }
+            .current-bets-box { padding: 0.5rem !important; }
+        }
+        
+        @media (max-height: 600px) {
+            .wheel-container, .wheel-outer, .wheel { width: 200px !important; height: 200px !important; }
+            .wheel-border { width: 200px !important; height: 200px !important; }
+            .wheel { transform-origin: 100px 100px !important; }
+            .result-display { font-size: 0.75rem; min-height: 30px; }
+            h1 { font-size: 0.75rem; }
+            .quick-bet button { font-size: 0.8rem !important; padding: 4px 8px !important; }
+        }
+        
+        @media (max-width: 380px) {
+            .quick-bet { flex-wrap: wrap; gap: 5px; }
+            .quick-bet button { flex: 1 1 45%; }
+            .custom-amount-area { margin-top: 5px !important; }
+        }
     </style>
 </head>
 <body>
