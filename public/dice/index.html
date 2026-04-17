@@ -273,38 +273,36 @@
                     break;
                     
                 case 'roll_result':
-                    console.log('>>> roll_result received:', JSON.stringify(data));
-                    console.log('    myIndex=', myIndex, 'myName=', myName);
+                    console.log('>>> roll_result:', 'myName=' + myName, 'myIndex=' + myIndex, 'data=' + JSON.stringify(data));
                     
                     // 顯示雙方骰子
-                    if (data.diceValues) {
-                        const myDiceVal = data.diceValues[myIndex];
-                        const oppDiceVal = data.diceValues[1 - myIndex];
-                        console.log('    Setting myDice=' + myDiceVal + ', oppDice=' + oppDiceVal);
+                    const oppDiceVal = data.diceValues[1 - myIndex];
+                    const myDiceVal = data.diceValues[myIndex];
+                    
+                    // 對手骰子
+                    document.getElementById('oppDice').textContent = oppDiceVal || '?';
+                    
+                    // 檢查我是否已骰
+                    const iHaveRolled = myDiceVal > 0 || (data.rolled && data.rolled[myIndex]);
+                    
+                    if (iHaveRolled) {
                         document.getElementById('myDice').textContent = myDiceVal || '?';
-                        // 如果對手還沒骰，顯示點點點
-                        if (oppDiceVal === 0 && data.rolled && !data.rolled[1 - myIndex]) {
-                            document.getElementById('oppDice').textContent = '...';
-                        } else {
-                            document.getElementById('oppDice').textContent = oppDiceVal || '?';
-                        }
                     } else {
-                        console.log('    No diceValues in data!');
-                        // Fallback: show data.dice
-                        if (data.player === myName) {
-                            document.getElementById('myDice').textContent = data.dice;
-                        } else {
-                            document.getElementById('oppDice').textContent = data.dice;
-                        }
+                        document.getElementById('myDice').textContent = '...';
                     }
                     
-                    // 如果雙方都骰完了，禁用按鈕
+                    // 如果雙方都骰完
                     if (data.rolled && data.rolled[0] && data.rolled[1]) {
-                        console.log('    Both rolled, waiting for game_over');
                         document.getElementById('rollBtn').textContent = '等待結算...';
                         document.getElementById('rollBtn').disabled = true;
                         canPlay = false;
-                    } else if (!gameEnded) {
+                    } else if (!iHaveRolled) {
+                        // 我還沒骰，可以骰
+                        document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                        document.getElementById('rollBtn').disabled = false;
+                        canPlay = true;
+                        isRolling = false;
+                    } else {
                         document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                         document.getElementById('rollBtn').disabled = true;
                     }
