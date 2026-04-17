@@ -129,6 +129,9 @@ function handleDiceMessage(ws, msg) {
                 const opponent = game.players[1 - game.players.indexOf(username)];
                 sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: player.gameId, myIndex: game.players.indexOf(username) });
                 return;
+            } else {
+                // Game expired or deleted, clear gameId and treat as fresh
+                delete player.gameId;
             }
         }
         
