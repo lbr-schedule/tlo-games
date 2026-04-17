@@ -443,9 +443,15 @@
             
             // 馬上更新積分顯示
             myScore += scoreChange;
-            document.getElementById('playerScore').textContent = myScore;
             myBalance = myScore;
+            // 立即更新 UI（不做任何判斷，直接設值）
+            const scoreEl = document.getElementById('playerScore');
+            if (scoreEl) {
+                scoreEl.textContent = myScore;
+                scoreEl.style.color = scoreChange > 0 ? '#4f4' : (scoreChange < 0 ? '#f44' : '#fff');
+            }
             saveSession();
+            console.log('Score updated: myScore=' + myScore + ', change=' + scoreChange);
             
             // 顯示結果彈窗 - 白字黃底透明+閃動
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
