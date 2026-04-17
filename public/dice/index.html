@@ -352,19 +352,6 @@
                 showBalanceInsufficientModal(); 
                 return; 
             }
-            
-            function showBalanceInsufficientModal() {
-                document.getElementById('resultView').innerHTML = \`
-                    <div style="text-align:center;">
-                        <h2 style="color:#ff4444;">⚠️ 積分不足</h2>
-                        <p style="color:#aaa;margin:15px 0;">您的積分不足，無法繼續遊戲</p>
-                        <p style="color:#ffd700;font-size:1.2em;">目前積分: <span style="font-size:1.5em;">\${myBalance}</span></p>
-                        <p style="color:#888;font-size:0.9em;">遊戲最低門檻: 10 積分</p>
-                        <button onclick="leaveGame()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🏠 返回大廳</button>
-                    </div>
-                \`;
-                document.getElementById('resultView').style.display = 'block';
-            }
             gameStarted = true; // Game has started, don't reset button from now on
             inGame = true;
             canPlay = true;
@@ -397,38 +384,27 @@
             const myScore = data.scores[myIndex] || 0;
             const oppScore = data.scores[1 - myIndex] || 0;
             let resultText = '';
+            let colorStyle = '#ffd700';
             if (data.isDraw) {
                 resultText = '🤝 平手！';
+                colorStyle = '#00c6ff';
             } else if (data.winner === myName) {
                 resultText = '🎉 你贏了！';
+                colorStyle = '#ffd700';
             } else {
                 resultText = '😢 你输了...';
+                colorStyle = '#ff4444';
             }
             
-            // 顯示結果彈窗（覆蓋整個遊戲區域）
-            document.getElementById('resultView').innerHTML = '''
-                <div style="text-align:center;">
-                    <h2 style="color:\${resultText.includes('你贏了') ? '#ffd700' : resultText.includes('平手') ? '#00c6ff' : '#ff4444'};\${resultText.includes('你输了') ? 'font-size:1.5em;margin-bottom:10px;' : ''}">\${resultText}</h2>
-                    <p style="font-size:1.2em;margin:15px 0;">你的骰子: <span style="color:#ffd700;font-size:1.5em;">\${myScore}</span></p>
-                    <p style="font-size:1.2em;margin:15px 0;">對手骰子: <span style="color:#ff6b6b;font-size:1.5em;">\${oppScore}</span></p>
-                    <button onclick="requestRematch()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>
-                    <button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;font-size:1em;">🚪 離開遊戲</button>
-                </div>
-            \`;
+            // 顯示結果彈窗
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;">' +
+                '<h2 style="color:' + colorStyle + ';">' + resultText + '</h2>' +
+                '<p style="font-size:1.2em;margin:15px 0;">你的骰子: <span style="color:#ffd700;font-size:1.5em;">' + myScore + '</span></p>' +
+                '<p style="font-size:1.2em;margin:15px 0;">對手骰子: <span style="color:#ff6b6b;font-size:1.5em;">' + oppScore + '</span></p>' +
+                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
+                '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;font-size:1em;">🚪 離開遊戲</button>' +
+                '</div>';
             document.getElementById('resultView').style.display = 'block';
-        }
-            let resultText = '';
-            if (data.isDraw) {
-                resultText = '🤝 平手！';
-            } else if (data.winner === myName) {
-                resultText = '🎉 你贏了！';
-            } else if (data.winner) {
-                resultText = '😢 你输了...';
-            } else {
-                resultText = '🤝 平手！';
-            }
-            document.getElementById('resultView').style.display = 'block';
-            document.getElementById('resultView').innerHTML = '<h2>' + resultText + '</h2><p>你的骰子: ' + myScore + ' | 對手骰子: ' + oppScore + '</p><button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;">再來一局</button><button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;">離開</button>';
         }
 
         function showResult(data) {
@@ -645,15 +621,29 @@
             showMatch();
         }
         
-        function requestRematch() {
+        
+        
+        function showBalanceInsufficientModal() {
+            document.getElementById('resultView').innerHTML = `
+                <div style="text-align:center;">
+                    <h2 style="color:#ff4444;">⚠️ 積分不足</h2>
+                    <p style="color:#aaa;margin:15px 0;">您的積分不足，無法繼續遊戲</p>
+                    <p style="color:#ffd700;font-size:1.2em;">目前積分: <span style="font-size:1.5em;">${myBalance}</span></p>
+                    <p style="color:#888;font-size:0.9em;">遊戲最低門檻: 10 積分</p>
+                    <button onclick="leaveGame()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🏠 返回大廳</button>
+                </div>
+            `;
+            document.getElementById('resultView').style.display = 'block';
+        }
+function requestRematch() {
             sendAction('rematch');
             // 禁用按鈕防止重複點擊
-            document.getElementById('resultView').innerHTML = \`
+            document.getElementById('resultView').innerHTML = `
                 <div style="text-align:center;">
                     <h2 style="color:#ffd700;">🔄 等待對手回應...</h2>
                     <p style="color:#aaa;margin-top:15px;">對手回應後自動開始</p>
                 </div>
-            \`;
+            `;
         }
         
         async function loadRank() {
