@@ -213,7 +213,6 @@ function handleDiceMessage(ws, msg) {
             });
         }
     }
-    }
     
     if (msg.type === 'rematch') {
         const player = diceState.players.get(username);
@@ -246,7 +245,7 @@ function handleDiceMessage(ws, msg) {
             });
         }
     }
-        
+}
 
 // JSON 解析
 app.use(express.json());
