@@ -227,7 +227,8 @@ function handleDiceMessage(ws, msg) {
         if (!game || game.status !== 'playing') return;
         
         const playerIndex = game.players.indexOf(username);
-        if (playerIndex !== game.currentTurn) return;
+        // 檢查這玩家是否已經骰過（不重複骰）
+        if (game.rolled && game.rolled[playerIndex]) return;
         
         // 如果是老闆帳號(12345)，使用加權骰子給予約70%勝率
         let dice;
@@ -237,24 +238,44 @@ function handleDiceMessage(ws, msg) {
         } else {
             dice = Math.floor(Math.random() * 6) + 1;
         }
-        game.scores[playerIndex] += dice;
+        // 記錄骰子
+        game.rolled[playerIndex] = true;
+        game.diceValues[playerIndex] = dice;
         
-        // 切換到下一回合
-        game.currentTurn = 1 - game.currentTurn;
-        
-        // 只有在回到玩家0（第一個玩家）時才增加 round
-        // 這樣 round 表示「第幾輪完整結算」
-        if (game.currentTurn === 0) {
-            game.round++;
-        }
-        
+        // 廣播骰子結果（包含雙方骰子）
         broadcastDice({
             type: 'roll_result',
             player: username,
             dice,
-            scores: game.scores,
-            nextTurn: game.currentTurn
+            diceValues: [...game.diceValues],
+            rolled: [...game.rolled]
         });
+        
+        // 檢查是否雙方都骰完
+        if (game.rolled[0] && game.rolled[1]) {
+            // 計算勝負
+            const [d1, d2] = game.diceValues;
+            let winner, isDraw;
+            if (d1 > d2) { winner = game.players[0]; isDraw = false; }
+            else if (d2 > d1) { winner = game.players[1]; isDraw = false; }
+            else { winner = null; isDraw = true; }
+            
+            game.status = 'finished';
+            game.winner = winner;
+            game.isDraw = isDraw;
+            
+            broadcastDice({
+                type: 'game_over',
+                diceValues: [...game.diceValues],
+                winner: winner,
+                isDraw: isDraw
+            });
+            
+            if (winner && !isDraw) {
+                const loser = game.players.find(p => p !== winner);
+                updateDicePlayerScore(winner, loser, 10);
+            }
+        }
         
         // 一局 = 雙方各擲一次 = 2次roll
         // 2 rolls per round, then end round
