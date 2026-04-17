@@ -66,7 +66,13 @@
         .message.error { background: #ffe0e0; color: #d00; }
         .message.success { background: #e0ffe0; color: #080; }
         .score-info { display: flex; justify-content: space-around; margin-top: 10px; font-size: 0.9rem; }
+    <style>
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
+</style>
 </head>
 <body>
     <div class="container">
@@ -403,12 +409,10 @@
                 scoreChange = -10;
             }
             
-            // 顯示結果彈窗 - 白字黃底
+            // 顯示結果彈窗 - 只有文字黃底+閃動，rollBtn會變成再來一局
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
-            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;background:#ffd700;border-radius:15px;">' +
-                '<h2 style="color:#1a1a2e;margin-bottom:15px;font-size:1.5em;">' + resultText + ' ' + changeText + '</h2>' +
-                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:10px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
-                '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;">🚪 離開遊戲</button>' +
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:15px;background:rgba(255,215,0,0.9);border-radius:10px;animation:blink 1s infinite;">' +
+                '<h2 style="color:#1a1a2e;font-size:1.4em;">' + resultText + ' ' + changeText + '</h2>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
