@@ -430,7 +430,7 @@ app.post('/api/roulette/ping', (req, res) => {
 // 版本確認
 app.get('/api/version', (req, res) => {
     res.json({ 
-        version: '2.11.1-FIXED',
+        version: 'v3.0-BIG-FIX',
         deployTime: new Date().toISOString(),
         wsPath: '/dice'
     });
