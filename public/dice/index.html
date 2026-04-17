@@ -270,7 +270,8 @@
                         // 對手擲的
                         document.getElementById('oppDice').textContent = data.dice;
                         // 如果輪到你了，enable 按鈕
-                        if (data.nextTurn === gamePlayers.indexOf(myName)) {
+                        const myIndex = gamePlayers.length > 0 ? gamePlayers.indexOf(myName) : data.nextTurn;
+                        if (data.nextTurn === myIndex) {
                             document.getElementById('rollBtn').disabled = false;
                             document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
                         }
@@ -368,8 +369,20 @@
         function showGameOver(data) {
             gameEnded = true;
             canPlay = false;
+            const myScore = data.scores[0] || 0;
+            const oppScore = data.scores[1] || 0;
+            let resultText = '';
+            if (data.isDraw) {
+                resultText = '🤝 平手！';
+            } else if (data.winner === myName) {
+                resultText = '🎉 你贏了！';
+            } else if (data.winner) {
+                resultText = '😢 你输了...';
+            } else {
+                resultText = '🤝 平手！';
+            }
             document.getElementById('resultView').style.display = 'block';
-            document.getElementById('resultView').innerHTML = '<h2>' + (data.winner === myName ? '🎉 你贏了！' : (data.winner ? '😢 你输了' : '🤝 平手！')) + '</h2><p>你的骰子: ' + data.scores[0] + ' | 對手骰子: ' + data.scores[1] + '</p><button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;">再來一局</button><button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;">離開</button>';
+            document.getElementById('resultView').innerHTML = '<h2>' + resultText + '</h2><p>你的骰子: ' + myScore + ' | 對手骰子: ' + oppScore + '</p><button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;">再來一局</button><button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;">離開</button>';
         }
 
         function showResult(data) {
