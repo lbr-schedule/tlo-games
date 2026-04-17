@@ -184,15 +184,19 @@ function handleDiceMessage(ws, msg) {
         }
         game.scores[playerIndex] += dice;
         
+        // 先切換到下一回合
+        game.round++;
+        game.currentTurn = 1 - game.currentTurn;
+        
         broadcastDice({
             type: 'roll_result',
             player: username,
             dice,
             scores: game.scores,
-            nextTurn: game.currentTurn
+            nextTurn: game.currentTurn  // 現在 currentTurn 是正確的下一位玩家
         });
         
-        if (game.round >= 3) {
+        if (game.round > 6) {
             game.status = 'finished';
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
             broadcastDice({
