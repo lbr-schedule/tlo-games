@@ -198,6 +198,9 @@ function handleDiceMessage(ws, msg) {
     }
 }
 
+// JSON 解析
+app.use(express.json());
+
 // ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
 // 客戶端每1秒輪詢一次 /dice/poll
 app.get('/dice/poll', (req, res) => {
@@ -348,9 +351,6 @@ app.get('/api/roulette/status', (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
-
-// JSON 解析（必須在路由之前）
-app.use(express.json());
 
 app.post('/api/roulette/bet', (req, res) => {
     if (rouletteState.phase !== 'betting') {
