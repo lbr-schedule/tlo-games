@@ -375,6 +375,18 @@
         function showGameOver(data) {
             gameEnded = true;
             canPlay = false;
+            
+            // 3.5秒後自動開始下一局
+            setTimeout(() => {
+                document.getElementById('resultView').style.display = 'none';
+                document.getElementById('myDice').textContent = '?';
+                document.getElementById('oppDice').textContent = '?';
+                gameEnded = false;
+                canPlay = true;
+                // 重置輪次顯示
+                document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                document.getElementById('rollBtn').disabled = false;
+            }, 3500);
             const myScore = data.scores[0] || 0;
             const oppScore = data.scores[1] || 0;
             let resultText = '';

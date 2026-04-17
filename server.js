@@ -193,11 +193,12 @@ function handleDiceMessage(ws, msg) {
             player: username,
             dice,
             scores: game.scores,
-            nextTurn: game.currentTurn  // 現在 currentTurn 是正確的下一位玩家
+            nextTurn: game.currentTurn
         });
         
-        if (game.round > 6) {
-            game.status = 'finished';
+        // 一局 = 雙方各擲一次 = 2次roll
+        // 2 rolls per round, then end round
+        if (game.round >= 2) {
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
             broadcastDice({
                 type: 'game_over',
@@ -205,6 +206,11 @@ function handleDiceMessage(ws, msg) {
                 winner: winner >= 0 ? game.players[winner] : null,
                 isDraw: winner === -1
             });
+            
+            // 準備下一局：重置分數和輪次
+            game.round = 0;
+            game.scores = [0, 0];
+            game.currentTurn = 0; // 老闆先擲
         }
     }
     
