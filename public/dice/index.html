@@ -267,16 +267,16 @@
                     break;
                     
                 case 'roll_result':
-                    // 顯示骰子（用 myIndex 判斷是對手還是自己的骰子）
+                    // 顯示骰子 - 直接用 data.player 判斷是誰骰的
                     if (data.player === myName) {
-                        // 自己擲的骰子
+                        // 自己骰的
                         document.getElementById('myDice').textContent = data.dice;
                         document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                         document.getElementById('rollBtn').disabled = true;
                     } else {
-                        // 對手擲的骰子
+                        // 對手骰的
                         document.getElementById('oppDice').textContent = data.dice;
-                        // 如果輪到你了，enable 按鈕
+                        // 如果 nextTurn 是我的索引，代表輪到我
                         if (data.nextTurn === myIndex) {
                             document.getElementById('rollBtn').disabled = false;
                             document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
