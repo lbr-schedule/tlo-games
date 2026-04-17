@@ -367,24 +367,28 @@
                 showBalanceInsufficientModal(); 
                 return; 
             }
-            gameStarted = true; // Game has started, don't reset button from now on
+            gameStarted = true;
             inGame = true;
             canPlay = true;
             gameEnded = false;
             myIndex = index ?? 0;
-            gamePlayers = [myName, opponent]; // Store players for this game
+            gamePlayers = [myName, opponent];
+            
+            // 隱藏所有視圖
             document.getElementById('matchView').style.display = 'none';
             document.getElementById('battleView').style.display = 'block';
             document.getElementById('rankView').style.display = 'none';
+            
+            // 重置所有 UI
+            document.getElementById('myDice').textContent = '?';
+            document.getElementById('oppDice').textContent = '?';
             document.getElementById('opponentDisplay').textContent = opponent;
-            document.getElementById('logoutBtn').style.display = 'none'; // 對戰中不顯示登出
-            document.getElementById('leaveBtn').style.display = 'block'; // 對戰中顯示離開
-            resetDice();
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('leaveBtn').style.display = 'inline-block';
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = false;
-            document.getElementById('leaveBtn').style.display = 'inline-block';
             document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
-            document.getElementById('oppDice').textContent = '?';
+            resetMatchButton(); // 重置匹配按鈕
         }
         
         function resetDice() {
@@ -586,11 +590,10 @@
             if (btn) {
                 btn.textContent = '🔍 開始配對';
                 btn.disabled = false;
+                btn.style.display = 'inline-block';
             }
             var cancelBtn = document.getElementById('cancelMatchBtn');
             if (cancelBtn) cancelBtn.style.display = 'none';
-            var leaveBtn = document.getElementById('leaveBtn');
-            if (leaveBtn) leaveBtn.style.display = 'none';
         }
         
         function setMatchingState(matching) {
@@ -650,7 +653,12 @@
             inGame = false;
             gameEnded = false;
             gameStarted = false;
+            isMatching = false;
             document.getElementById('resultView').style.display = 'none';
+            document.getElementById('myDice').textContent = '?';
+            document.getElementById('oppDice').textContent = '?';
+            document.getElementById('opponentDisplay').textContent = '-';
+            document.getElementById('rollBtn').textContent = '等待擲骰...';
             showMatch();
         }
         
