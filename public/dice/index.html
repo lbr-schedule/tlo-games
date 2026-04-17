@@ -291,12 +291,13 @@
                     break;
                     
                 case 'rematch_start':
+                    gameStarted = false; // Reset for new game
                     resetDice();
                     document.getElementById('resultView').style.display = 'none';
                     gameEnded = false;
                     canPlay = true;
                     document.getElementById('rollBtn').disabled = false;
-            document.getElementById('leaveBtn').style.display = 'inline-block';
+                    document.getElementById('leaveBtn').style.display = 'inline-block';
                     document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
                     break;
                     
@@ -330,6 +331,7 @@
             inGame = false;
             canPlay = false;
             gameEnded = false;
+            gameStarted = false; // Always reset for fresh start
             document.getElementById('matchView').style.display = 'block';
             document.getElementById('battleView').style.display = 'none';
             document.getElementById('rankView').style.display = 'none';
@@ -339,8 +341,6 @@
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = true;
             document.getElementById('rollBtn').textContent = '等待擲骰...';
-            // 遊戲已開始後不再重置配對按鈕
-            if (gameStarted) return;
             resetMatchButton();
         }
         
