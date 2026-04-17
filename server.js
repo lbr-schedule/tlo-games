@@ -88,7 +88,8 @@ function createDiceGame(player1, player2) {
         id: Date.now(),
         players: [player1, player2],
         scores: [0, 0],
-        currentTurn: 0,
+        rolled: [false, false],  // 記錄誰已骰
+        diceValues: [0, 0],       // 記錄骰出的點數
         status: 'playing',
         round: 1
     };

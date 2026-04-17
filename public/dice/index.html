@@ -273,22 +273,19 @@
                     break;
                     
                 case 'roll_result':
-                    console.log('roll_result:', 'myName=' + myName, 'data.player=' + data.player, 'myIndex=' + myIndex, 'nextTurn=' + data.nextTurn);
-                    
-                    // 顯示骰子 - 不管是誰骰的，都顯示
-                    if (data.player === myName) {
-                        document.getElementById('myDice').textContent = data.dice;
-                    } else {
-                        document.getElementById('oppDice').textContent = data.dice;
+                    // 顯示雙方骰子
+                    if (data.diceValues) {
+                        document.getElementById('myDice').textContent = data.diceValues[myIndex] || '?';
+                        document.getElementById('oppDice').textContent = data.diceValues[1 - myIndex] || '?';
                     }
                     
-                    // 按鈕狀態：根據 nextTurn 判斷
-                    if (data.nextTurn === myIndex && !gameEnded) {
-                        document.getElementById('rollBtn').disabled = false;
-                        document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
-                        canPlay = true;
-                        isRolling = false; // 解鎖
-                    } else {
+                    // 如果雙方都骰完了，禁用按鈕
+                    if (data.rolled && data.rolled[0] && data.rolled[1]) {
+                        document.getElementById('rollBtn').textContent = '等待結算...';
+                        document.getElementById('rollBtn').disabled = true;
+                        canPlay = false;
+                    } else if (!gameEnded) {
+                        // 还没骰完，等待
                         document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                         document.getElementById('rollBtn').disabled = true;
                     }
@@ -299,6 +296,11 @@
                     break;
                     
                 case 'game_over':
+                    // 確保顯示最終骰子
+                    if (data.diceValues) {
+                        document.getElementById('myDice').textContent = data.diceValues[myIndex] || '?';
+                        document.getElementById('oppDice').textContent = data.diceValues[1 - myIndex] || '?';
+                    }
                     showGameOver(data);
                     break;
                     
