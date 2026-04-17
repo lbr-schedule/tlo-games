@@ -230,6 +230,24 @@ app.get('/dice/poll', (req, res) => {
 });
 
 
+// 清理超時玩家（30秒沒poll就移除）
+function cleanupStalePlayers() {
+    const now = Date.now();
+    const staleTimeout = 30000; // 30秒
+    
+    // 清理等待池中超時的玩家
+    for (const name of diceState.waitingPlayers) {
+        const player = diceState.players.get(name);
+        if (!player || (now - player.lastPoll > staleTimeout)) {
+            diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== name);
+            diceState.players.delete(name);
+        }
+    }
+}
+
+// 每10秒清理一次
+setInterval(cleanupStalePlayers, 10000);
+
 // 發送消息到伺服器（客戶端使用 POST）
 app.post('/dice/action', (req, res) => {
     const { username, type } = req.body;
