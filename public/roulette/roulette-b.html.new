@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎰 T-LO 俄羅斯輪盤 B版（仿真）</title>
+    <title>🎰 T-LO 俄羅斯輪盤</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { height: 100%; }
@@ -46,73 +46,14 @@
         
         .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; }
         
-        .roulette-table { position: relative; width: 320px; height: 320px; margin: 10px auto; }
+        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
+        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
+        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
+        .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
+        @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
         
-        /* 外圈（軌道） */
-        .wheel-track { 
-            width: 320px; height: 320px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, #1a472a, #2d5a3f);
-            position: absolute;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
-        }
-        
-        /* 轉盤 */
-        .wheel-container { 
-            width: 300px; height: 300px; 
-            border-radius: 50%; 
-            position: absolute; 
-            left: 10px; top: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        .wheel { 
-            width: 300px; height: 300px; 
-            border-radius: 50%; 
-            transform-origin: 150px 150px; 
-            transition: transform 8s cubic-bezier(0.1, 0.4, 0.2, 1);
-            transform: rotate(0deg);
-        }
-        .wheel.spinning { 
-            animation: wheel-fast-spin 0.15s linear infinite; 
-        }
-        @keyframes wheel-fast-spin { 
-            from { transform: rotate(0deg); } 
-            to { transform: rotate(360deg); } 
-        }
-        
-        /* 小球 */
-        .ball { 
-            width: 16px; height: 16px; 
-            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-            border-radius: 50%;
-            position: absolute;
-            left: 152px; top: 10px;
-            transform-origin: 8px 150px;
-            box-shadow: 0 0 10px rgba(255,255,255,0.8);
-            z-index: 20;
-        }
-        .ball.spinning {
-            animation: ball-spin 0.15s linear infinite;
-        }
-        @keyframes ball-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(-360deg); }
-        }
-        
-        /* 指針（頂部向下） */
-        .ball-pointer {
-            width: 0; height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 25px solid #ffd700;
-            position: absolute;
-            top: -5px;
-            left: 148px;
-            z-index: 15;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
-        }
-        
-        /* 結果顯示 */
         .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
         .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
@@ -245,7 +186,7 @@
     </style>
 </head>
 <body>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO 俄羅斯輪盤 B版（仿真）</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO 俄羅斯輪盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -287,8 +228,9 @@
             <div class="tab-content active" id="gameTab">
                 <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
                 
-                <div class="roulette-table">
-                    <div class="wheel-track"></div>
+                <div class="wheel-container">
+                    <div class="wheel-border"></div>
+                    <div class="wheel-pointer"></div>
                     <div class="wheel-outer">
                         <div class="wheel" id="wheel">
                             <canvas id="wheelCanvas" width="300" height="300"></canvas>
