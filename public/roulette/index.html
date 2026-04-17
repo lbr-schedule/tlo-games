@@ -13,7 +13,7 @@
             height: 100vh; 
             height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
             color: white; 
-            overflow-y: auto; 
+            overflow: hidden; 
             display: flex;
             flex-direction: column;
         }
@@ -178,16 +178,6 @@
         .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
         .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
         .modal .guide-step p strong { color: #fff; }
-
-        /* 手機響應式 - 縮放整個遊戲區塊 */
-        @media (max-height: 700px) {
-            .game-area { transform: scale(0.85); transform-origin: top center; }
-            .container { padding: 0.2rem; }
-        }
-        
-        @media (max-height: 580px) {
-            .game-area { transform: scale(0.7); transform-origin: top center; }
-        }
     </style>
 </head>
 <body>
