@@ -153,7 +153,7 @@ async function updateDicePlayerScore(winner, loser, betAmount) {
     }
 }
 
-function handleDiceMessage(ws, msg) {
+async function handleDiceMessage(ws, msg) {
     const username = msg.username || 'Player';
 
     if (msg.type === 'cancel') {
@@ -191,6 +191,21 @@ function handleDiceMessage(ws, msg) {
     if (msg.type === 'join') {
         const player = diceState.players.get(username);
         
+        // Check if player has enough score to play (min 10)
+        let playerScore = 0;
+        try {
+            const result = await db.execute({
+                sql: 'SELECT score FROM players WHERE username = ?',
+                args: [username]
+            });
+            playerScore = result.rows?.[0]?.score ?? 0;
+        } catch(e) {}
+        
+        if (playerScore < 10) {
+            sendToPlayer(username, { type: 'balance_insufficient', score: playerScore, required: 10 });
+            return;
+        }
+        
         // If already in a game, re-send game_start with current game info
         if (player?.gameId) {
             const game = diceState.games.get(player.gameId);
@@ -213,9 +228,33 @@ function handleDiceMessage(ws, msg) {
         // Remove from waiting list (prevent duplicates)
         diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
         
-        // If there are other waiting players, match immediately
+        // If there are other waiting players, match immediately (check both have score)
         if (diceState.waitingPlayers.length > 0) {
-            const opponent = diceState.waitingPlayers.shift();
+            // Find a waiting player with enough score
+            let opponent = null;
+            for (const p of diceState.waitingPlayers) {
+                try {
+                    const result = await db.execute({
+                        sql: 'SELECT score FROM players WHERE username = ?',
+                        args: [p]
+                    });
+                    const score = result.rows?.[0]?.score ?? 0;
+                    if (score >= 10) {
+                        opponent = diceState.waitingPlayers.shift();
+                        break;
+                    } else {
+                        // Remove player with insufficient score
+                        diceState.waitingPlayers = diceState.waitingPlayers.filter(wp => wp !== p);
+                    }
+                } catch(e) {}
+            }
+            
+            if (!opponent) {
+                // No valid opponent, just add self to queue
+                diceState.waitingPlayers.push(username);
+                sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+                return;
+            }
             const game = createDiceGame(opponent, username);
             diceState.games.set(game.id, game);
             

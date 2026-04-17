@@ -330,6 +330,14 @@
                     console.log('Score synced from server:', myScore);
                     break;
                     
+                case 'balance_insufficient':
+                    // 積分不足，無法遊戲
+                    showToast('積分不足（' + data.score + '），需要至少 ' + data.required + ' 才能遊戲');
+                    // 取消匹配狀態
+                    setMatchingState(false);
+                    resetMatchButton();
+                    break;
+                    
                 case 'rematch_start':
                     // 更新 myIndex（用於正確顯示分數）
                     if (data.myIndex !== undefined) {
