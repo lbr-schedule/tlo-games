@@ -267,14 +267,14 @@
                     break;
                     
                 case 'roll_result':
-                    // 顯示雙方骰子
+                    // 顯示骰子（用 myIndex 判斷是對手還是自己的骰子）
                     if (data.player === myName) {
-                        // 自己擲的
+                        // 自己擲的骰子
                         document.getElementById('myDice').textContent = data.dice;
                         document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                         document.getElementById('rollBtn').disabled = true;
                     } else {
-                        // 對手擲的
+                        // 對手擲的骰子
                         document.getElementById('oppDice').textContent = data.dice;
                         // 如果輪到你了，enable 按鈕
                         if (data.nextTurn === myIndex) {
@@ -399,16 +399,15 @@
                 scoreChange = -10;
             }
             
-            // 顯示結果彈窗（積分增減）
+            // 顯示結果彈窗（積分增減）- 只有文字，按鈕統一用 rollBtn
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
             document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;">' +
                 '<h2 style="color:#ffd700;margin-bottom:15px;">' + resultText + ' ' + changeText + '</h2>' +
-                '<button onclick="requestRematch()" class="btn-primary" style="padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
-                '<div style="margin-top:15px;"><button onclick="leaveGame()" class="btn-secondary" style="padding:10px 25px;">🚪 離開遊戲</button></div>' +
+                '<p style="color:#aaa;margin-top:10px;">請按「再來一局」按鈕繼續</p>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
-            // 按鈕變成「再來一局」
+            // rollBtn 變成「再來一局」- 這是唯一的按鈕
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
         }
