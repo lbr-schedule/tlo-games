@@ -206,6 +206,10 @@
                 body: JSON.stringify({ username: myName, type, ...extra })
             }).then(res => res.json()).then(data => {
                 console.log('action sent:', type, data);
+                // After join, poll immediately instead of waiting for next interval
+                if (type === 'join') {
+                    poll();
+                }
             }).catch(err => {
                 console.log('action failed:', type, err);
             });
