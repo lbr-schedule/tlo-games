@@ -122,7 +122,6 @@
                 <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
                 <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button>
                 <button class="btn-warning" id="cancelMatchBtn" onclick="cancelMatch()" style="display:none;">❌ 取消配對</button>
-                <button class="btn-danger" id="leaveBtn" onclick="leaveGame()" style="display:none;">🚪 離開</button>
                 </div>
             </div>
             
@@ -150,6 +149,7 @@
                 </div>
                 
                 <button class="btn-dice" id="rollBtn" onclick="doAction()" disabled>等待擲骰...</button>
+                <button id="leaveBtn" onclick="leaveGame()" style="display:none;margin-top:10px;padding:10px 25px;background:#666;color:white;border:none;border-radius:8px;cursor:pointer;">🚪 離開遊戲</button>
             </div>
             
             <!-- 排行區域 -->
@@ -273,6 +273,8 @@
                     break;
                     
                 case 'roll_result':
+                    // 除錯用
+                    console.log('roll_result:', 'myName=' + myName, 'data.player=' + data.player, 'myIndex=' + myIndex, 'nextTurn=' + data.nextTurn);
                     // 顯示骰子 - 直接用 data.player 判斷是誰骰的
                     if (data.player === myName) {
                         // 自己骰的
@@ -311,7 +313,7 @@
                     document.getElementById('resultView').style.display = 'none';
                     document.getElementById('opponentDisplay').textContent = data.opponent || '對手';
                     document.getElementById('rollBtn').disabled = false;
-                    document.getElementById('leaveBtn').style.display = 'inline-block';
+                    document.getElementById('leaveBtn').style.display = 'block';
                     document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
                     break;
                     
@@ -356,6 +358,7 @@
             document.getElementById('rollBtn').disabled = true;
             document.getElementById('rollBtn').textContent = '等待擲骰...';
             document.getElementById('logoutBtn').style.display = 'inline-block'; // 匹配階段顯示登出
+            document.getElementById('leaveBtn').style.display = 'none'; // 隱藏離開按鈕
             resetMatchButton();
         }
         
@@ -375,6 +378,7 @@
             document.getElementById('rankView').style.display = 'none';
             document.getElementById('opponentDisplay').textContent = opponent;
             document.getElementById('logoutBtn').style.display = 'none'; // 對戰中不顯示登出
+            document.getElementById('leaveBtn').style.display = 'block'; // 對戰中顯示離開
             resetDice();
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = false;
@@ -425,6 +429,7 @@
             // rollBtn 變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
+            document.getElementById('leaveBtn').style.display = 'block'; // 保持顯示
         }
 
         function showResult(data) {
