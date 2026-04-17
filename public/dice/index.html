@@ -235,7 +235,7 @@
                     showMatch();
                     break;
                     
-                case 'start':
+                case 'game_start':
                     showBattle(data.opponent);
                     resetMatchButton();
                     break;
@@ -540,7 +540,7 @@
         
         function doLogout() {
             localStorage.removeItem('lbr_dice_session'); // 清除 session
-            if (ws) { ws.send(JSON.stringify({ type: 'leave' })); ws.close(); }
+            sendAction('leave');
             myName = '';
             myScore = 0;
             inGame = false;
