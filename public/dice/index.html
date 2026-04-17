@@ -238,11 +238,12 @@
             switch(data.type) {
                 case 'waiting':
                     showMatch();
+                    setMatchingState(true);
                     break;
                     
                 case 'game_start':
+                    setMatchingState(false);
                     showBattle(data.opponent);
-                    resetMatchButton();
                     break;
                     
                 case 'roll_result':
@@ -487,6 +488,7 @@
         function cancelMatch() {
             sendAction('cancel');
             resetMatchButton();
+            setMatchingState(false);
             showToast('已取消配對');
         }
 
@@ -496,8 +498,7 @@
                 const btn = document.getElementById('matchBtn');
                 btn.textContent = '⏳ 配對中...';
                 btn.disabled = true;
-                isMatching = true;
-                document.getElementById('cancelMatchBtn').style.display = 'inline-block';
+                setMatchingState(true);
             }
         }
         
@@ -511,7 +512,14 @@
             if (cancelBtn) cancelBtn.style.display = 'none';
             var leaveBtn = document.getElementById('leaveBtn');
             if (leaveBtn) leaveBtn.style.display = 'none';
-            isMatching = false;
+        }
+        
+        function setMatchingState(matching) {
+            isMatching = matching;
+            const cancelBtn = document.getElementById('cancelMatchBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = matching ? 'inline-block' : 'none';
+            }
         }
         
         function doRoll() {
