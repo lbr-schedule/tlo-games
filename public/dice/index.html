@@ -507,8 +507,10 @@
                 btn.textContent = '🔍 開始配對';
                 btn.disabled = false;
             }
-            document.getElementById('cancelMatchBtn').style.display = 'none';
-            document.getElementById('leaveBtn').style.display = 'none';
+            var cancelBtn = document.getElementById('cancelMatchBtn');
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            var leaveBtn = document.getElementById('leaveBtn');
+            if (leaveBtn) leaveBtn.style.display = 'none';
             isMatching = false;
         }
         

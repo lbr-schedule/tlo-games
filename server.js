@@ -120,29 +120,31 @@ function handleDiceMessage(ws, msg) {
     }
     
     if (msg.type === 'join') {
-        // First, remove this player if they're already in waiting (prevents duplicates)
+        // If already in a game, ignore
+        if (diceState.players.has(username) && diceState.players.get(username).gameId) {
+            return;
+        }
+        
+        // Remove from waiting list (prevent duplicates)
+        const wasInWaiting = diceState.waitingPlayers.includes(username);
         diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
         
-        // Find any waiting opponent
-        const opponent = diceState.waitingPlayers[0]; // Just take the first one
-        
-        if (opponent) {
-            const game = createDiceGame(username, opponent);
+        // If there are other waiting players, match immediately
+        if (diceState.waitingPlayers.length > 0) {
+            const opponent = diceState.waitingPlayers.shift(); // Get first waiting player
+            const game = createDiceGame(opponent, username);
             diceState.games.set(game.id, game);
-            diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== opponent);
             
-            // 對手收到 game_start
-            sendToPlayer(opponent, { type: 'game_start', opponent: username, gameId: game.id, myIndex: 1 });
-            // 自己收到 game_start
-            sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 0 });
+            // Send game_start to both
+            sendToPlayer(opponent, { type: 'game_start', opponent: username, gameId: game.id, myIndex: 0 });
+            sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 1 });
             
-            // 更新玩家遊戲狀態（不含 ws）
-            diceState.players.set(username, { ...(diceState.players.get(username) || {}), gameId: game.id });
+            // Update player game state
             diceState.players.set(opponent, { ...(diceState.players.get(opponent) || {}), gameId: game.id });
+            diceState.players.set(username, { ...(diceState.players.get(username) || {}), gameId: game.id });
         } else {
-            if (!diceState.waitingPlayers.includes(username)) {
-                diceState.waitingPlayers.push(username);
-            }
+            // No one waiting, add to queue
+            diceState.waitingPlayers.push(username);
             sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
         }
     }
