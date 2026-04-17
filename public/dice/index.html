@@ -403,10 +403,11 @@
                 scoreChange = -10;
             }
             
-            // 顯示結果彈窗
+            // 顯示結果彈窗 - 白字黃底
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
-            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;">' +
-                '<h2 style="color:#ffd700;margin-bottom:15px;">' + resultText + ' ' + changeText + '</h2>' +
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;background:#ffd700;border-radius:15px;">' +
+                '<h2 style="color:#1a1a2e;margin-bottom:15px;font-size:1.5em;">' + resultText + ' ' + changeText + '</h2>' +
+                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:10px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
                 '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;">🚪 離開遊戲</button>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
@@ -414,6 +415,8 @@
             // 更新積分顯示
             myScore += scoreChange;
             document.getElementById('playerScore').textContent = myScore;
+            myBalance = myScore; // 同步更新
+            saveSession(); // 保存 session
             
             // rollBtn 變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
