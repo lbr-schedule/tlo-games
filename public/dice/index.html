@@ -282,7 +282,12 @@
                         const oppDiceVal = data.diceValues[1 - myIndex];
                         console.log('    Setting myDice=' + myDiceVal + ', oppDice=' + oppDiceVal);
                         document.getElementById('myDice').textContent = myDiceVal || '?';
-                        document.getElementById('oppDice').textContent = oppDiceVal || '?';
+                        // 如果對手還沒骰，顯示點點點
+                        if (oppDiceVal === 0 && data.rolled && !data.rolled[1 - myIndex]) {
+                            document.getElementById('oppDice').textContent = '...';
+                        } else {
+                            document.getElementById('oppDice').textContent = oppDiceVal || '?';
+                        }
                     } else {
                         console.log('    No diceValues in data!');
                         // Fallback: show data.dice
@@ -442,10 +447,10 @@
             myBalance = myScore;
             saveSession();
             
-            // 顯示結果彈窗 - 只有文字黃底+閃動，rollBtn會變成再來一局
+            // 顯示結果彈窗 - 白字黃底透明+閃動
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
-            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:15px;background:rgba(255,215,0,0.9);border-radius:10px;animation:blink 1s infinite;">' +
-                '<h2 style="color:#1a1a2e;font-size:1.4em;">' + resultText + ' ' + changeText + '</h2>' +
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;background:rgba(255,215,0,0.85);border-radius:15px;animation:blink 0.8s infinite;box-shadow:0 0 20px rgba(255,215,0,0.5);">' +
+                '<h2 style="color:#1a1a2e;font-size:1.6em;font-weight:bold;text-shadow:0 0 10px rgba(255,255,255,0.5);">' + resultText + ' ' + changeText + '</h2>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
