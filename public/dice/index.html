@@ -371,6 +371,7 @@
             inGame = true;
             canPlay = true;
             gameEnded = false;
+            isRolling = false; // 重置骰子鎖
             myIndex = index ?? 0;
             gamePlayers = [myName, opponent];
             
@@ -604,9 +605,14 @@
             }
         }
         
+        let isRolling = false; // 防呆：防止重複骰
+        
         function doRoll() {
-            if (!canPlay) return;
+            if (!canPlay || isRolling) return;
             if (myBalance < 10) { showToast('金額不足，無法遊戲'); return; }
+            
+            isRolling = true; // 鎖定
+            canPlay = false; // 禁用遊戲
             
             const diceEl = document.getElementById('myDice');
             diceEl.classList.add('shaking');
@@ -620,6 +626,7 @@
                     diceEl.classList.remove('shaking');
                     sendAction('roll');
                     document.getElementById('rollBtn').textContent = '等待對手...';
+                    document.getElementById('rollBtn').disabled = true;
                 }
             }, 80);
         }
