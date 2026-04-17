@@ -148,6 +148,31 @@ function handleDiceMessage(ws, msg) {
         return;
     }
     
+    if (msg.type === 'leave') {
+        const player = diceState.players.get(username);
+        
+        // If in a game, notify opponent and remove game
+        if (player?.gameId) {
+            const game = diceState.games.get(player.gameId);
+            if (game) {
+                const opponent = game.players.find(p => p !== username);
+                if (opponent) {
+                    sendToPlayer(opponent, { type: 'opponent_left' });
+                    // Reset opponent's state
+                    const oppPlayer = diceState.players.get(opponent);
+                    if (oppPlayer) delete oppPlayer.gameId;
+                }
+                diceState.games.delete(player.gameId);
+            }
+        }
+        
+        // Remove from waiting list if there
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        delete player.gameId;
+        sendToPlayer(username, { type: 'left' });
+        return;
+    }
+    
     if (msg.type === 'join') {
         const player = diceState.players.get(username);
         
