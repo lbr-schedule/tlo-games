@@ -245,13 +245,17 @@
         function handleMessage(data) {
             switch(data.type) {
                 case 'waiting':
-                    showMatch();
-                    setMatchingState(true);
+                    if (!gameStarted) {
+                        showMatch();
+                        setMatchingState(true);
+                    }
                     break;
                     
                 case 'game_start':
                     setMatchingState(false);
                     showBattle(data.opponent);
+                    // Ensure match button is hidden in battle view
+                    document.getElementById('matchBtn').style.display = 'none';
                     break;
                     
                 case 'roll_result':
@@ -329,12 +333,14 @@
             document.getElementById('resultView').style.display = 'none';
             document.getElementById('rollBtn').disabled = true;
             document.getElementById('rollBtn').textContent = '等待擲骰...';
-            // 重置配對按鈕
+            // 遊戲已開始後不再重置配對按鈕
+            if (gameStarted) return;
             resetMatchButton();
         }
         
         function showBattle(opponent) {
             if (myBalance < 10) { showToast('金額不足，無法遊戲'); showMatch(); return; }
+            gameStarted = true; // Game has started, don't reset button from now on
             inGame = true;
             canPlay = true;
             gameEnded = false;
@@ -491,6 +497,7 @@
         }
         
         let isMatching = false;
+        let gameStarted = false; // Prevent showMatch from resetting button during game
         let gameEnded = false; // 追蹤遊戲是否結束
         
         function cancelMatch() {
