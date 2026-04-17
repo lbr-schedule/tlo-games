@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎰 T-LO 俄羅斯輪盤</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -10,12 +10,14 @@
         body { 
             font-family: 'Segoe UI', sans-serif; 
             background: linear-gradient(135deg, #1a1a2e, #16213e); 
-            height: 100vh; 
             height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
+            height: 100%; /* fallback */
             color: white; 
             overflow: hidden; 
             display: flex;
             flex-direction: column;
+            touch-action: manipulation;
+            -webkit-overflow-scrolling: touch;
         }
         .container { 
             max-width: 100%; 
@@ -24,7 +26,10 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
         
         h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; }
@@ -39,11 +44,11 @@
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
         .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; }
         
-        .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; }
         
         .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
         .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
-        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; }
+        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
@@ -61,7 +66,7 @@
         .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 3px; border: 1px solid rgba(255,255,255,0.25); width: 40px; height: 30px; box-sizing: border-box; }
         .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .modal-overlay.show { display: flex; }
         .modal { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; }
         .modal h2 { color: #ffd700; text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
@@ -82,7 +87,7 @@
         .bet-section h3 { color: #ffd700; margin-bottom: 8px; font-size: clamp(0.9rem, 3vw, 1rem); }
         
         .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(4px, 1vw, 6px); margin-bottom: clamp(4px, 1vw, 6px); }
-        .bet-btn { padding: clamp(8px, 2vw, 12px) 3px; border: none; border-radius: 10px; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; cursor: pointer; width: 100%; min-height: clamp(45px, 10vw, 55px); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+        .bet-btn { padding: clamp(8px, 2vw, 12px) 3px; border: none; border-radius: 10px; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; cursor: pointer; width: 100%; min-height: clamp(45px, 10vw, 55px); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
         .bet-btn .bet-amount { font-size: clamp(0.7rem, 2vw, 0.8rem); color: #ffd700; display: none; margin-top: 2px; }
         .bet-btn.has-bet .bet-amount { display: block; }
