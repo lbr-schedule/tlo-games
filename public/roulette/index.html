@@ -476,18 +476,16 @@
             if (!audioCtx) initAudio();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            // 如果已經在播放，就不要重新開始
-            if (bgMusicPlaying) return;
             bgMusicPlaying = true;
             
-            const playNote = (freq, startTime, duration, gainVal = 0.08) => {
+            const playNote = (freq, startTime, duration, gainVal = 0.04, type = 'square') => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = 'triangle';
+                osc.type = type;
                 osc.frequency.value = freq;
                 gain.gain.value = gainVal;
                 gain.gain.setValueAtTime(gainVal, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.01);
                 osc.connect(gain);
                 gain.connect(bgMusicGain);
                 osc.start(startTime);
@@ -500,24 +498,38 @@
                     return;
                 }
                 const now = audioCtx.currentTime;
-                // 更活潑的和弦循環：C - G - Am - F（每和弦1秒）
-                const chords = [
-                    [261.63, 329.63, 392.00, 523.25], // C (加了高音)
-                    [392.00, 493.88, 587.33, 783.99], // G
-                    [220.00, 261.63, 329.63, 440.00], // Am
-                    [349.23, 440.00, 523.25, 659.26]  // F
+                
+                // 連續旋律音（每個音符0.2秒，無縫循環）
+                // G大調快節奏旋律：上上下下循環
+                const melody = [
+                    392.00, 440.00, 523.25, 587.33, // G A C D
+                    659.26, 587.33, 523.25, 440.00, // E D C A
+                    392.00, 523.25, 659.26, 523.25, // G C E C
+                    587.33, 523.25, 440.00, 392.00, // D C A G
                 ];
-                const beatDuration = 1.0; // 更快節奏
-                chords.forEach((chord, i) => {
-                    chord.forEach((freq, j) => {
-                        playNote(freq, now + i * beatDuration, beatDuration * 0.85, 0.06);
+                const noteDur = 0.2;
+                
+                // 和弦進行（每4個音符一個和弦）
+                const chords = [
+                    [261.63, 329.63, 392.00], // C
+                    [261.63, 329.63, 392.00], // C
+                    [196.00, 246.94, 293.66], // G
+                    [196.00, 246.94, 293.66], // G
+                ];
+                
+                // 持續播放（每個音符緊接下一個，無間斷）
+                melody.forEach((freq, i) => {
+                    // 旋律
+                    playNote(freq, now + i * noteDur, noteDur * 0.9, 0.05, 'square');
+                    // 和弦（每4個音符換一次）
+                    const chordIdx = Math.floor(i / 4) % chords.length;
+                    chords[chordIdx].forEach((cf) => {
+                        playNote(cf, now + i * noteDur, noteDur * 0.7, 0.025, 'triangle');
                     });
-                    // 每個和弦加一個簡單的旋律音
-                    const melody = [523.25, 587.33, 659.26, 783.99]; // C5, D5, E5, G5
-                    playNote(melody[i], now + i * beatDuration + 0.1, 0.4, 0.04);
                 });
-                // 循環（使用 setInterval 確保穩定）
-                bgMusicTimer = setTimeout(scheduleMusic, beatDuration * 4 * 1000);
+                
+                // 緊接著下一個循環（無縫）
+                bgMusicTimer = setTimeout(scheduleMusic, noteDur * melody.length * 1000);
             };
             
             scheduleMusic();
@@ -1152,6 +1164,8 @@
             document.getElementById('numberBetBtn').classList.remove('disabled');
             // 只在新回合開始時清除選擇（從result/spinning等到betting）
             // 不要在betting中清除，否則用戶下注後馬上又消失
+            // 自動啟動背景音樂
+            if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
         }
         
         function clearSelected() {
