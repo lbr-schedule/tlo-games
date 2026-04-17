@@ -161,6 +161,7 @@
         let pollInterval = null;
         let myName = '';
         let myBalance = 0;
+        let myBalance = 0;
         let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
@@ -193,6 +194,7 @@
             const data = {
                 username: myName,
                 score: myScore,
+                balance: myBalance,
                 cheat: document.getElementById('cheatBadge').textContent.includes('老闆') ? 1 : 0
             };
             localStorage.setItem('lbr_dice_session', JSON.stringify(data));
