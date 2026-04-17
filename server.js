@@ -236,7 +236,7 @@ app.get('/dice/poll', (req, res) => {
 });
 
 
-// 清理超時玩家（30秒沒poll就移除）
+// 清理超時玩家（30秒沒poll就移除）- FORCE REDEPLOY
 function cleanupStalePlayers() {
     const now = Date.now();
     const staleTimeout = 30000; // 30秒
