@@ -246,16 +246,21 @@
                     break;
                     
                 case 'roll_result':
-                    // 自己擲骰了，顯示骰子但允許等待對手
-                    document.getElementById('myDice').textContent = data.yourDice;
-                    // 不 disable 按鈕，只是顯示等待
-                    document.getElementById('rollBtn').textContent = '等待對手擲骰...';
-                    break;
-                    
-                case 'roll_result':
-                    // 對手已準備（擲骰），輪到你了
-                    document.getElementById('oppDice').textContent = '?';
-                    document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                    // 顯示雙方骰子
+                    if (data.player === myName) {
+                        // 自己擲的
+                        document.getElementById('myDice').textContent = data.dice;
+                        document.getElementById('rollBtn').textContent = '等待對手擲骰...';
+                        document.getElementById('rollBtn').disabled = true;
+                    } else {
+                        // 對手擲的
+                        document.getElementById('oppDice').textContent = data.dice;
+                        // 如果輪到你了，enable 按鈕
+                        if (data.nextTurn === gamePlayers.indexOf(myName)) {
+                            document.getElementById('rollBtn').disabled = false;
+                            document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                        }
+                    }
                     break;
                     
                 case 'result':
