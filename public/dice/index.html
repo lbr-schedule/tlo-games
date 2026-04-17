@@ -173,6 +173,7 @@
                 const data = JSON.parse(saved);
                 myName = data.username || '';
                 myScore = data.score || 0;
+                myBalance = data.balance || myScore || 0; // 恢復餘額
                 if (myName) {
                     document.getElementById('playerName').textContent = myName;
                     document.getElementById('playerScore').textContent = myScore;
