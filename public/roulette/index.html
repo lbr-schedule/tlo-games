@@ -183,6 +183,17 @@
         .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
         .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
         .modal .guide-step p strong { color: #fff; }
+
+        /* 桌面設備隱藏滾動条（滑鼠用戶不需要） */
+        @media (hover: hover) and (pointer: fine) {
+            * {
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+            }
+            *::-webkit-scrollbar {
+                display: none; /* Chrome/Safari/Opera */
+            }
+        }
     </style>
 </head>
 <body>
