@@ -1303,12 +1303,10 @@
         // 選擇數字下注模式
         function selectNumberBet() {
             const numberBetArea = document.getElementById('numberBetArea');
-            const customAmountArea = document.getElementById('customAmountArea');
             const betNumInput = document.getElementById('betNum');
             
-            // 顯示數字輸入區和自訂金額區
+            // 顯示數字輸入區
             numberBetArea.style.display = 'flex';
-            customAmountArea.style.display = 'flex';
             
             // 啟用數字輸入框
             betNumInput.disabled = false;
@@ -1320,18 +1318,13 @@
         }
         
         async function placeNumberBet() {
-            // 取得玩家輸入的數字
-            const numInput = document.getElementById('betNum');
-            const num = parseInt(numInput.value);
-            
-            // 取得自訂金額（如果有的話）；否則用 quickAmount
-            const customAmtInput = document.getElementById('customBetAmt');
-            const customAmt = parseInt(customAmtInput?.value);
+            // 如果有自訂金額，用自訂金額；否則用 quickAmount
+            const customAmt = parseInt(document.getElementById('betAmt').value);
             const amt = (!isNaN(customAmt) && customAmt >= 10) ? customAmt : quickAmount;
             
             // 防呆：數字選擇提示
             if (isNaN(num) || num < 0 || num > 36) { 
-                showToast('請輸入數字 0-36');
+                showToast('請選擇數字 0-36');
                 return; 
             }
             
