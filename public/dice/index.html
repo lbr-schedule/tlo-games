@@ -321,6 +321,15 @@
                     showGameOver(data);
                     break;
                     
+                case 'score_update':
+                    // 伺服器更新後的積分同步
+                    myScore = data.score;
+                    myBalance = data.score;
+                    document.getElementById('playerScore').textContent = myScore;
+                    saveSession();
+                    console.log('Score synced from server:', myScore);
+                    break;
+                    
                 case 'rematch_start':
                     // 更新 myIndex（用於正確顯示分數）
                     if (data.myIndex !== undefined) {

@@ -112,6 +112,20 @@ function sendToPlayer(username, msg) {
 
 
 // 骰子遊戲 - 更新玩家積分
+// 獲取玩家積分
+async function getPlayerScore(username) {
+    if (!dbAvailable) return null;
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        return result.rows?.[0]?.score ?? null;
+    } catch(e) {
+        return null;
+    }
+}
+
 async function updateDicePlayerScore(winner, loser, betAmount) {
     if (LOCAL_TEST_MODE) {
         // 本地測試模式
@@ -271,9 +285,22 @@ function handleDiceMessage(ws, msg) {
                 isDraw: isDraw
             });
             
+            // 結算後更新資料庫積分
             if (winner && !isDraw) {
                 const loser = game.players.find(p => p !== winner);
                 updateDicePlayerScore(winner, loser, 10);
+                
+                // 廣播積分更新給雙方
+                getPlayerScore(winner).then(wScore => {
+                    getPlayerScore(loser).then(lScore => {
+                        if (wScore !== null) {
+                            sendToPlayer(winner, { type: 'score_update', score: wScore });
+                        }
+                        if (lScore !== null) {
+                            sendToPlayer(loser, { type: 'score_update', score: lScore });
+                        }
+                    });
+                });
             }
         }
         
