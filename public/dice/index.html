@@ -200,6 +200,10 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: myName, type, ...extra })
+            }).then(res => res.json()).then(data => {
+                console.log('action sent:', type, data);
+            }).catch(err => {
+                console.log('action failed:', type, err);
             });
         }
         
@@ -216,8 +220,9 @@
                 const res = await fetch('/dice/poll?username=' + encodeURIComponent(myName));
                 const data = await res.json();
                 if (data.messages && data.messages.length > 0) {
+                    console.log('poll收到消息:', data.messages.length);
                     for (const msg of data.messages) {
-                        console.log('收到:', msg);
+                        console.log('  收到:', msg.type, msg);
                         handleMessage(msg);
                     }
                 }
