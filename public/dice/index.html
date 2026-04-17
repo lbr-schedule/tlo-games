@@ -153,6 +153,7 @@
     <script>
         let pollInterval = null;
         let myName = '';
+        let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
         let canPlay = false;
@@ -240,14 +241,14 @@
                     resetMatchButton();
                     break;
                     
-                case 'rolled':
+                case 'roll_result':
                     // 自己擲骰了，顯示骰子但允許等待對手
                     document.getElementById('myDice').textContent = data.yourDice;
                     // 不 disable 按鈕，只是顯示等待
                     document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                     break;
                     
-                case 'opponent_ready':
+                case 'roll_result':
                     // 對手已準備（擲骰），輪到你了
                     document.getElementById('oppDice').textContent = '?';
                     document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
@@ -255,6 +256,10 @@
                     
                 case 'result':
                     showResult(data);
+                    break;
+                    
+                case 'game_over':
+                    showGameOver(data);
                     break;
                     
                 case 'rematch_start':
@@ -309,9 +314,11 @@
         }
         
         function showBattle(opponent) {
+            if (myBalance < 10) { showToast('金額不足，無法遊戲'); showMatch(); return; }
             inGame = true;
             canPlay = true;
             gameEnded = false;
+            gamePlayers = [myName, opponent]; // Store players for this game
             document.getElementById('matchView').style.display = 'none';
             document.getElementById('battleView').style.display = 'block';
             document.getElementById('rankView').style.display = 'none';
@@ -330,6 +337,13 @@
             document.getElementById('oppDice').className = 'dice';
         }
         
+        function showGameOver(data) {
+            gameEnded = true;
+            canPlay = false;
+            document.getElementById('resultView').style.display = 'block';
+            document.getElementById('resultView').innerHTML = '<h2>' + (data.winner === myName ? '🎉 你贏了！' : (data.winner ? '😢 你输了' : '🤝 平手！')) + '</h2><p>你的骰子: ' + data.scores[0] + ' | 對手骰子: ' + data.scores[1] + '</p><button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;">再來一局</button><button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;">離開</button>';
+        }
+
         function showResult(data) {
             document.getElementById('myDice').textContent = data.yourDice;
             document.getElementById('oppDice').textContent = data.opponentDice;
@@ -478,6 +492,7 @@
         
         function doRoll() {
             if (!canPlay) return;
+            if (myBalance < 10) { showToast('金額不足，無法遊戲'); return; }
             
             const diceEl = document.getElementById('myDice');
             diceEl.classList.add('shaking');
