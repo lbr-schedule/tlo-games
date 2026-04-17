@@ -281,28 +281,20 @@ function handleDiceMessage(ws, msg) {
         const game = diceState.games.get(player.gameId);
         if (!game || game.status !== 'finished') return;
         
-        // 記錄請求
-        if (!game.rematchRequests) game.rematchRequests = [];
-        if (!game.rematchRequests.includes(username)) {
-            game.rematchRequests.push(username);
-        }
+        // 一方按了馬上開始新遊戲
+        const newGame = createDiceGame(game.players[0], game.players[1]);
+        diceState.games.set(newGame.id, newGame);
+        diceState.games.delete(game.id);
         
-        // 雙方都同意才開始新遊戲
-        if (game.rematchRequests.length >= 2) {
-            const newGame = createDiceGame(game.players[0], game.players[1]);
-            diceState.games.set(newGame.id, newGame);
-            diceState.games.delete(game.id);
-            
-            // 發送 rematch_start 給雙方，包含正確的 myIndex
-            sendToPlayer(game.players[0], { type: 'rematch_start', gameId: newGame.id, myIndex: 0, opponent: game.players[1] });
-            sendToPlayer(game.players[1], { type: 'rematch_start', gameId: newGame.id, myIndex: 1, opponent: game.players[0] });
-        } else {
-            // 通知對方有人請求再來一局
-            const opponent = game.players.find(p => p !== username);
-            sendToPlayer(opponent, {
-                type: 'opponent_wants_rematch'
-            });
-        }
+        // 更新雙方玩家的 gameId
+        const p0 = diceState.players.get(game.players[0]);
+        const p1 = diceState.players.get(game.players[1]);
+        if (p0) p0.gameId = newGame.id;
+        if (p1) p1.gameId = newGame.id;
+        
+        // 發送 game_start 給雙方（包含 myIndex 和 opponent）
+        sendToPlayer(game.players[0], { type: 'game_start', opponent: game.players[1], gameId: newGame.id, myIndex: 0 });
+        sendToPlayer(game.players[1], { type: 'game_start', opponent: game.players[0], gameId: newGame.id, myIndex: 1 });
     }
 }
 

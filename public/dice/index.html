@@ -277,7 +277,6 @@
                         // 對手擲的
                         document.getElementById('oppDice').textContent = data.dice;
                         // 如果輪到你了，enable 按鈕
-                        const myIndex = gamePlayers.length > 0 ? gamePlayers.indexOf(myName) : data.nextTurn;
                         if (data.nextTurn === myIndex) {
                             document.getElementById('rollBtn').disabled = false;
                             document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
@@ -388,34 +387,28 @@
             canPlay = false;
             
             let resultText = '';
-            let colorStyle = '#ffd700';
             let scoreChange = 0;
             if (data.isDraw) {
                 resultText = '🤝 平手！';
-                colorStyle = '#00c6ff';
                 scoreChange = 0;
             } else if (data.winner === myName) {
-                resultText = '🎉 你贏了！';
-                colorStyle = '#ffd700';
+                resultText = '🎉 恭喜你獲勝';
                 scoreChange = 10;
             } else {
-                resultText = '😢 你輸了...';
-                colorStyle = '#ff4444';
+                resultText = '😢 很遺憾你輸了';
                 scoreChange = -10;
             }
             
             // 顯示結果彈窗（積分增減）
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
-            const changeColor = scoreChange > 0 ? '#00ff00' : (scoreChange < 0 ? '#ff4444' : '#aaa');
-            document.getElementById('resultView').innerHTML = '<div style="text-align:center;">' +
-                '<h2 style="color:' + colorStyle + ';">' + resultText + '</h2>' +
-                '<p style="font-size:1.5em;margin:20px 0;">積分變化: <span style="color:' + changeColor + ';font-size:1.5em;font-weight:bold;">' + changeText + '</span></p>' +
-                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
-                '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;font-size:1em;">🚪 離開遊戲</button>' +
+            document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:20px;">' +
+                '<h2 style="color:#ffd700;margin-bottom:15px;">' + resultText + ' ' + changeText + '</h2>' +
+                '<button onclick="requestRematch()" class="btn-primary" style="padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
+                '<div style="margin-top:15px;"><button onclick="leaveGame()" class="btn-secondary" style="padding:10px 25px;">🚪 離開遊戲</button></div>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
-            // 勝利後更換按鈕文字為「再來一局」
+            // 按鈕變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
         }
@@ -626,11 +619,19 @@
         
         function doLeave() {
             sendAction('leave');
+            inGame = false;
+            gameEnded = false;
+            gameStarted = false;
+            document.getElementById('resultView').style.display = 'none';
             showMatch();
         }
         
         function leaveGame() {
             sendAction('leave');
+            inGame = false;
+            gameEnded = false;
+            gameStarted = false;
+            document.getElementById('resultView').style.display = 'none';
             showMatch();
         }
         
