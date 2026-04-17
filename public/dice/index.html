@@ -348,7 +348,23 @@
         }
         
         function showBattle(opponent, index) {
-            if (myBalance < 10) { showToast('金額不足，無法遊戲'); showMatch(); return; }
+            if (myBalance < 10) { 
+                showBalanceInsufficientModal(); 
+                return; 
+            }
+            
+            function showBalanceInsufficientModal() {
+                document.getElementById('resultView').innerHTML = \`
+                    <div style="text-align:center;">
+                        <h2 style="color:#ff4444;">⚠️ 積分不足</h2>
+                        <p style="color:#aaa;margin:15px 0;">您的積分不足，無法繼續遊戲</p>
+                        <p style="color:#ffd700;font-size:1.2em;">目前積分: <span style="font-size:1.5em;">\${myBalance}</span></p>
+                        <p style="color:#888;font-size:0.9em;">遊戲最低門檻: 10 積分</p>
+                        <button onclick="leaveGame()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🏠 返回大廳</button>
+                    </div>
+                \`;
+                document.getElementById('resultView').style.display = 'block';
+            }
             gameStarted = true; // Game has started, don't reset button from now on
             inGame = true;
             canPlay = true;
