@@ -62,12 +62,13 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
     });
 }
 
-// 骰子遊戲用 HTTP Long-Polling（取代 WebSocket）
+// 骰子遊戲用 WebSocket
+const WebSocket = require('ws');
+const diceWss = new WebSocket.Server({ noServer: true });
 const diceState = {
     waitingPlayers: [],
     games: new Map(),
-    players: new Map(),  // { username: { lastPoll: timestamp, pendingMessages: [] } }
-    pollInterval: 1000    // 1秒polling
+    players: new Map()
 };
 
 // 輪盤遊戲狀態（單人，無需 WebSocket）
@@ -95,17 +96,10 @@ function createDiceGame(player1, player2) {
 }
 
 function broadcastDice(msg) {
-    // 廣播消息到所有玩家的 pendingMessages（long-polling 機制）
     for (const [name, data] of diceState.players) {
-        data.pendingMessages.push(msg);
-    }
-}
-
-// 發送消息給特定玩家（long-polling 機制）
-function sendToPlayer(username, msg) {
-    const player = diceState.players.get(username);
-    if (player) {
-        player.pendingMessages.push(msg);
+        if (data.ws.readyState === WebSocket.OPEN) {
+            data.ws.send(JSON.stringify(msg));
+        }
     }
 }
 
@@ -120,19 +114,19 @@ function handleDiceMessage(ws, msg) {
             diceState.games.set(game.id, game);
             diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== opponent);
             
-            // 對手收到 game_start
-            sendToPlayer(opponent, { type: 'game_start', opponent: username, gameId: game.id, myIndex: 1 });
-            // 自己收到 game_start
-            sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 0 });
+            const opponentWs = diceState.players.get(opponent)?.ws;
+            if (opponentWs) {
+                opponentWs.send(JSON.stringify({ type: 'game_start', opponent: username, gameId: game.id, myIndex: 1 }));
+            }
             
-            // 更新玩家遊戲狀態（不含 ws）
-            diceState.players.set(username, { ...(diceState.players.get(username) || {}), gameId: game.id });
-            diceState.players.set(opponent, { ...(diceState.players.get(opponent) || {}), gameId: game.id });
+            ws.send(JSON.stringify({ type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 0 }));
+            diceState.players.set(username, { ws, gameId: game.id });
         } else {
             if (!diceState.waitingPlayers.includes(username)) {
                 diceState.waitingPlayers.push(username);
             }
-            sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+            ws.send(JSON.stringify({ type: 'waiting', message: '等待對手中...' }));
+            diceState.players.set(username, { ws, gameId: null });
         }
     }
     
@@ -193,48 +187,18 @@ function handleDiceMessage(ws, msg) {
         for (const p of game.players) {
             const pData = diceState.players.get(p);
             if (pData) pData.gameId = newGame.id;
-            sendToPlayer(p, { type: 'game_start', opponent: game.players[1 - game.players.indexOf(p)], gameId: newGame.id, myIndex: game.players.indexOf(p) });
+            const pWs = diceState.players.get(p)?.ws;
+            if (pWs) pWs.send(JSON.stringify({ type: 'game_start', opponent: game.players[1 - game.players.indexOf(p)], gameId: newGame.id, myIndex: game.players.indexOf(p) }));
         }
     }
 }
 
-// ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
-// 客戶端每1秒輪詢一次 /dice/poll
-app.get('/dice/poll', (req, res) => {
-    const username = req.query.username;
-    if (!username) return res.json({ error: 'no username' });
-    
-    // 初始化玩家狀態
-    if (!diceState.players.has(username)) {
-        diceState.players.set(username, { lastPoll: Date.now(), pendingMessages: [] });
-    }
-    
-    const player = diceState.players.get(username);
-    player.lastPoll = Date.now();
-    
-    // 返回所有待發送消息並清空
-    const messages = player.pendingMessages;
-    player.pendingMessages = [];
-    
-    res.json({ messages, timestamp: Date.now() });
-});
-
-
-// 發送消息到伺服器（客戶端使用 POST）
-app.post('/dice/action', (req, res) => {
-    const { username, type } = req.body;
-    if (!username) return res.status(400).json({ error: 'no username' });
-    
-    // 確保玩家在 players map 中
-    if (!diceState.players.has(username)) {
-        diceState.players.set(username, { lastPoll: Date.now(), pendingMessages: [] });
-    }
-    
-    // 處理各種消息類型
-    const msg = { type, username, ...req.body };
-    handleDiceMessage(null, msg);
-    
-    res.json({ ok: true });
+diceWss.on('connection', (ws) => {
+    ws.on('message', (data) => {
+        try {
+            handleDiceMessage(ws, JSON.parse(data));
+        } catch(e) { console.log('Dice error:', e.message); }
+    });
 });
 
 // ========== 輪盤遊戲邏輯（無 WebSocket） ==========
@@ -305,7 +269,7 @@ app.get('/api/version', (req, res) => {
     res.json({ 
         version: '2.5',
         deployTime: new Date().toISOString(),
-        wsPath: '/dice'
+        wsPath: '/dice/ws'
     });
 });
 
@@ -587,6 +551,19 @@ app.get('/api/roulette/history/:username', async (req, res) => {
     } catch(e) {
         console.log('取得歷史失敗:', e.message);
         res.json({ history: [] });
+    }
+});
+
+// ========== HTTP 路由 ==========
+app.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url, 'http://localhost');
+    
+    if (url.pathname === '/dice/ws') {
+        diceWss.handleUpgrade(request, socket, head, (ws) => {
+            diceWss.emit('connection', ws, request);
+        });
+    } else {
+        socket.destroy();
     }
 });
 

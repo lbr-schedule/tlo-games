@@ -151,7 +151,7 @@
     </div>
 
     <script>
-        let pollInterval = null;
+        let ws = null;
         let myName = '';
         let myScore = 0;
         let inGame = false;
@@ -188,45 +188,37 @@
             localStorage.setItem('lbr_dice_session', JSON.stringify(data));
         }
         
-        // 發送 action 到伺服器
-        function sendAction(type, extra = {}) {
-            if (!myName) return;
-            fetch('/dice/action', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: myName, type, ...extra })
-            });
-        }
-        
-        // 開始輪詢（每1秒）
-        function startPolling() {
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(poll, 1000);
-        }
-        
-        // 輪詢取得消息
-        async function poll() {
-            if (!myName) return;
-            try {
-                const res = await fetch('/dice/poll?username=' + encodeURIComponent(myName));
-                const data = await res.json();
-                if (data.messages && data.messages.length > 0) {
-                    for (const msg of data.messages) {
-                        console.log('收到:', msg);
-                        handleMessage(msg);
-                    }
-                }
-            } catch(e) {
-                console.log('輪詢失敗:', e.message);
-            }
-        }
-        
         function connect() {
-            // HTTP long-polling 模式
-            document.getElementById('connectionStatus').className = 'connection-status online';
-            document.getElementById('connectionStatus').textContent = '✅ 已連線';
-            startPolling();
-            if (myName) startMatch();
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(protocol + '//' + location.host + '/dice/ws');
+            
+            ws.onopen = () => {
+                document.getElementById('connectionStatus').className = 'connection-status online';
+                document.getElementById('connectionStatus').textContent = '✅ 已連線';
+                if (myName) startMatch();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('收到:', data);
+                handleMessage(data);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('connectionStatus').className = 'connection-status offline';
+                document.getElementById('connectionStatus').textContent = '⚠️ 連線中斷';
+                // 清除 session，因為連線中斷可能來自伺服器重啟
+                myName = '';
+                myScore = 0;
+                localStorage.removeItem('lbr_dice_session');
+                // 顯示配對畫面（等同登出）
+                showMatch();
+                // 不要自動重連，避免造成重配對問題
+            };
+            
+            ws.onerror = () => {
+                document.getElementById('connectionStatus').textContent = '❌ 連線錯誤';
+            };
         }
         
         function handleMessage(data) {
@@ -458,8 +450,9 @@
         let gameEnded = false; // 追蹤遊戲是否結束
         
         function startMatch() {
-            if (myName) {
-                sendAction('join');
+            if (ws && ws.readyState === WebSocket.OPEN && myName) {
+                ws.send(JSON.stringify({ type: 'join', username: myName }));
+                // 改變按鈕文字讓使用者知道已按過
                 const btn = document.getElementById('matchBtn');
                 btn.textContent = '⏳ 配對中...';
                 btn.disabled = true;
@@ -477,7 +470,7 @@
         }
         
         function doRoll() {
-            if (!canPlay) return;
+            if (!canPlay || !ws || ws.readyState !== WebSocket.OPEN) return;
             
             const diceEl = document.getElementById('myDice');
             diceEl.classList.add('shaking');
@@ -489,7 +482,7 @@
                 if (count >= 10) {
                     clearInterval(interval);
                     diceEl.classList.remove('shaking');
-                    sendAction('roll');
+                    ws.send(JSON.stringify({ type: 'roll' }));
                     document.getElementById('rollBtn').textContent = '等待對手...';
                 }
             }, 80);
@@ -505,13 +498,15 @@
         }
         
         function doRematch() {
-            sendAction('rematch');
-            document.getElementById('rollBtn').textContent = '等待對手確認...';
-            document.getElementById('rollBtn').disabled = true;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'rematch' }));
+                document.getElementById('rollBtn').textContent = '等待對手確認...';
+                document.getElementById('rollBtn').disabled = true;
+            }
         }
         
         function doLeave() {
-            sendAction('leave');
+            if (ws) ws.send(JSON.stringify({ type: 'leave' }));
             showMatch();
         }
         
