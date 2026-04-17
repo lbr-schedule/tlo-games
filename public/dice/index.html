@@ -160,6 +160,7 @@
     <script>
         let pollInterval = null;
         let myName = '';
+        let myBalance = 0;
         let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
@@ -425,7 +426,8 @@
             
             if (data.success) {
                 myName = username;
-                myScore = data.player.score;
+                myScore = data.player.score || 0;
+                myBalance = data.player.balance || data.player.score || 0;
                 document.getElementById('playerName').textContent = username;
                 document.getElementById('playerScore').textContent = myScore;
                 if (data.player.cheat === 1) {
