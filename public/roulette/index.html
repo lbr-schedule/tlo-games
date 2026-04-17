@@ -404,8 +404,12 @@
             }
             if (!soundEnabled) {
                 bgMusicPlaying = false;
-            } else if (myName && !bgMusicPlaying) {
-                bgMusicPlaying = true;
+                if (bgMusicTimer) clearTimeout(bgMusicTimer);
+            } else if (myName) {
+                // 重新啟動背景音樂
+                bgMusicPlaying = false;
+                if (bgMusicTimer) clearTimeout(bgMusicTimer);
+                startBgMusic();
             }
         }
         
