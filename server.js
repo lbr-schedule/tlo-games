@@ -238,9 +238,14 @@ function handleDiceMessage(ws, msg) {
         }
         game.scores[playerIndex] += dice;
         
-        // 先切換到下一回合
-        game.round++;
+        // 切換到下一回合
         game.currentTurn = 1 - game.currentTurn;
+        
+        // 只有在回到玩家0（第一個玩家）時才增加 round
+        // 這樣 round 表示「第幾輪完整結算」
+        if (game.currentTurn === 0) {
+            game.round++;
+        }
         
         broadcastDice({
             type: 'roll_result',
