@@ -267,6 +267,8 @@
                 case 'game_start':
                     setMatchingState(false);
                     myIndex = data.myIndex ?? 0;  // Store my index (0 or 1)
+                    // 進入遊戲前同步積分
+                    syncScoreFromServer();
                     showBattle(data.opponent, data.myIndex);
                     // Ensure match button is hidden in battle view
                     document.getElementById('matchBtn').style.display = 'none';

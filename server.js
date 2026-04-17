@@ -853,6 +853,22 @@ app.get('/api/players', async (req, res) => {
     }
 });
 
+// 獲取玩家積分（无需登录）
+app.get('/api/score/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!dbAvailable) return res.json({ score: null });
+    
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ username, score: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ username, score: null });
+    }
+});
+
 app.get('/api/player/:username', async (req, res) => {
     if (!dbAvailable) return res.json({ player: null });
     
