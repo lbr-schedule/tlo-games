@@ -6,7 +6,7 @@
     <title>🎰 T-LO 俄羅斯輪盤 B版（仿真）</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a18, #1a1a2e); min-height: 100vh; min-height: 100dvh; color: white; touch-action: manipulation; -webkit-overflow-scrolling: touch; overflow-y: auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a18, #1a1a2e); min-height: 100vh; color: white; }
         .container { max-width: 420px; margin: 0 auto; padding: 10px; }
         
         h1 { text-align: center; padding: 10px; color: #ffd700; font-size: 1.5rem; }
@@ -94,7 +94,6 @@
         
         /* 結果顯示 */
         .result-display { text-align: center; font-size: 1.3rem; padding: 12px; border-radius: 12px; margin: 10px 0; font-weight: bold; }
-        .custom-amount-area { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 10px 0; }
         .result-display.red { background: rgba(204,0,0,0.5); }
         .result-display.black { background: rgba(50,50,50,0.5); }
         .result-display.green { background: rgba(0,170,0,0.5); }
@@ -249,10 +248,6 @@
                         <button onclick="setQuickAmount(500)">500</button>
                     </div>
                     <div class="bet-buttons" id="betButtons">
-                <div class="number-bet" id="numberBetArea" style="margin-top:5px; flex-wrap:wrap; justify-content:center; display: none;">
-                    <input type="number" id="betNum" placeholder="填數字(0-36)" min="0" max="36" disabled style="width:70px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #ffd700; border-radius:8px; padding:8px; font-size:0.9rem; text-align:center;">
-                    <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()" style="padding:10px 18px; background:#ffd700; border:none; border-radius:8px; font-weight:bold; font-size:0.9rem; color:#1a1a2e;">✔ 確認</button>
-                </div>
                         <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span></button>
                         <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span></button>
                         <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span></button>
@@ -336,8 +331,6 @@
         let quickAmount = 100;
         let pollInterval;
         let lastProcessedSpinId = 0;
-        let bgMusicPlaying = false;
-        let bgMusicTimer = null;
         let selectedBets = [];
         
         if (savedUsername && savedBalance) {
@@ -757,17 +750,8 @@
         function hideBrokeOverlay() { document.getElementById('brokeOverlay').classList.remove('show'); }
         
         async function placeBet(type, amount, choice) {
-            // 隱藏數字下注區
-            document.getElementById('numberBetArea').style.display = 'none';
             if (gamePhase !== 'betting') return;
             if (!checkBalance()) return;
-            // 自訂金額
-            const customAmtInput = document.getElementById('customBetAmt');
-            const customAmt = parseInt(customAmtInput && customAmtInput.value ? customAmtInput.value : 'NaN');
-            if (!isNaN(customAmt) && customAmt >= 10) {
-                amount = customAmt;
-                customAmtInput.value = '';
-            }
             if (myBalance < amount) { document.getElementById('brokeOverlay').classList.add('show'); return; }
             
             const bet = { type, amount, info: choice };
