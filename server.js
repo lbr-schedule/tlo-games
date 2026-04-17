@@ -112,6 +112,13 @@ function sendToPlayer(username, msg) {
 function handleDiceMessage(ws, msg) {
     const username = msg.username || 'Player';
 
+    if (msg.type === 'cancel') {
+        // Remove from waiting list
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        sendToPlayer(username, { type: 'cancel' });
+        return;
+    }
+    
     if (msg.type === 'join') {
         const opponent = diceState.waitingPlayers.find(p => p !== username);
         

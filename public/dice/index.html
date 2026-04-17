@@ -110,7 +110,7 @@
                     <div class="spinner">🐱</div>
                     <p>等待配對中...</p>
                 </div>
-                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button>
+                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button><button class="btn-secondary" id="cancelMatchBtn" onclick="cancelMatch()" style="display:none; margin-left:5px;">❌ 取消配對</button><button class="btn-secondary" id="leaveBtn" onclick="leaveGame()" style="display:none; margin-left:5px;">🚪 離開</button>
             </div>
             
             <!-- 對戰區域 -->
@@ -471,6 +471,12 @@
         let isMatching = false;
         let gameEnded = false; // 追蹤遊戲是否結束
         
+        function cancelMatch() {
+            sendAction('cancel');
+            resetMatchButton();
+            showToast('已取消配對');
+        }
+
         function startMatch() {
             if (myName) {
                 sendAction('join');
