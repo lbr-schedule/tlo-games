@@ -273,22 +273,24 @@
                     break;
                     
                 case 'roll_result':
-                    // 除錯用
                     console.log('roll_result:', 'myName=' + myName, 'data.player=' + data.player, 'myIndex=' + myIndex, 'nextTurn=' + data.nextTurn);
-                    // 顯示骰子 - 直接用 data.player 判斷是誰骰的
+                    
+                    // 顯示骰子 - 不管是誰骰的，都顯示
                     if (data.player === myName) {
-                        // 自己骰的
                         document.getElementById('myDice').textContent = data.dice;
+                    } else {
+                        document.getElementById('oppDice').textContent = data.dice;
+                    }
+                    
+                    // 按鈕狀態：根據 nextTurn 判斷
+                    if (data.nextTurn === myIndex && !gameEnded) {
+                        document.getElementById('rollBtn').disabled = false;
+                        document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
+                        canPlay = true;
+                        isRolling = false; // 解鎖
+                    } else {
                         document.getElementById('rollBtn').textContent = '等待對手擲骰...';
                         document.getElementById('rollBtn').disabled = true;
-                    } else {
-                        // 對手骰的
-                        document.getElementById('oppDice').textContent = data.dice;
-                        // 如果 nextTurn 是我的索引，代表輪到我
-                        if (data.nextTurn === myIndex) {
-                            document.getElementById('rollBtn').disabled = false;
-                            document.getElementById('rollBtn').textContent = '🎲 輪到你了！';
-                        }
                     }
                     break;
                     
