@@ -120,7 +120,11 @@ function handleDiceMessage(ws, msg) {
     }
     
     if (msg.type === 'join') {
-        const opponent = diceState.waitingPlayers.find(p => p !== username);
+        // First, remove this player if they're already in waiting (prevents duplicates)
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        
+        // Find any waiting opponent
+        const opponent = diceState.waitingPlayers[0]; // Just take the first one
         
         if (opponent) {
             const game = createDiceGame(username, opponent);

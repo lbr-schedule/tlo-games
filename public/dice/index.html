@@ -110,7 +110,11 @@
                     <div class="spinner">🐱</div>
                     <p>等待配對中...</p>
                 </div>
-                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button><button class="btn-secondary" id="cancelMatchBtn" onclick="cancelMatch()" style="display:none; margin-left:5px;">❌ 取消配對</button><button class="btn-secondary" id="leaveBtn" onclick="leaveGame()" style="display:none; margin-left:5px;">🚪 離開</button>
+                <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button>
+                <button class="btn-warning" id="cancelMatchBtn" onclick="cancelMatch()" style="display:none;">❌ 取消配對</button>
+                <button class="btn-danger" id="leaveBtn" onclick="leaveGame()" style="display:none;">🚪 離開</button>
+                </div>
             </div>
             
             <!-- 對戰區域 -->
