@@ -413,6 +413,12 @@
                 scoreChange = -10;
             }
             
+            // 馬上更新積分顯示
+            myScore += scoreChange;
+            document.getElementById('playerScore').textContent = myScore;
+            myBalance = myScore;
+            saveSession();
+            
             // 顯示結果彈窗 - 只有文字黃底+閃動，rollBtn會變成再來一局
             const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
             document.getElementById('resultView').innerHTML = '<div style="text-align:center;padding:15px;background:rgba(255,215,0,0.9);border-radius:10px;animation:blink 1s infinite;">' +
@@ -420,16 +426,10 @@
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
             
-            // 更新積分顯示
-            myScore += scoreChange;
-            document.getElementById('playerScore').textContent = myScore;
-            myBalance = myScore; // 同步更新
-            saveSession(); // 保存 session
-            
             // rollBtn 變成「再來一局」
             document.getElementById('rollBtn').textContent = '🔄 再來一局';
             document.getElementById('rollBtn').disabled = false;
-            document.getElementById('leaveBtn').style.display = 'block'; // 保持顯示
+            document.getElementById('leaveBtn').style.display = 'block';
         }
 
         function showResult(data) {
