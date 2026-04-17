@@ -196,7 +196,7 @@ function handleDiceMessage(ws, msg) {
             nextTurn: game.currentTurn  // 現在 currentTurn 是正確的下一位玩家
         });
         
-        if (game.round >= 7) {
+        if (game.round > 6) {
             game.status = 'finished';
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
             broadcastDice({
@@ -205,9 +205,6 @@ function handleDiceMessage(ws, msg) {
                 winner: winner >= 0 ? game.players[winner] : null,
                 isDraw: winner === -1
             });
-        } else {
-            game.round++;
-            game.currentTurn = 1 - game.currentTurn;
         }
     }
     
