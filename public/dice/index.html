@@ -294,11 +294,17 @@
                     break;
                     
                 case 'rematch_start':
-                    gameStarted = false; // Reset for new game
+                    // 更新 myIndex（用於正確顯示分數）
+                    if (data.myIndex !== undefined) {
+                        myIndex = data.myIndex;
+                    }
+                    gameStarted = true;
+                    gameEnded = false;
+                    inGame = true;
+                    canPlay = true;
                     resetDice();
                     document.getElementById('resultView').style.display = 'none';
-                    gameEnded = false;
-                    canPlay = true;
+                    document.getElementById('opponentDisplay').textContent = data.opponent || '對手';
                     document.getElementById('rollBtn').disabled = false;
                     document.getElementById('leaveBtn').style.display = 'inline-block';
                     document.getElementById('rollBtn').textContent = '🎲 擲骰子！';
@@ -381,30 +387,37 @@
             gameEnded = true;
             canPlay = false;
             
-            const myScore = data.scores[myIndex] || 0;
-            const oppScore = data.scores[1 - myIndex] || 0;
             let resultText = '';
             let colorStyle = '#ffd700';
+            let scoreChange = 0;
             if (data.isDraw) {
                 resultText = '🤝 平手！';
                 colorStyle = '#00c6ff';
+                scoreChange = 0;
             } else if (data.winner === myName) {
                 resultText = '🎉 你贏了！';
                 colorStyle = '#ffd700';
+                scoreChange = 10;
             } else {
-                resultText = '😢 你输了...';
+                resultText = '😢 你輸了...';
                 colorStyle = '#ff4444';
+                scoreChange = -10;
             }
             
-            // 顯示結果彈窗
+            // 顯示結果彈窗（積分增減）
+            const changeText = scoreChange > 0 ? '+' + scoreChange : scoreChange.toString();
+            const changeColor = scoreChange > 0 ? '#00ff00' : (scoreChange < 0 ? '#ff4444' : '#aaa');
             document.getElementById('resultView').innerHTML = '<div style="text-align:center;">' +
                 '<h2 style="color:' + colorStyle + ';">' + resultText + '</h2>' +
-                '<p style="font-size:1.2em;margin:15px 0;">你的骰子: <span style="color:#ffd700;font-size:1.5em;">' + myScore + '</span></p>' +
-                '<p style="font-size:1.2em;margin:15px 0;">對手骰子: <span style="color:#ff6b6b;font-size:1.5em;">' + oppScore + '</span></p>' +
-                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:20px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
+                '<p style="font-size:1.5em;margin:20px 0;">積分變化: <span style="color:' + changeColor + ';font-size:1.5em;font-weight:bold;">' + changeText + '</span></p>' +
+                '<button onclick="requestRematch()" class="btn-primary" style="margin-top:15px;padding:12px 30px;font-size:1.1em;">🔄 再來一局</button>' +
                 '<button onclick="leaveGame()" class="btn-secondary" style="margin-top:10px;padding:10px 25px;font-size:1em;">🚪 離開遊戲</button>' +
                 '</div>';
             document.getElementById('resultView').style.display = 'block';
+            
+            // 勝利後更換按鈕文字為「再來一局」
+            document.getElementById('rollBtn').textContent = '🔄 再來一局';
+            document.getElementById('rollBtn').disabled = false;
         }
 
         function showResult(data) {
