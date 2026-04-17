@@ -200,17 +200,17 @@ function handleDiceMessage(ws, msg) {
         // 2 rolls per round, then end round
         if (game.round >= 2) {
             const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
+            game.status = 'finished';
+            game.winner = winner >= 0 ? game.players[winner] : null;
+            game.isDraw = winner === -1;
+            game.rematchRequests = [];
+            
             broadcastDice({
                 type: 'game_over',
                 scores: game.scores,
-                winner: winner >= 0 ? game.players[winner] : null,
-                isDraw: winner === -1
+                winner: game.winner,
+                isDraw: game.isDraw
             });
-            
-            // 準備下一局：重置分數和輪次
-            game.round = 0;
-            game.scores = [0, 0];
-            game.currentTurn = 0; // 老闆先擲
         }
     }
     
@@ -221,9 +221,30 @@ function handleDiceMessage(ws, msg) {
         const game = diceState.games.get(player.gameId);
         if (!game || game.status !== 'finished') return;
         
-        const newGame = createDiceGame(game.players[0], game.players[1]);
-        diceState.games.set(newGame.id, newGame);
-        diceState.games.delete(game.id);
+        // 記錄請求
+        if (!game.rematchRequests) game.rematchRequests = [];
+        if (!game.rematchRequests.includes(username)) {
+            game.rematchRequests.push(username);
+        }
+        
+        // 雙方都同意才開始新遊戲
+        if (game.rematchRequests.length >= 2) {
+            const newGame = createDiceGame(game.players[0], game.players[1]);
+            diceState.games.set(newGame.id, newGame);
+            diceState.games.delete(game.id);
+            
+            broadcastDice({
+                type: 'rematch_start',
+                gameId: newGame.id
+            });
+        } else {
+            // 通知對方有人請求再來一局
+            const opponent = game.players.find(p => p !== username);
+            sendToPlayer(opponent, {
+                type: 'opponent_wants_rematch'
+            });
+        }
+    }
         
         for (const p of game.players) {
             const pData = diceState.players.get(p);
