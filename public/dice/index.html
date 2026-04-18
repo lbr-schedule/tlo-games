@@ -215,18 +215,18 @@
             if (!audioCtx || bgMusicPlaying) return;
             bgMusicPlaying = true;
             
-            // 柔和愉快的旋律 (C大調，使用較低音域)
+            // 輕快活潑的旋律 (C大調活潑版)
             const melody = [
-                262, 330, 392, 523,  // C4, E4, G4, C5 (上行，柔和)
-                494, 440, 392, 330,  // B4, A4, G4, E4 (下行)
-                262, 330, 392, 494,  // C4, E4, G4, B4
-                523, 494, 392, 330,  // C5, B4, G4, E4
-                392, 440, 494, 523,  // G4, A4, B4, C5
-                659, 523, 494, 392,  // E5, C5, B4, G4
+                392, 523, 659, 784,  // G4, C5, E5, G5 (上行活潑)
+                880, 784, 659, 523,  // A5, G5, E5, C5 (下行)
+                784, 659, 523, 659,  // G5, E5, C5, E5 (活潑跳躍)
+                784, 880, 988, 784,  // G5, A5, B5, G5 (活潑下行)
+                523, 659, 784, 880,  // C5, E5, G5, A5 (歡快上行)
+                988, 784, 523, 392,  // B5, G5, C5, G4 (結束下行)
             ];
             
             const now = audioCtx.currentTime;
-            const beatDuration = 0.28; // 舒緩的節奏
+            const beatDuration = 0.2; // 輕快節奏
             
             function playNote(idx) {
                 if (!bgMusicPlaying || !audioCtx) return;
