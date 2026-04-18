@@ -943,6 +943,7 @@ app.get('/api/player/:username', async (req, res) => {
 // 靜態檔案
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
+app.use('/mahjong', express.static(path.join(__dirname, 'public')));
 
 // 首頁
 app.get('/', (req, res) => {
