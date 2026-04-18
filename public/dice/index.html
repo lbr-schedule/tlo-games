@@ -10,7 +10,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 15px; }
+        h1 { color: white; text-align: center; font-size: 2rem; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; gap: 8px; }
         h1 span { font-size: 2.5rem; }
         .container { max-width: 450px; width: 100%; }
         .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><span>🎲</span> T-LO 骰子 <button id="muteBtn" onclick="toggleMute()" style="font-size:16px;background:none;border:none;cursor:pointer;padding:5px;">🔊</button></h1>
+        <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><span>🎲</span> T-LO 骰子</h1><button id="muteBtn" onclick="toggleMute()" style="font-size:16px;background:none;border:none;cursor:pointer;padding:5px;">🔊</button>
         <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
         
         <!-- 登入區塊 -->
