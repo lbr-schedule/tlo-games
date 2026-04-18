@@ -633,7 +633,8 @@
         function showModal(title, msg, callback) {
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
-            modal.innerHTML = '<div class="modal-box"><h3>' + title + '</h3><p>' + msg + '</p><button class="btn-primary" onclick="this.closest('.modal-overlay').remove(); ' + (callback ? '(' + callback + ')()' : '') + '">確定</button></div>';
+            modal.innerHTML = '<div class="modal-box"><h3>' + title + '</h3><p>' + msg + '</p><button class="btn-primary" id="modalOkBtn">確定</button></div>';
+            document.getElementById('modalOkBtn').onclick = () => { modal.remove(); if (callback) eval(callback); };
             modal.onclick = (e) => { if (e.target === modal) { modal.remove(); if (callback) eval(callback); }};
             document.body.appendChild(modal);
         }
