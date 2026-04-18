@@ -258,6 +258,23 @@ async function handleDiceMessage(ws, msg) {
             const game = createDiceGame(opponent, username);
             diceState.games.set(game.id, game);
             
+            // Check both players have enough score before starting
+            let opponentScore = 0;
+            try {
+                const r = await db.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [opponent] });
+                opponentScore = r.rows?.[0]?.score ?? 0;
+            } catch(e) {}
+            
+            if (opponentScore < 10) {
+                // Opponent no longer has enough score, notify and remove from queue
+                diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== opponent);
+                sendToPlayer(opponent, { type: 'balance_insufficient', score: opponentScore, required: 10 });
+                // Add current player to queue instead
+                diceState.waitingPlayers.push(username);
+                sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+                return;
+            }
+            
             // Send game_start to both
             sendToPlayer(opponent, { type: 'game_start', opponent: username, gameId: game.id, myIndex: 0 });
             sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 1 });
