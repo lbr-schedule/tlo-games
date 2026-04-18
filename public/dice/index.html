@@ -268,7 +268,7 @@
 
         
         // 背景音樂 - 柔和歡快的旋律
-        let bgMusicPlaying = false;
+        
         let bgMusicTimeout = null;
         
         function startBgMusic() {
@@ -937,7 +937,7 @@
             }
         }
         
-        function playSound(type) {
+        function setMatchingState {
             if (!soundEnabled || soundMuted) return;
             initAudio();
             if (!audioCtx) return;
