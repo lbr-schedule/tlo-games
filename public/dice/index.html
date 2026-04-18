@@ -177,14 +177,18 @@
         let audioCtx = null;
         
         function initAudio() {
-            if (audioCtx) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
         
         function resumeAudio() {
-            if (!audioCtx) initAudio();
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            initAudio();
         }
+        
         let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
@@ -192,6 +196,59 @@
         
         // 頁面載入時初始化音頻上下文
         initAudio();
+        
+        // 背景音樂
+        let bgMusicOsc = null;
+        let bgMusicGain = null;
+        let bgMusicPlaying = false;
+        
+        function startBgMusic() {
+            if (!audioCtx || bgMusicPlaying) return;
+            bgMusicPlaying = true;
+            
+            bgMusicGain = audioCtx.createGain();
+            bgMusicGain.connect(audioCtx.destination);
+            bgMusicGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            
+            // 簡單的循環旋律
+            const melody = [262, 294, 330, 349, 392, 349, 330, 294];
+            let noteIndex = 0;
+            
+            function playNote() {
+                if (!bgMusicPlaying) return;
+                
+                const osc = audioCtx.createOscillator();
+                const noteGain = audioCtx.createGain();
+                osc.connect(noteGain);
+                noteGain.connect(bgMusicGain);
+                osc.frequency.value = melody[noteIndex % melody.length];
+                osc.type = 'sine';
+                
+                const now = audioCtx.currentTime;
+                noteGain.gain.setValueAtTime(0.5, now);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                
+                osc.start(now);
+                osc.stop(now + 0.4);
+                
+                noteIndex++;
+                setTimeout(playNote, 500);
+            }
+            
+            playNote();
+        }
+        
+        function stopBgMusic() {
+            bgMusicPlaying = false;
+        }
+        
+        // 當使用者第一次互動時啟動背景音樂
+        document.addEventListener('click', function() {
+            initAudio();
+            if (soundEnabled && !bgMusicPlaying) startBgMusic();
+        }, { once: true });
+        
+
         
         // 頁面載入時恢復 session
         function restoreSession() {
@@ -719,45 +776,72 @@
         
         function playSound(type) {
             if (!soundEnabled) return;
-            resumeAudio();
+            initAudio();
             if (!audioCtx) return;
             
             const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
             
-            if (type === 'roll') {
-                osc.frequency.value = 400;
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'win') {
+            if (type === 'btn') {
+                // 按鈕點擊音效 - 短促的嗶聲
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
                 osc.frequency.value = 600;
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                osc.start(now);
-                osc.stop(now + 0.4);
-            } else if (type === 'lose') {
-                osc.frequency.value = 200;
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.5);
-            } else if (type === 'match') {
-                osc.frequency.value = 500;
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            } else if (type === 'click') {
-                osc.frequency.value = 300;
                 gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.start(now);
-                osc.stop(now + 0.08);
+                osc.stop(now + 0.05);
+            } else if (type === 'match') {
+                // 配對成功 - 兩個高音
+                for (let i = 0; i < 2; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = 800 + i * 200;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.1);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.1);
+                }
+            } else if (type === 'roll') {
+                // 擲骰子 - 快速的嗶嗶聲
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.value = 400;
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                // 勝利 - 上升音階
+                [400, 500, 600, 800].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.15);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.15);
+                });
+            } else if (type === 'lose') {
+                // 失敗 - 下降音
+                [400, 300, 200].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.15);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.15);
+                });
             }
         }
         
