@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🀄 T-LO 麻將</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            min-height: 100vh; 
+            color: white; 
+            overflow-x: hidden; 
+        }
+        .container { max-width: 450px; margin: 0 auto; padding: 10px; }
+        
+        h1 { text-align: center; font-size: 1.8rem; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .player-info {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 10px; margin-bottom: 10px;
+        }
+        .coin { font-size: 1.2rem; color: #ffd700; }
+        
+        /* 牌桌 */
+        .table {
+            background: #2d5a27; 
+            border-radius: 50%; 
+            aspect-ratio: 1;
+            max-width: 350px; 
+            margin: 20px auto;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+        
+        /* 玩家手牌 */
+        .hand {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 3px;
+            padding: 10px; min-height: 80px;
+        }
+        .tile {
+            width: 35px; height: 50px;
+            background: linear-gradient(135deg, #fff, #eee);
+            border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer; transition: transform 0.1s;
+            border: 1px solid #ccc;
+        }
+        .tile:hover { transform: translateY(-5px); }
+        .tile.selected { background: #ffd700; transform: translateY(-10px); }
+        
+        /* 電腦玩家手牌 */
+        .opponent-hand {
+            display: flex; justify-content: center; gap: 2px;
+            padding: 5px; min-height: 40px;
+        }
+        .opponent-tile {
+            width: 25px; height: 35px;
+            background: linear-gradient(135deg, #ddd, #bbb);
+            border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; color: #666;
+        }
+        
+        /* 中央資訊 */
+        .center-info {
+            text-align: center; padding: 15px;
+            background: rgba(255,255,255,0.05); border-radius: 10px; margin: 10px 0;
+        }
+        .action-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        
+        /* 按鈕 */
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .btn-success { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* 牌池 */
+        .wall { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; margin: 10px 0; }
+        .wall-tile {
+            width: 20px; height: 28px; background: #334; border-radius: 2px;
+        }
+        
+        /* 訊息 */
+        .message { text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 10px 0; }
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 10px;
+            z-index: 1000;
+        }
+        
+        /* 登入 */
+        .auth-section { text-align: center; padding: 30px; }
+        .auth-section input { padding: 10px; border: 2px solid #667eea; border-radius: 10px; margin: 5px; width: 200px; }
+        
+        /* 買幣提示 */
+        .buy-coins {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        .buy-coins h2 { color: #ffd700; margin-bottom: 20px; }
+        .buy-coins p { color: #aaa; margin-bottom: 20px; text-align: center; padding: 0 20px; }
+        
+        /* 吃碰槓按鈕 */
+        .action-panel { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🀄 T-LO 麻將</h1>
+        
+        <div id="authSection" class="auth-section">
+            <input type="text" id="usernameInput" placeholder="輸入帳號">
+            <button class="btn btn-primary" onclick="doLogin()">進入遊戲</button>
+        </div>
+        
+        <div id="gameSection" style="display:none;">
+            <div class="player-info">
+                <span id="playerName">玩家</span>
+                <span class="coin">🪙 <span id="coinDisplay">1000</span></span>
+            </div>
+            
+            <!-- 對手顯示 -->
+            <div class="opponent-hand" id="opponentHand">
+                <!-- 對手手牌顯示 -->
+            </div>
+            
+            <div class="table" id="table">
+                <div id="turnIndicator" style="font-size:1.2rem;color:#ffd700;">等待開始</div>
+            </div>
+            
+            <!-- 玩家手牌 -->
+            <div class="hand" id="playerHand"></div>
+            
+            <div class="action-panel" id="actionPanel" style="display:none;">
+                <button class="btn btn-success" onclick="doChi()">吃</button>
+                <button class="btn btn-success" onclick="doPeng()">碰</button>
+                <button class="btn btn-warning" onclick="doGang()">槓</button>
+                <button class="btn btn-primary" onclick="doHu()">胡</button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="startBtn" onclick="startGame()">開始遊戲</button>
+            </div>
+            
+            <div class="wall" id="wallInfo"></div>
+            
+            <div class="message" id="message">等待開始...</div>
+        </div>
+    </div>
+    
+    <!-- 金幣不足提示 -->
+    <div id="buyCoinsModal" class="buy-coins" style="display:none;">
+        <h2>🪙 金幣不足</h2>
+        <p>您的金幣已用完，請聯繫客服購買金幣</p>
+        <button class="btn btn-primary" onclick="contactLine()">LINE 聯繫儲值</button>
+    </div>
+
+    <script>
+        // ========== 麻將遊戲核心 ==========
+        
+        // 麻將牌定義
+        const TILE_TYPES = {
+            WAN: '萬', // 1-9萬
+            TONG: '筒', // 1-9筒
+            TIAO: '條', // 1-9條
+            ZI: '字', // 東南西北中發白
+            FLOWER: '花' // 梅蘭菊竹
+        };
+        
+        // 牌庫
+        let tiles = [];
+        let playerHand = [];
+        let opponentHands = [[], [], []];
+        let wall = [];
+        let currentPlayer = 0; // 0=玩家, 1-3=電腦
+        let gameStarted = false;
+        let coins = 1000;
+        let username = '';
+        
+        // 初始化牌庫
+        function initTiles() {
+            tiles = [];
+            
+            // 萬子 1-9 (各4張)
+            for (let i = 1; i <= 9; i++) {
+                for (let j = 0; j < 4; j++) tiles.push({ type: 'wan', value: i, name: i + '萬' });
+            }
+            // 筒子 1-9 (各4張)
+            for (let i = 1; i <= 9; i++) {
+                for (let j = 0; j < 4; j++) tiles.push({ type: 'tong', value: i, name: i + '筒' });
+            }
+            // 條子 1-9 (各4張)
+            for (let i = 1; i <= 9; i++) {
+                for (let j = 0; j < 4; j++) tiles.push({ type: 'tiao', value: i, name: i + '條' });
+            }
+            // 字牌 (各4張)
+            const zi = ['東', '南', '西', '北', '中', '發', '白'];
+            for (let z of zi) {
+                for (let j = 0; j < 4; j++) tiles.push({ type: 'zi', value: z, name: z });
+            }
+            
+            console.log('牌庫初始化，共', tiles.length, '張');
+        }
+        
+        // 洗牌
+        function shuffleTiles() {
+            for (let i = tiles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+            }
+        }
+        
+        // 發牌
+        function dealTiles() {
+            playerHand = [];
+            opponentHands = [[], [], []];
+            
+            // 每人16張
+            for (let i = 0; i < 16; i++) {
+                playerHand.push(tiles.pop());
+                for (let p = 0; p < 3; p++) {
+                    opponentHands[p].push(tiles.pop());
+                }
+            }
+            
+            renderHands();
+            updateWallInfo();
+        }
+        
+        // 渲染手牌
+        function renderHands() {
+            const playerDiv = document.getElementById('playerHand');
+            playerDiv.innerHTML = playerHand.map((t, i) => 
+                `<div class="tile" onclick="selectTile(${i})">${t.name}</div>`
+            ).join('');
+            
+            // 對手顯示背面
+            const oppDiv = document.getElementById('opponentHand');
+            oppDiv.innerHTML = opponentHands[0].map(() => 
+                `<div class="opponent-tile">?</div>`
+            ).join('');
+        }
+        
+        // 選擇牌
+        function selectTile(index) {
+            // 打牌
+            const tile = playerHand.splice(index, 1)[0];
+            showToast(`打牌：${tile.name}`);
+            renderHands();
+            
+            // 電腦回合
+            setTimeout(computerTurn, 1000);
+        }
+        
+        // 電腦回合
+        function computerTurn() {
+            const hand = opponentHands[currentPlayer - 1];
+            if (hand.length > 0) {
+                // 電腦打一張
+                const idx = Math.floor(Math.random() * hand.length);
+                const tile = hand.splice(idx, 1)[0];
+                showToast(`電腦${currentPlayer}打：${tile.name}`);
+            }
+            
+            // 摸牌
+            if (tiles.length > 0) {
+                const tile = tiles.pop();
+                playerHand.push(tile);
+                renderHands();
+            }
+            
+            updateTurn();
+        }
+        
+        // 更新回合
+        function updateTurn() {
+            document.getElementById('turnIndicator').textContent = `輪到：玩家`;
+        }
+        
+        // 更新牌牆資訊
+        function updateWallInfo() {
+            document.getElementById('wallInfo').innerHTML = 
+                `<span style="color:#aaa;">牌牆剩餘：${tiles.length} 張</span>`;
+        }
+        
+        // 顯示提示
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // 開始遊戲
+        function startGame() {
+            if (coins < 100) {
+                document.getElementById('buyCoinsModal').style.display = 'flex';
+                return;
+            }
+            
+            initTiles();
+            shuffleTiles();
+            dealTiles();
+            gameStarted = true;
+            
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('message').textContent = '遊戲開始！';
+            updateTurn();
+        }
+        
+        // 吃碰槓胡
+        function doChi() { showToast('吃'); }
+        function doPeng() { showToast('碰'); }
+        function doGang() { showToast('槓'); }
+        function doHu() { showToast('胡！'); }
+        
+        // 聯繫LINE
+        function contactLine() {
+            window.open('https://line.me/ti/p/@HAPPYNEWYA', '_blank');
+        }
+        
+        // 登入
+        function doLogin() {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (!name) { alert('請輸入帳號'); return; }
+            
+            username = name;
+            coins = parseInt(localStorage.getItem('mahjong_coins_' + username)) || 1000;
+            
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
+            document.getElementById('playerName').textContent = username;
+            document.getElementById('coinDisplay').textContent = coins;
+            
+            initTiles();
+        }
+        
+        // 保存金幣
+        function saveCoins() {
+            if (username) localStorage.setItem('mahjong_coins_' + username, coins);
+        }
+    </script>
+</body>
+</html>
