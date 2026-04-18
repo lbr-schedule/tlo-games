@@ -325,6 +325,8 @@
         }
         
         // 輪詢取得消息
+        let lastScoreSync = 0;
+        
         async function poll() {
             if (!myName) return;
             try {
@@ -336,6 +338,13 @@
                         console.log('  收到:', msg.type, msg);
                         handleMessage(msg);
                     }
+                }
+                
+                // 每10秒同步一次積分
+                lastScoreSync++;
+                if (lastScoreSync >= 10) {
+                    lastScoreSync = 0;
+                    syncScoreFromServer();
                 }
             } catch(e) {
                 console.log('輪詢失敗:', e.message);
