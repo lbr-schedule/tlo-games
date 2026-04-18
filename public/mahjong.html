@@ -11,186 +11,181 @@
             background: linear-gradient(135deg, #1a1a2e, #16213e); 
             min-height: 100vh; 
             color: white; 
-            overflow-x: hidden; 
         }
-        .container { max-width: 450px; margin: 0 auto; padding: 10px; }
         
-        h1 { text-align: center; font-size: 1.5rem; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        /* 橫向佈局 */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+        }
         
-        .player-info {
+        h1 { text-align: center; font-size: 1.3rem; margin: 5px 0; }
+        
+        /* 玩家資訊 */
+        .top-bar {
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 10px; margin-bottom: 10px;
+            background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 10px; margin-bottom: 8px;
         }
-        .coin { font-size: 1.1rem; color: #ffd700; }
+        .coin { color: #ffd700; font-size: 1.1rem; }
+        
+        /* 對手區 - 水平排列 */
+        .opponents-row {
+            display: flex; justify-content: space-around; padding: 5px; 
+            background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 8px;
+        }
+        .opponent {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .opponent-name { font-size: 0.7rem; color: #aaa; margin-bottom: 3px; }
+        .opponent-tiles { display: flex; gap: 2px; }
+        .opp-tile {
+            width: 22px; height: 30px; background: linear-gradient(135deg, #4a5568, #2d3748);
+            border-radius: 3px; display: flex; align-items: center; justify-content: center;
+            color: #718096; font-size: 0.7rem;
+        }
         
         /* 牌桌 */
-        .table {
-            background: #2d5a27; 
-            border-radius: 50%; 
-            aspect-ratio: 1;
-            max-width: 320px; 
-            margin: 15px auto;
-            position: relative;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        .table-area {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background: #2d5a27; border-radius: 50%; min-height: 150px;
+            margin: 0 -10px;
         }
         
-        /* 麻將牌 */
+        /* 玩家手牌 - 橫向滑動 */
+        .player-area {
+            background: rgba(255,255,255,0.05); border-radius: 15px; padding: 10px; margin-top: 8px;
+        }
+        .player-label { font-size: 0.75rem; color: #aaa; margin-bottom: 5px; }
+        
+        .player-hand {
+            display: flex; gap: 4px; overflow-x: auto; padding-bottom: 5px;
+            justify-content: center;
+        }
+        .player-hand::-webkit-scrollbar { height: 4px; }
+        .player-hand::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .player-hand::-webkit-scrollbar-thumb { background: #667eea; border-radius: 2px; }
+        
+        /* 麻將牌 - 使用 Unicode */
         .tile {
-            width: 42px; height: 58px;
-            background: linear-gradient(135deg, #fff 0%, #e8e8e8 50%, #fff 100%);
-            border-radius: 6px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
-            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-            border: 1px solid #ccc;
+            min-width: 38px; height: 52px; flex-shrink: 0;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 50%, #fff 100%);
+            border-radius: 5px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
             position: relative;
-            overflow: hidden;
         }
-        .tile::before {
-            content: '';
-            position: absolute;
-            top: 2px; left: 2px; right: 2px; bottom: 2px;
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 4px;
+        .tile:hover { transform: translateY(-5px); box-shadow: 0 5px 10px rgba(0,0,0,0.4); }
+        .tile.selected { background: linear-gradient(135deg, #ffd700, #ffaa00); transform: translateY(-8px); }
+        
+        /* 按鈕區 */
+        .action-row {
+            display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap;
         }
-        .tile:hover { transform: translateY(-8px) scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.5); }
-        .tile.selected { background: linear-gradient(135deg, #ffd700, #ffaa00); transform: translateY(-12px); }
-        
-        /* 萬子牌 - 紅色 */
-        .tile.wan .num { color: #c41e3a; font-weight: bold; font-size: 1.3rem; }
-        .tile.wan .unit { color: #c41e3a; font-size: 0.7rem; }
-        
-        /* 筒子牌 - 藍色 */
-        .tile.tong .num { color: #1e3a8a; font-weight: bold; font-size: 1.3rem; }
-        .tile.tong .unit { color: #1e3a8a; font-size: 0.7rem; }
-        
-        /* 條子牌 - 綠色 */
-        .tile.tiao .num { color: #065f46; font-weight: bold; font-size: 1.3rem; }
-        .tile.tiao .unit { color: #065f46; font-size: 0.7rem; }
-        
-        /* 字牌 - 黑色 */
-        .tile.zi { background: linear-gradient(135deg, #f0f0f0, #d0d0d0); }
-        .tile.zi .char { color: #333; font-weight: bold; font-size: 1.4rem; }
-        
-        /* 花牌 */
-        .tile.flower { background: linear-gradient(135deg, #fef3c7, #fde68a); }
-        .tile.flower .char { color: #059669; font-size: 1.2rem; }
-        
-        /* 電腦手牌 */
-        .opponent-hand {
-            display: flex; justify-content: center; gap: 3px;
-            padding: 8px; min-height: 50px; background: rgba(0,0,0,0.2); border-radius: 10px; margin: 5px 0;
-        }
-        .opponent-tile {
-            width: 28px; height: 40px;
-            background: linear-gradient(135deg, #4a5568, #2d3748);
-            border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.8rem; color: #718096;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        /* 中央資訊 */
-        .center-info { text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin: 10px 0; }
-        .action-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
-        
-        /* 按鈕 */
         .btn {
-            padding: 10px 18px; border: none; border-radius: 20px; cursor: pointer; font-size: 0.95rem;
-            transition: all 0.2s; font-weight: bold;
+            padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; font-size: 0.9rem;
+            font-weight: bold; transition: all 0.2s;
         }
         .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
         .btn-success { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
         
-        /* 牌池 */
-        .wall { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; margin: 8px 0; }
-        .wall-tile { width: 18px; height: 26px; background: #334; border-radius: 2px; }
-        
-        /* 訊息 */
-        .message { text-align: center; padding: 10px; background: rgba(255,255,255,0.08); border-radius: 10px; margin: 10px 0; font-size: 0.9rem; }
+        /* 提示 */
+        .message {
+            text-align: center; padding: 8px; background: rgba(255,255,255,0.05); 
+            border-radius: 10px; margin: 8px 0; font-size: 0.85rem;
+        }
         .toast {
-            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); color: white; padding: 12px 24px; border-radius: 25px;
-            z-index: 1000; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; padding: 10px 20px; border-radius: 20px;
+            z-index: 1000; font-size: 0.9rem;
         }
         
         /* 登入 */
-        .auth-section { text-align: center; padding: 30px; }
-        .auth-section input { padding: 12px; border: 2px solid #667eea; border-radius: 10px; margin: 5px; width: 200px; font-size: 1rem; }
+        .auth-section { text-align: center; padding: 40px 20px; }
+        .auth-section input { 
+            padding: 12px; border: 2px solid #667eea; border-radius: 10px; 
+            width: 200px; font-size: 1rem; margin: 5px;
+        }
         
-        /* 金幣不足提示 */
+        /* 金幣不足 */
         .buy-coins {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.95); display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 100;
         }
-        .buy-coins h2 { color: #ffd700; margin-bottom: 20px; font-size: 1.5rem; }
-        .buy-coins p { color: #aaa; margin-bottom: 25px; text-align: center; padding: 0 30px; line-height: 1.5; }
+        .buy-coins h2 { color: #ffd700; margin-bottom: 15px; }
+        .buy-coins p { color: #aaa; margin-bottom: 20px; padding: 0 20px; }
         
-        /* 吃碰槓按鈕 */
-        .action-panel { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .action-panel .btn { min-width: 60px; }
-        
-        /* 牌的裝飾 */
-        .tile-pattern {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* 提示文字 */
+        .turn-info {
+            text-align: center; color: #ffd700; font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="game-container">
         <h1>🀄 T-LO 麻將</h1>
         
         <div id="authSection" class="auth-section">
             <input type="text" id="usernameInput" placeholder="輸入帳號">
-            <br><br>
+            <br>
             <button class="btn btn-primary" onclick="doLogin()">進入遊戲</button>
         </div>
         
         <div id="gameSection" style="display:none;">
-            <div class="player-info">
+            <div class="top-bar">
                 <span id="playerName">玩家</span>
                 <span class="coin">🪙 <span id="coinDisplay">1000</span></span>
             </div>
             
-            <!-- 對手顯示 -->
-            <div style="margin-bottom:5px;">
-                <div style="font-size:0.8rem;color:#aaa;margin-bottom:3px;">電腦對手</div>
-                <div class="opponent-hand" id="opponentHand"></div>
+            <!-- 對手區 -->
+            <div class="opponents-row">
+                <div class="opponent">
+                    <div class="opponent-name">電腦1</div>
+                    <div class="opponent-tiles" id="opp1"></div>
+                </div>
+                <div class="opponent">
+                    <div class="opponent-name">電腦2</div>
+                    <div class="opponent-tiles" id="opp2"></div>
+                </div>
+                <div class="opponent">
+                    <div class="opponent-name">電腦3</div>
+                    <div class="opponent-tiles" id="opp3"></div>
+                </div>
             </div>
             
-            <div class="table" id="table">
-                <div id="turnIndicator" style="font-size:1rem;color:#ffd700;">等待開始</div>
+            <!-- 牌桌 -->
+            <div class="table-area">
+                <div class="turn-info" id="turnInfo">🎴 等待開始</div>
             </div>
             
             <!-- 玩家手牌 -->
-            <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;margin:10px 0;">
-                <div style="font-size:0.8rem;color:#aaa;margin-bottom:8px;">你的手牌（點擊出牌）</div>
-                <div class="hand" id="playerHand"></div>
+            <div class="player-area">
+                <div class="player-label">你的手牌（點擊出牌）</div>
+                <div class="player-hand" id="playerHand"></div>
             </div>
             
-            <div class="action-panel" id="actionPanel" style="display:none;">
+            <div class="action-row" id="actionPanel" style="display:none;">
                 <button class="btn btn-success" onclick="doChi()">吃</button>
                 <button class="btn btn-success" onclick="doPeng()">碰</button>
                 <button class="btn btn-warning" onclick="doGang()">槓</button>
                 <button class="btn btn-primary" onclick="doHu()">胡</button>
             </div>
             
-            <div class="action-buttons">
+            <div class="action-row">
                 <button class="btn btn-primary" id="startBtn" onclick="startGame()">🎮 開始遊戲</button>
             </div>
             
-            <div class="wall" id="wallInfo"></div>
-            
-            <div class="message" id="message">🎴 16張麻將 · 贏取金幣</div>
+            <div class="message" id="message">16張麻將 · 贏取金幣</div>
         </div>
     </div>
     
-    <!-- 金幣不足提示 -->
+    <!-- 金幣不足 -->
     <div id="buyCoinsModal" class="buy-coins" style="display:none;">
         <h2>🪙 金幣不足</h2>
         <p>您的金幣已用完，請聯繫客服購買金幣</p>
@@ -198,7 +193,23 @@
     </div>
 
     <script>
-        // ========== 麻將遊戲核心 ==========
+        // ========== 麻將 Unicode 字符 ==========
+        // 萬子
+        const WAN = ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'];
+        // 筒子
+        const TONG = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'];
+        // 條子
+        const TIAO = ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'];
+        // 字牌
+        const ZI = ['🀀','🀁','🀂','🀃','🀄','🀅','🀆'];
+        
+        function getTileChar(type, value) {
+            if (type === 'wan') return WAN[value - 1];
+            if (type === 'tong') return TONG[value - 1];
+            if (type === 'tiao') return TIAO[value - 1];
+            if (type === 'zi') return ZI[value - 1];
+            return '❓';
+        }
         
         let playerHand = [];
         let opponentHands = [[], [], []];
@@ -207,47 +218,16 @@
         let coins = 1000;
         let username = '';
         
-        // 牌名轉換
-        const TILE_NAMES = {
-            wan: {1:'一萬',2:'二萬',3:'三萬',4:'四萬',5:'五萬',6:'六萬',7:'七萬',8:'八萬',9:'九萬'},
-            tong: {1:'一筒',2:'二筒',3:'三筒',4:'四筒',5:'五筒',6:'六筒',7:'七筒',8:'八筒',9:'九筒'},
-            tiao: {1:'一條',2:'二條',3:'三條',4:'四條',5:'五條',6:'六條',7:'七條',8:'八條',9:'九條'},
-            zi: {'東':'東','南':'南','西':'西','北':'北','中':'中','發':'發','白':'白'},
-            flower: {'梅':'梅','蘭':'蘭','菊':'菊','竹':'竹'}
-        };
-        
-        // 初始化牌庫
         function initTiles() {
             let tiles = [];
-            
-            // 萬子 1-9 (各4張)
-            for (let i = 1; i <= 9; i++) {
-                for (let j = 0; j < 4; j++) tiles.push({ type: 'wan', value: i, name: TILE_NAMES.wan[i] });
-            }
-            // 筒子 1-9 (各4張)
-            for (let i = 1; i <= 9; i++) {
-                for (let j = 0; j < 4; j++) tiles.push({ type: 'tong', value: i, name: TILE_NAMES.tong[i] });
-            }
-            // 條子 1-9 (各4張)
-            for (let i = 1; i <= 9; i++) {
-                for (let j = 0; j < 4; j++) tiles.push({ type: 'tiao', value: i, name: TILE_NAMES.tiao[i] });
-            }
-            // 字牌 (各4張)
-            const ziChars = ['東','南','西','北','中','發','白'];
-            for (let z of ziChars) {
-                for (let j = 0; j < 4; j++) tiles.push({ type: 'zi', value: z, name: TILE_NAMES.zi[z] });
-            }
-            // 花牌 (各1張)
-            const flowerChars = ['梅','蘭','菊','竹'];
-            for (let f of flowerChars) {
-                tiles.push({ type: 'flower', value: f, name: TILE_NAMES.flower[f] });
-            }
-            
+            for (let i = 1; i <= 9; i++) for (let j = 0; j < 4; j++) tiles.push({type:'wan',value:i});
+            for (let i = 1; i <= 9; i++) for (let j = 0; j < 4; j++) tiles.push({type:'tong',value:i});
+            for (let i = 1; i <= 9; i++) for (let j = 0; j < 4; j++) tiles.push({type:'tiao',value:i});
+            for (let i = 0; i < 7; i++) for (let j = 0; j < 4; j++) tiles.push({type:'zi',value:i});
             return tiles;
         }
         
-        // 洗牌
-        function shuffleTiles(tiles) {
+        function shuffle(tiles) {
             for (let i = tiles.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
@@ -255,158 +235,100 @@
             return tiles;
         }
         
-        // 發牌
-        function dealTiles() {
+        function deal() {
             playerHand = [];
             opponentHands = [[], [], []];
-            
-            let allTiles = shuffleTiles(initTiles());
-            
-            // 每人16張
+            let all = shuffle(initTiles());
             for (let i = 0; i < 16; i++) {
-                playerHand.push(allTiles.pop());
-                for (let p = 0; p < 3; p++) {
-                    opponentHands[p].push(allTiles.pop());
-                }
+                playerHand.push(all.pop());
+                for (let p = 0; p < 3; p++) opponentHands[p].push(all.pop());
             }
-            
-            wall = allTiles;
-            renderHands();
-            updateWallInfo();
+            wall = all;
+            renderAll();
         }
         
-        // 渲染手牌
-        function renderTile(tile) {
-            if (tile.type === 'wan' || tile.type === 'tong' || tile.type === 'tiao') {
-                return `<div class="tile ${tile.type}">
-                    <div class="tile-pattern">
-                        <span class="num">${tile.value}</span>
-                        <span class="unit">${tile.type === 'wan' ? '萬' : tile.type === 'tong' ? '筒' : '條'}</span>
-                    </div>
-                </div>`;
-            } else if (tile.type === 'zi') {
-                return `<div class="tile zi">
-                    <div class="tile-pattern">
-                        <span class="char">${tile.value}</span>
-                    </div>
-                </div>`;
-            } else {
-                return `<div class="tile flower">
-                    <div class="tile-pattern">
-                        <span class="char">${tile.value}</span>
-                    </div>
-                </div>`;
-            }
-        }
-        
-        function renderHands() {
-            const playerDiv = document.getElementById('playerHand');
-            playerDiv.innerHTML = playerHand.map((t, i) => 
-                `<div onclick="selectTile(${i})">${renderTile(t)}</div>`
+        function renderAll() {
+            // 玩家手牌
+            document.getElementById('playerHand').innerHTML = playerHand.map((t, i) =>
+                `<div class="tile" onclick="selectTile(${i})">${getTileChar(t.type, t.value)}</div>`
             ).join('');
             
-            // 對手顯示背面
-            const oppDiv = document.getElementById('opponentHand');
-            oppDiv.innerHTML = opponentHands[0].map(() => 
-                `<div class="opponent-tile">?</div>`
-            ).join('');
+            // 對手手牌（背面）
+            ['opp1','opp2','opp3'].forEach((id, idx) => {
+                document.getElementById(id).innerHTML = opponentHands[idx].map(() =>
+                    `<div class="opp-tile">?</div>`
+                ).join('');
+            });
         }
         
-        // 選擇牌
         function selectTile(index) {
             if (!gameStarted) return;
-            
             const tile = playerHand.splice(index, 1)[0];
-            showToast(`打出：${tile.name}`);
-            renderHands();
+            showToast(`打出：${tile.type}${tile.value}`);
+            renderAll();
             
-            // 電腦回合
-            setTimeout(computerTurn, 1200);
+            document.getElementById('turnInfo').textContent = '電腦回合...';
+            setTimeout(computerTurn, 1000);
         }
         
-        // 電腦回合
         function computerTurn() {
-            const hand = opponentHands[0];
-            if (hand.length > 0) {
-                const idx = Math.floor(Math.random() * hand.length);
-                const tile = hand.splice(idx, 1)[0];
-                showToast(`電腦打出：${tile.name}`);
+            if (opponentHands[0].length > 0) {
+                const idx = Math.floor(Math.random() * opponentHands[0].length);
+                opponentHands[0].splice(idx, 1);
             }
-            
-            // 玩家摸牌
             if (wall.length > 0) {
-                const tile = wall.pop();
-                playerHand.push(tile);
-                showToast(`摸到：${tile.name}`);
+                const t = wall.pop();
+                playerHand.push(t);
+                showToast(`摸到：${t.type}${t.value}`);
             }
-            
-            renderHands();
-            updateWallInfo();
+            renderAll();
+            document.getElementById('turnInfo').textContent = '你的回合';
         }
         
-        // 更新牌牆資訊
-        function updateWallInfo() {
-            document.getElementById('wallInfo').innerHTML = 
-                `<span style="color:#aaa;font-size:0.85rem;">牌牆剩餘：${wall.length} 張</span>`;
-        }
-        
-        // 顯示提示
         function showToast(msg) {
             document.querySelectorAll('.toast').forEach(t => t.remove());
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2000);
         }
         
-        // 開始遊戲
         function startGame() {
             if (coins < 100) {
                 document.getElementById('buyCoinsModal').style.display = 'flex';
                 return;
             }
-            
-            dealTiles();
+            deal();
             gameStarted = true;
-            
             document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('turnInfo').textContent = '你的回合';
             document.getElementById('message').textContent = '🎮 遊戲開始！';
         }
         
-        // 吃碰槓胡
         function doChi() { showToast('吃'); }
         function doPeng() { showToast('碰'); }
         function doGang() { showToast('槓'); }
-        function doHu() { 
-            showToast('🎉 胡了！');
+        function doHu() {
+            showToast('🎉 胡了！ +100金幣');
             coins += 100;
             document.getElementById('coinDisplay').textContent = coins;
-            saveCoins();
+            if (username) localStorage.setItem('mahjong_coins_' + username, coins);
         }
         
-        // 聯繫LINE
         function contactLine() {
             window.open('https://line.me/ti/p/@HAPPYNEWYA', '_blank');
         }
         
-        // 登入
         function doLogin() {
             const name = document.getElementById('usernameInput').value.trim();
             if (!name) { alert('請輸入帳號'); return; }
-            
             username = name;
             coins = parseInt(localStorage.getItem('mahjong_coins_' + username)) || 1000;
-            
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
             document.getElementById('playerName').textContent = username;
             document.getElementById('coinDisplay').textContent = coins;
-        }
-        
-        // 保存金幣
-        function saveCoins() {
-            if (username) localStorage.setItem('mahjong_coins_' + username, coins);
         }
     </script>
 </body>
