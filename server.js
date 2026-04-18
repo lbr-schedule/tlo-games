@@ -478,11 +478,6 @@ function getRouletteColor(num) {
 function spinWheel() {
     rouletteState.phase = 'spinning';
     
-    // 庄家65%勝率機制
-    // 策略：提高綠色(0)出現機率，讓玩家在顏色下注時長期虧損
-    // 正常機率：P(0)=1/37≈2.7%
-    // 調整後：P(0)≈20%，庄家勝率約65%
-    
     const allNumbers = [
         {num:0,color:'green'},
         {num:32,color:'red'},{num:15,color:'black'},{num:19,color:'red'},{num:4,color:'black'},
@@ -496,14 +491,8 @@ function spinWheel() {
         {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'}
     ];
     
-    // 65%機率讓庄家贏（出0），35%正常隨機
-    let selected;
-    if (Math.random() < 0.65) {
-        selected = allNumbers[0]; // 強製出0，庄家贏
-    } else {
-        const selectedIndex = Math.floor(Math.random() * 37);
-        selected = allNumbers[selectedIndex];
-    }
+    const selectedIndex = Math.floor(Math.random() * 37);
+    const selected = allNumbers[selectedIndex];
     
     rouletteState.lastSpin = { 
         result: selected.num, 
