@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><span>🎲</span> T-LO 骰子</h1>
+        <h1><span>🎲</span> T-LO 骰子 <button id="muteBtn" onclick="toggleMute()" style="font-size:16px;background:none;border:none;cursor:pointer;padding:5px;">🔊</button></h1>
         <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
         
         <!-- 登入區塊 -->
@@ -174,6 +174,7 @@
         let myBalance = 0;
         let myIndex = 0;
         let soundEnabled = true;
+        let soundMuted = false;
         let audioCtx = null;
         
         function initAudio() {
@@ -252,8 +253,21 @@
         // 當使用者第一次互動時啟動背景音樂
         document.addEventListener('click', function() {
             initAudio();
-            if (soundEnabled && !bgMusicPlaying) startBgMusic();
+            if (soundEnabled && !bgMusicPlaying && !soundMuted) startBgMusic();
         }, { once: true });
+        
+        function toggleMute() {
+            soundMuted = !soundMuted;
+            document.getElementById('muteBtn').textContent = soundMuted ? '🔇' : '🔊';
+            if (soundMuted) {
+                stopBgMusic();
+                soundEnabled = false;
+            } else {
+                soundEnabled = true;
+                initAudio();
+                startBgMusic();
+            }
+        }
         
 
         
@@ -786,7 +800,7 @@
         }
         
         function playSound(type) {
-            if (!soundEnabled) return;
+            if (!soundEnabled || soundMuted) return;
             initAudio();
             if (!audioCtx) return;
             
