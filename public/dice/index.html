@@ -95,12 +95,12 @@
             <div class="auth-form active" id="loginForm">
                 <input type="text" id="loginUsername" placeholder="帳號">
                 <input type="password" id="loginPassword" placeholder="密碼">
-                <button class="btn-primary" onclick="doLogin()">登入</button>
+                <button class="btn-primary" onclick="playSound('btn'); doLogin()">登入</button>
             </div>
             <div class="auth-form" id="registerForm">
                 <input type="text" id="registerUsername" placeholder="選擇帳號">
                 <input type="password" id="registerPassword" placeholder="設定密碼">
-                <button class="btn-primary" onclick="doRegister()">註冊</button>
+                <button class="btn-primary" onclick="playSound('btn'); doRegister()">註冊</button>
             </div>
         </div>
         
@@ -126,7 +126,7 @@
                     <p>等待配對中...</p>
                 </div>
                 <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-                <button class="btn-primary" id="matchBtn" onclick="startMatch()">🔍 開始配對</button>
+                <button class="btn-primary" id="matchBtn" onclick="playSound('btn'); startMatch()">🔍 開始配對</button>
                 <button class="btn-warning" id="cancelMatchBtn" onclick="cancelMatch()" style="display:none;">❌ 取消配對</button>
                 </div>
             </div>
@@ -154,7 +154,7 @@
                     </div>
                 </div>
                 
-                <button class="btn-dice" id="rollBtn" onclick="doAction()" disabled>等待擲骰...</button>
+                <button class="btn-dice" id="rollBtn" onclick="playSound('btn'); doAction()" disabled>等待擲骰...</button>
                 <button id="leaveBtn" onclick="leaveGame()" style="display:none;margin-top:10px;padding:10px 25px;background:#666;color:white;border:none;border-radius:8px;cursor:pointer;">🚪 離開遊戲</button>
             </div>
             
