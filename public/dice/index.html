@@ -429,6 +429,8 @@
                         playSound('lose');
                     }
                     showGameOver(data);
+                    // 立即從伺服器同步積分
+                    setTimeout(() => syncScoreFromServer(), 500);
                     break;
                     
                 case 'score_update':
@@ -516,6 +518,8 @@
             document.getElementById('logoutBtn').style.display = 'inline-block'; // 匹配階段顯示登出
             document.getElementById('leaveBtn').style.display = 'none'; // 隱藏離開按鈕
             resetMatchButton();
+            // 返回時同步積分
+            syncScoreFromServer();
         }
         
         function showBattle(opponent, index) {
@@ -943,7 +947,9 @@ function requestRematch() {
             `;
         }
         
-        async function loadRank() {
+        async async function loadRank() {
+            // 先同步積分
+            await syncScoreFromServer();
             const res = await fetch('/api/players');
             const data = await res.json();
             const list = document.getElementById('rankList');
