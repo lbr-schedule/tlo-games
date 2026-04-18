@@ -247,7 +247,18 @@
             renderAll();
         }
         
+        function sortHand(hand) {
+            const order = {wan:0, tong:1, tiao:2, zi:3};
+            return hand.sort((a, b) => {
+                if (order[a.type] !== order[b.type]) return order[a.type] - order[b.type];
+                return a.value - b.value;
+            });
+        }
+        
         function renderAll() {
+            // 排序手牌
+            playerHand = sortHand(playerHand);
+            
             // 玩家手牌
             document.getElementById('playerHand').innerHTML = playerHand.map((t, i) =>
                 `<div class="tile" onclick="selectTile(${i})">${getTileChar(t.type, t.value)}</div>`
@@ -279,6 +290,7 @@
             if (wall.length > 0) {
                 const t = wall.pop();
                 playerHand.push(t);
+                playerHand = sortHand(playerHand);
                 showToast(`摸到：${t.type}${t.value}`);
             }
             renderAll();
