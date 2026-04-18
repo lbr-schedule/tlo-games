@@ -252,7 +252,28 @@
             document.getElementById('connectionStatus').className = 'connection-status online';
             document.getElementById('connectionStatus').textContent = '✅ 已連線';
             startPolling();
-            if (myName) startMatch();
+            // 連線時同步積分
+            if (myName) {
+                syncScoreFromServer();
+                startMatch();
+            }
+        }
+        
+        async function syncScoreFromServer() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/score/' + encodeURIComponent(myName));
+                const data = await res.json();
+                if (data.score !== null) {
+                    myScore = data.score;
+                    myBalance = data.score;
+                    document.getElementById('playerScore').textContent = myScore;
+                    saveSession();
+                    console.log('Score synced from server:', myScore);
+                }
+            } catch(e) {
+                console.log('Score sync failed:', e.message);
+            }
         }
         
         function handleMessage(data) {
