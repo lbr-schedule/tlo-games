@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><span>🎲</span> T-LO 骰子 <button id="muteBtn" onclick="toggleMute()" style="background:transparent;border:none;cursor:pointer;font-size:14px;vertical-align:middle;padding:2px 5px;">🔊</button></h1>
+        <h1><span>🎲</span> T-LO 骰子</h1>
         <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
         
         <!-- 登入區塊 -->
@@ -171,9 +171,6 @@
     <script>
         let pollInterval = null;
         let myName = '';
-        let soundEnabled = true;
-        let soundMuted = false;
-        let audioCtx = null;
         let myBalance = 0;
         let myIndex = 0;
         let soundEnabled = true;
@@ -261,78 +258,7 @@
 
         
         // 頁面載入時恢復 session
-        function initAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-function playSound(type) {
-    if (!soundEnabled || soundMuted) return;
-    initAudio();
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    if (type === 'btn') {
-        osc.frequency.value = 600;
-        osc.type = 'sine';
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
-    } else if (type === 'match') {
-        [0, 0.1].forEach((d, i) => {
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.connect(g);
-            g.connect(audioCtx.destination);
-            o.frequency.value = 500 + i * 150;
-            o.type = 'sine';
-            g.gain.setValueAtTime(0.1, now + d);
-            g.gain.exponentialRampToValueAtTime(0.001, now + d + 0.12);
-            o.start(now + d);
-            o.stop(now + d + 0.12);
-        });
-    }
-}
-
-let bgPlaying = false, bgTO = null;
-
-function startBg() {
-    if (!audioCtx || bgPlaying || soundMuted) return;
-    bgPlaying = true;
-    const m = [262, 330, 392, 523, 494, 440, 392, 330];
-    let idx = 0;
-    const play = () => {
-        if (!bgPlaying || soundMuted) return;
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.connect(g);
-        g.connect(audioCtx.destination);
-        o.frequency.value = m[idx % m.length];
-        o.type = 'sine';
-        g.gain.setValueAtTime(0.06, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
-        o.start(audioCtx.currentTime);
-        o.stop(audioCtx.currentTime + 0.25);
-        idx++;
-        bgTO = setTimeout(play, 280);
-    };
-    play();
-}
-
-function stopBg() { bgPlaying = false; if (bgTO) clearTimeout(bgTO); }
-
-function toggleMute() {
-    soundMuted = !soundMuted;
-    document.getElementById('muteBtn').textContent = soundMuted ? '🔇' : '🔊';
-    if (soundMuted) { stopBg(); soundEnabled = false; }
-    else { soundEnabled = true; initAudio(); startBg(); }
-}
-
-document.addEventListener('click', () => { initAudio(); if (soundEnabled && !bgPlaying && !soundMuted) startBg(); }, { once: true });
-
-function restoreSession() {
+        function restoreSession() {
             const saved = localStorage.getItem('lbr_dice_session');
             if (saved) {
                 const data = JSON.parse(saved);
