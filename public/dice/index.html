@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><span>🎲</span> T-LO 骰子 <button id="muteBtn" onclick="toggleMute()" style="background:none;border:none;cursor:pointer;padding:2px 5px;font-size:14px;vertical-align:middle;">🔊</button></h1>
+        <h1><span>🎲</span> T-LO 骰子</h1>
         <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
         
         <!-- 登入區塊 -->
@@ -171,10 +171,7 @@
     <script>
         let pollInterval = null;
         let myName = '';
-        let soundEnabled = true;
-        let soundMuted = false;
         let myBalance = 0;
-        let audioCtx = null;
         let myIndex = 0;
         let soundEnabled = true;
         let audioCtx = null;
@@ -859,105 +856,7 @@
             }
         }
         
-        
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-        
-        function playSound(type) {
-            if (!soundEnabled || soundMuted) return;
-            initAudio();
-            if (!audioCtx) return;
-            
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            if (type === 'btn') {
-                osc.frequency.value = 600;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.start(now);
-                osc.stop(now + 0.05);
-            } else if (type === 'match') {
-                [0, 0.1].forEach((delay, i) => {
-                    const o = audioCtx.createOscillator();
-                    const g = audioCtx.createGain();
-                    o.connect(g);
-                    g.connect(audioCtx.destination);
-                    o.frequency.value = 500 + i * 150;
-                    o.type = 'sine';
-                    g.gain.setValueAtTime(0.1, now + delay);
-                    g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
-                    o.start(now + delay);
-                    o.stop(now + delay + 0.12);
-                });
-            }
-        }
-        
-        // 背景音樂
-        let bgMusicPlaying = false;
-        let bgMusicTimeout = null;
-        
-        function startBgMusic() {
-            if (!audioCtx || bgMusicPlaying || soundMuted) return;
-            bgMusicPlaying = true;
-            
-            const melody = [262, 330, 392, 523, 494, 440, 392, 330];
-            let noteIndex = 0;
-            const beatDuration = 0.28;
-            
-            function playNote() {
-                if (!bgMusicPlaying || soundMuted) return;
-                const note = melody[noteIndex % melody.length];
-                const osc = audioCtx.createOscillator();
-                const noteGain = audioCtx.createGain();
-                osc.connect(noteGain);
-                noteGain.connect(audioCtx.destination);
-                osc.frequency.value = note;
-                osc.type = 'sine';
-                noteGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-                noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + beatDuration * 0.8);
-                osc.start(audioCtx.currentTime);
-                osc.stop(audioCtx.currentTime + beatDuration);
-                noteIndex++;
-                bgMusicTimeout = setTimeout(playNote, beatDuration * 1000);
-            }
-            playNote();
-        }
-        
-        function stopBgMusic() {
-            bgMusicPlaying = false;
-            if (bgMusicTimeout) clearTimeout(bgMusicTimeout);
-        }
-        
-        function toggleMute() {
-            soundMuted = !soundMuted;
-            document.getElementById('muteBtn').textContent = soundMuted ? '🔇' : '🔊';
-            if (soundMuted) {
-                stopBgMusic();
-                soundEnabled = false;
-            } else {
-                soundEnabled = true;
-                initAudio();
-                startBgMusic();
-            }
-        }
-        
-        document.addEventListener('click', function() {
-            initAudio();
-            if (soundEnabled && !bgMusicPlaying && !soundMuted) startBgMusic();
-        }, { once: true });
-        
-function setMatchingState(matching) {
+        function setMatchingState(matching) {
             isMatching = matching;
             const cancelBtn = document.getElementById('cancelMatchBtn');
             if (cancelBtn) {
