@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><span>🎲</span> T-LO 骰子</h1>
+        <h1><span>🎲</span> T-LO 骰子 <button id="muteBtn" onclick="toggleMute()" style="background:transparent;border:none;cursor:pointer;font-size:14px;vertical-align:middle;padding:2px 5px;">🔊</button></h1>
         <div class="connection-status online" id="connectionStatus">✅ 已連線</div>
         
         <!-- 登入區塊 -->
@@ -185,12 +185,22 @@
             }
         }
         
+        function toggleMute() {
+            soundMuted = !soundMuted;
+            const muteBtn = document.getElementById('muteBtn');
+            if (muteBtn) muteBtn.textContent = soundMuted ? '🔇' : '🔊';
+            if (soundMuted) { stopBgMusic(); soundEnabled = false; }
+            else { soundEnabled = true; initAudio(); startBgMusic(); }
+        }
+    
+        
         function resumeAudio() {
             initAudio();
         }
         
         let gamePlayers = [];
         let myScore = 0;
+        let soundMuted = false;
         let inGame = false;
         let canPlay = false;
         
