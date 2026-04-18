@@ -1198,11 +1198,14 @@
         }
         
         function checkBalance() {
-            if (myBalance <= 0) {
+            // 餘額不足最低下注（$10）就不能玩
+            if (myBalance < 10) {
                 document.getElementById('brokeOverlay').classList.add('show');
                 return false;
             }
-            document.getElementById('balanceBox').classList.add('low');
+            if (myBalance < 100) {
+                document.getElementById('balanceBox').classList.add('low');
+            }
             return true;
         }
         
