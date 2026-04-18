@@ -173,6 +173,7 @@
         let myName = '';
         let myBalance = 0;
         let myIndex = 0;
+        let soundEnabled = true;
         let gamePlayers = [];
         let myScore = 0;
         let inGame = false;
@@ -296,6 +297,7 @@
                     myIndex = data.myIndex ?? 0;  // Store my index (0 or 1)
                     // 進入遊戲前同步積分
                     syncScoreFromServer();
+                    playSound('match');
                     showBattle(data.opponent, data.myIndex);
                     // Ensure match button is hidden in battle view
                     document.getElementById('matchBtn').style.display = 'none';
