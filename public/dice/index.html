@@ -197,49 +197,56 @@
         // 頁面載入時初始化音頻上下文
         initAudio();
         
-        // 背景音樂
-        let bgMusicOsc = null;
-        let bgMusicGain = null;
+        // 背景音樂 - 輕快歡樂的旋律
         let bgMusicPlaying = false;
+        let bgMusicTimeout = null;
         
         function startBgMusic() {
             if (!audioCtx || bgMusicPlaying) return;
             bgMusicPlaying = true;
             
-            bgMusicGain = audioCtx.createGain();
-            bgMusicGain.connect(audioCtx.destination);
-            bgMusicGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            // 輕快活潑的旋律 (C大調愉快的旋律)
+            const melody = [
+                523, 659, 784, 1047,  // C5, E5, G5, C6 (上行)
+                988, 880, 784, 659,   // B5, A5, G5, E5 (下行)
+                523, 659, 784, 988,   // C5, E5, G5, B5
+                1047, 988, 784, 659,  // C6, B5, G5, E5
+                784, 880, 988, 1047,  // G5, A5, B5, C6
+                1175, 1047, 988, 784, // D6, C6, B5, G5
+            ];
             
-            // 簡單的循環旋律
-            const melody = [262, 294, 330, 349, 392, 349, 330, 294];
-            let noteIndex = 0;
+            const now = audioCtx.currentTime;
+            const beatDuration = 0.2; // 比較快的節奏
             
-            function playNote() {
-                if (!bgMusicPlaying) return;
+            function playNote(idx) {
+                if (!bgMusicPlaying || !audioCtx) return;
                 
+                const noteIdx = idx % melody.length;
                 const osc = audioCtx.createOscillator();
                 const noteGain = audioCtx.createGain();
+                
                 osc.connect(noteGain);
-                noteGain.connect(bgMusicGain);
-                osc.frequency.value = melody[noteIndex % melody.length];
-                osc.type = 'sine';
+                noteGain.connect(audioCtx.destination);
                 
-                const now = audioCtx.currentTime;
-                noteGain.gain.setValueAtTime(0.5, now);
-                noteGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.frequency.value = melody[noteIdx];
+                osc.type = 'triangle'; // 比較柔和但活潑的音色
                 
-                osc.start(now);
-                osc.stop(now + 0.4);
+                const startTime = audioCtx.currentTime;
+                noteGain.gain.setValueAtTime(0.15, startTime);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, startTime + beatDuration * 0.9);
                 
-                noteIndex++;
-                setTimeout(playNote, 500);
+                osc.start(startTime);
+                osc.stop(startTime + beatDuration);
+                
+                bgMusicTimeout = setTimeout(() => playNote(idx + 1), beatDuration * 1000);
             }
             
-            playNote();
+            playNote(0);
         }
         
         function stopBgMusic() {
             bgMusicPlaying = false;
+            if (bgMusicTimeout) clearTimeout(bgMusicTimeout);
         }
         
         // 當使用者第一次互動時啟動背景音樂
