@@ -303,8 +303,8 @@ async function handleDiceMessage(ws, msg) {
         // 如果是老闆帳號(12345)，使用加權骰子給予約70%勝率
         let dice;
         if (username === '12345') {
-            // 75%機會骰到5-6，25%機會骰到1-4
-            dice = Math.random() < 0.75 ? Math.floor(Math.random() * 2) + 5 : Math.floor(Math.random() * 4) + 1;
+            // 65%機會骰到5-6，35%機會骰到1-4
+            dice = Math.random() < 0.65 ? Math.floor(Math.random() * 2) + 5 : Math.floor(Math.random() * 4) + 1;
         } else {
             dice = Math.floor(Math.random() * 6) + 1;
         }
@@ -867,6 +867,42 @@ app.get('/api/players', async (req, res) => {
         res.json({ players: result.rows || [] });
     } catch(e) {
         res.json({ players: [] });
+    }
+});
+
+// Admin: 更新玩家積分
+app.post('/api/admin/update-score', async (req, res) => {
+    const { username, change } = req.body;
+    if (!dbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    
+    try {
+        await db.execute({
+            sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+            args: [change, username]
+        });
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ success: true, username, newScore: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// Admin: 獲取玩家積分
+app.get('/api/admin/score/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!dbAvailable) return res.json({ score: null });
+    
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ username, score: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ username, score: null });
     }
 });
 
