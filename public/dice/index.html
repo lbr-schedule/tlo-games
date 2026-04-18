@@ -954,7 +954,7 @@ function requestRematch() {
             `;
         }
         
-        async async function loadRank() {
+        async function loadRank() {
             // 先同步積分
             await syncScoreFromServer();
             const res = await fetch('/api/players');
