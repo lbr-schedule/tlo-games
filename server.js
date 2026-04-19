@@ -582,7 +582,26 @@ app.post('/api/roulette/bet', (req, res) => {
         return res.json({ success: false, message: '請輸入正確的金額' });
     }
     
-    res.json({ success: true, message: '下注成功！' });
+    // 隨機獎勵：3% 機會觸發 200 分 bonus
+    let bonusTriggered = false;
+    let bonusAmount = 0;
+    if (Math.random() < 0.03) {
+        bonusTriggered = true;
+        bonusAmount = 200;
+        console.log('🎁 隨機獎勵觸發! username:', username, 'bonus:', bonusAmount);
+        
+        // 立即發放獎勵到帳戶
+        if (LOCAL_TEST_MODE) {
+            if (localPlayers[username]) localPlayers[username].score += bonusAmount;
+        } else if (rouletteDbAvailable) {
+            rouletteDb.execute({
+                sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                args: [bonusAmount, username]
+            }).catch(e => console.log('發放隨機獎勵失敗:', e.message));
+        }
+    }
+    
+    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount });
 });
 
 // 輪盤遊戲 - 註冊
@@ -678,15 +697,62 @@ app.post('/api/roulette/login', async (req, res) => {
         
         if (result.rows && result.rows.length > 0) {
             const row = result.rows[0];
-            console.log('輪盤登入成功, username:', username, 'score:', row.score);
+            
+            // 每日登入獎勵：檢查是否是新的一天
+            let dailyBonus = 0;
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const lastLogin = row.lastLogin || '';
+            
+            if (lastLogin !== today) {
+                // 新的一天，發放每日獎勵 100 分
+                dailyBonus = 100;
+                console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
+                // 更新 lastLogin 和 score
+                try {
+                    await rouletteDb.execute({
+                        sql: `UPDATE players SET lastLogin = ?, score = score + ? WHERE username = ?`,
+                        args: [today, dailyBonus, username]
+                    });
+                } catch(e) {
+                    console.log('更新每日獎勵失敗:', e.message);
+                }
+            }
+            
+            const newScore = (row.score || 0) + dailyBonus;
+            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'dailyBonus:', dailyBonus);
             playerJoined(); // 通知有玩家加入
-            res.json({ success: true, player: { id: row.id, username: row.username, score: row.score, wins: row.wins || 0, losses: row.losses || 0 } });
+            res.json({ success: true, player: { id: row.id, username: row.username, score: newScore, wins: row.wins || 0, losses: row.losses || 0, dailyBonus } });
         } else {
             res.json({ success: false, message: '帳號或密碼錯誤' });
         }
     } catch(e) {
         console.log('輪盤登入失敗:', e.message);
         res.json({ success: false, message: '登入失敗' });
+    }
+});
+
+// 輪盤遊戲 - 排行榜
+app.get('/api/roulette/leaderboard', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        // 本地模式：取 localPlayers 前10名
+        const sorted = Object.entries(localPlayers)
+            .map(([username, data]) => ({ username, score: data.score || 0 }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
+        return res.json({ success: true, leaderboard: sorted });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 10`
+        });
+        console.log('排行榜查詢成功, count:', result.rows?.length || 0);
+        res.json({ success: true, leaderboard: result.rows || [] });
+    } catch(e) {
+        console.log('排行榜查詢失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
     }
 });
 
