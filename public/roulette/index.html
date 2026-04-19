@@ -222,6 +222,9 @@
             <div class="auth-form" id="registerForm">
                 <input type="text" id="regUsername" placeholder="帳號">
                 <input type="password" id="regPassword" placeholder="密碼">
+                <input type="text" id="regRealname" placeholder="姓名 *" style="border-color:#ff9966;">
+                <input type="tel" id="regPhone" placeholder="電話 *" style="border-color:#ff9966;">
+                <input type="email" id="regEmail" placeholder="信箱（選填）">
                 <button onclick="doRegister()">註冊</button>
                 <div class="auth-msg" id="regMsg"></div>
             </div>
@@ -705,15 +708,20 @@
         async function doRegister() {
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
+            const realname = document.getElementById('regRealname').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
             const msg = document.getElementById('regMsg');
             
             if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
+            if (!realname) { msg.textContent = '請填寫姓名'; msg.className = 'auth-msg'; return; }
+            if (!phone) { msg.textContent = '請填寫電話'; msg.className = 'auth-msg'; return; }
             
             try {
                 const res = await fetch('/api/roulette/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, realname, phone, email })
                 });
                 const data = await res.json();
                 

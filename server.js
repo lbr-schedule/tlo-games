@@ -588,7 +588,7 @@ app.post('/api/roulette/bet', (req, res) => {
 // 輪盤遊戲 - 註冊
 app.post('/api/roulette/register', async (req, res) => {
     console.log('收到註冊請求:', req.body);
-    const { username, password } = req.body;
+    const { username, password, realname, phone, email } = req.body;
     if (!username || !password) {
         console.log('缺少帳號或密碼');
         return res.json({ success: false, message: '請填寫帳號和密碼' });
@@ -599,8 +599,8 @@ app.post('/api/roulette/register', async (req, res) => {
         if (localPlayers[username]) {
             return res.json({ success: false, message: '帳號已存在' });
         }
-        localPlayers[username] = { password, score: 1000 };
-        console.log('本地測試模式：註冊成功, username:', username);
+        localPlayers[username] = { password, score: 1000, realname, phone, email };
+        console.log('本地測試模式：註冊成功, username:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
         return res.json({ success: true, message: '註冊成功！' });
     }
     
@@ -610,7 +610,7 @@ app.post('/api/roulette/register', async (req, res) => {
     }
     
     try {
-        console.log('嘗試註冊用戶到輪盤資料庫:', username);
+        console.log('嘗試註冊用戶到輪盤資料庫:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
         
         // 先檢查帳號是否已存在
         const timeoutPromise = new Promise((_, reject) => {
@@ -629,14 +629,24 @@ app.post('/api/roulette/register', async (req, res) => {
             return res.json({ success: false, message: '帳號已存在，請換一個' });
         }
         
-        // 帳號不存在，執行註冊
-        const executePromise = rouletteDb.execute({
-            sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
-            args: [username, password]
-        });
+        // 帳號不存在，執行註冊（嘗試包含新欄位）
+        try {
+            const executePromise = rouletteDb.execute({
+                sql: `INSERT INTO players (username, password, score, realname, phone, email) VALUES (?, ?, 1000, ?, ?, ?)`,
+                args: [username, password, realname || '', phone || '', email || '']
+            });
+            await Promise.race([executePromise, timeoutPromise]);
+        } catch(dbErr) {
+            // 如果新欄位不存在，退回只插入基本欄位
+            console.log('新欄位插入失敗，退回基本欄位:', dbErr.message);
+            const fallbackPromise = rouletteDb.execute({
+                sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
+                args: [username, password]
+            });
+            await Promise.race([fallbackPromise, timeoutPromise]);
+        }
         
-        const result = await Promise.race([executePromise, timeoutPromise]);
-        console.log('註冊成功, result:', JSON.stringify(result));
+        console.log('註冊成功, username:', username);
         res.json({ success: true, message: '註冊成功！' });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
