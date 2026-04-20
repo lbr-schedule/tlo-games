@@ -1677,14 +1677,14 @@
                     return;
                 }
                 
-                let html = '<div style="text-align:center;margin-bottom:15px;"><span style="font-size:1.5rem;">🏆</span><br><strong style="color:#ffd700;font-size:1.2rem;">排行榜 TOP 15</strong><br><small style="color:#aaa;font-size:0.8rem;">(本週累積贏分)</small></div>';
+                let html = '<div style="text-align:center;margin-bottom:15px;"><span style="font-size:1.5rem;">🏆</span><br><strong style="color:#ffd700;font-size:1.2rem;">排行榜 TOP 15</strong><br><small style="color:#aaa;font-size:0.8rem;">(輸贏加減後總分)</small></div>';
                 html += '<div style="max-height:300px;overflow-y:auto;">';
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const wins = player.totalWins || player.score || 0;
+                    const totalScore = player.score || 0;
                     html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';">';
-                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + wins.toLocaleString() + '</span></div>';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + totalScore.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 

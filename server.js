@@ -87,21 +87,20 @@ let rouletteState = {
 function checkWeeklyReset() {
     const now = new Date();
     const day = now.getDay(); // 0=週日, 1=週一...
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
     const today = now.toISOString().split('T')[0];
     
-    if (day === 0 && rouletteState.lastResetDay !== today) {
-        // 週日了，執行重置
+    // 每週日 00:00 ~ 00:59 執行重置（只執行一次）
+    if (day === 0 && hours === 0 && rouletteState.lastResetDay !== today) {
         rouletteState.lastResetDay = today;
         console.log('🔄 每週重置執行！');
         
         if (LOCAL_TEST_MODE) {
-            // 本地模式：所有玩家分數設為 1000
             for (const username in localPlayers) {
-                localPlayers[username].totalWins = localPlayers[username].totalWins || 0;
                 localPlayers[username].score = 1000;
             }
         } else if (rouletteDbAvailable && rouletteDb) {
-            // 雲端模式：將所有玩家的分數重置為 1000，並保存 totalWins
             rouletteDb.execute({
                 sql: `UPDATE players SET score = 1000`
             }).catch(e => console.log('每週重置失敗:', e.message));
@@ -767,19 +766,19 @@ app.get('/api/roulette/leaderboard', async (req, res) => {
     checkWeeklyReset(); // 檢查是否需要每週重置
     
     if (LOCAL_TEST_MODE) {
-        // 本地模式：取 localPlayers 前15名（顯示 totalWins）
+        // 本地模式：取 localPlayers 前15名（顯示輸贏加減後的總分 = score）
         const sorted = Object.entries(localPlayers)
-            .map(([username, data]) => ({ username, totalWins: data.totalWins || 0, score: data.score || 0 }))
-            .sort((a, b) => b.totalWins - a.totalWins)
+            .map(([username, data]) => ({ username, score: data.score || 0 }))
+            .sort((a, b) => b.score - a.score)
             .slice(0, 15);
         return res.json({ success: true, leaderboard: sorted });
     }
     
-    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維程中' });
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
     
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT username, totalWins, score FROM players ORDER BY totalWins DESC LIMIT 15`
+            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 15`
         });
         console.log('排行榜查詢成功, count:', result.rows?.length || 0);
         res.json({ success: true, leaderboard: result.rows || [] });
