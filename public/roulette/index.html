@@ -1399,6 +1399,10 @@
                     vibrateDevice([100, 50, 100, 50, 200]);
                     playSound('win');
                 }
+                // 10% 機率觸發廣告
+                if (Math.random() < 0.1) {
+                    setTimeout(() => showAdPopup(), 500);
+                }
             } catch(e) {}
         }
         
@@ -1492,6 +1496,10 @@
                     vibrateDevice([100, 50, 100, 50, 200]);
                     playSound('win');
                 }
+                // 10% 機率觸發廣告
+                if (Math.random() < 0.1) {
+                    setTimeout(() => showAdPopup(), 500);
+                }
             } catch(e) {}
         }
         
@@ -1566,6 +1574,29 @@
             }
             
             setTimeout(() => { popup.style.display = 'none'; }, 2500);
+        }
+        
+        // 廣告彈窗（LBR-STUDIO）
+        function showAdPopup() {
+            let modal = document.getElementById('adModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'adModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:700;display:none;justify-content:center;align-items:center;';
+                modal.innerHTML = `
+                    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #ffd700;border-radius:20px;padding:30px;max-width:300px;width:90%;text-align:center;color:white;box-shadow:0 0 40px rgba(255,215,0,0.3);">
+                        <div style="font-size:1rem;color:#aaa;margin-bottom:8px;">LBR-STUDIO</div>
+                        <div style="font-size:1.4rem;font-weight:bold;color:#ffd700;margin-bottom:15px;">主播問你要來嗎?</div>
+                        <div style="font-size:2rem;margin-bottom:15px;">🎤</div>
+                        <div style="font-size:1.3rem;color:#fff;margin-bottom:20px;">ID：<strong style="color:#00c864;">233333</strong></div>
+                        <button onclick="window.open('https://line.me/ti/p/@HAPPYNEWYA','_blank')" style="padding:12px 25px;background:#00c864;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:white;">💬 聯繫LINE</button>
+                        <div onclick="document.getElementById('adModal').style.display='none'" style="margin-top:15px;color:#666;font-size:0.85rem;cursor:pointer;">稍後再說</div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            playSound('win');
         }
         
         // 活動公告彈窗
