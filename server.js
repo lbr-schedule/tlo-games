@@ -746,7 +746,7 @@ app.get('/api/roulette/leaderboard', async (req, res) => {
     
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 10`
+            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 15`
         });
         console.log('排行榜查詢成功, count:', result.rows?.length || 0);
         res.json({ success: true, leaderboard: result.rows || [] });
