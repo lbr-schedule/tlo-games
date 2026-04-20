@@ -932,6 +932,34 @@ app.post('/api/roulette/save-history', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 玩家反饋（發送到 Discord）
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1491323033952473098/OYa经营活动/PhCXZ4K_gREhKGjd1YPaXp0nGdCXa4xYqJqJ8SpW7Y1lvNM3sMh-FqLGRm3Z4qZq';
+
+app.post('/api/roulette/feedback', async (req, res) => {
+    const { username, feedback } = req.body;
+    if (!username || !feedback) {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    
+    console.log('收到玩家反饋:', username, '-', feedback);
+    
+    // 發送到 Discord
+    try {
+        await fetch(DISCORD_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: `📩 **輪盤遊戲反饋**\n👤 玩家：**${username}**\n💬 內容：${feedback}`
+            })
+        });
+        console.log('反饋已發送到 Discord');
+    } catch(e) {
+        console.log('發送 Discord 失敗:', e.message);
+    }
+    
+    res.json({ success: true });
+});
+
 // 輪盤遊戲 - 清理過多歷史（每用戶最多100筆）
 async function cleanupOldHistory() {
     if (!rouletteDbAvailable) return;

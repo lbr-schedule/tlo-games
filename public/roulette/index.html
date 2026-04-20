@@ -236,6 +236,7 @@
             <div class="game-tabs">
                 <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
                 <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
+                <button class="game-tab" onclick="showTab('feedback')">💬 反饋</button>
             </div>
             
             <!-- 遊戲 Tab -->
@@ -296,6 +297,17 @@
                 <div class="history-bets-box" style="max-height:none;">
                     <h4>📜 遊戲歷史記錄</h4>
                     <div id="historyBetsList"><span class="no-bets">尚無記錄</span></div>
+                </div>
+            </div>
+            
+            <!-- 反饋 Tab -->
+            <div class="tab-content" id="feedbackTab">
+                <div style="padding:10px;text-align:center;">
+                    <h4 style="color:#ffd700;margin-bottom:12px;">💬 意見反饋</h4>
+                    <p style="color:#aaa;font-size:0.85rem;margin-bottom:15px;">遇到問題或有建議？告訴我們！</p>
+                    <input type="text" id="feedbackText" placeholder="請輸入您的意見..." style="width:100%;padding:12px;border:2px solid #555;border-radius:10px;background:#2a2a4a;color:white;font-size:0.95rem;margin-bottom:10px;box-sizing:border-box;">
+                    <button onclick="submitFeedback()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;">送出反饋</button>
+                    <div id="feedbackMsg" style="margin-top:10px;font-size:0.9rem;"></div>
                 </div>
             </div>
         </div>
@@ -763,9 +775,41 @@
             if (tab === 'game') {
                 document.querySelector('.game-tab:nth-child(1)').classList.add('active');
                 document.getElementById('gameTab').classList.add('active');
-            } else {
+            } else if (tab === 'history') {
                 document.querySelector('.game-tab:nth-child(2)').classList.add('active');
                 document.getElementById('historyTab').classList.add('active');
+            } else if (tab === 'feedback') {
+                document.querySelector('.game-tab:nth-child(3)').classList.add('active');
+                document.getElementById('feedbackTab').classList.add('active');
+            }
+        }
+        
+        async function submitFeedback() {
+            const text = document.getElementById('feedbackText').value.trim();
+            const msg = document.getElementById('feedbackMsg');
+            if (!text) {
+                msg.textContent = '請輸入意見內容';
+                msg.style.color = '#ff6666';
+                return;
+            }
+            try {
+                const res = await fetch('/api/roulette/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, feedback: text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.textContent = '✅ 感謝您的反饋！';
+                    msg.style.color = '#00ff00';
+                    document.getElementById('feedbackText').value = '';
+                } else {
+                    msg.textContent = '發送失敗，請稍後再試';
+                    msg.style.color = '#ff6666';
+                }
+            } catch(e) {
+                msg.textContent = '發送失敗，請稍後再試';
+                msg.style.color = '#ff6666';
             }
         }
         
