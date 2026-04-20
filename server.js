@@ -34,6 +34,7 @@ let rouletteDbAvailable = false;
 // 本地測試模式：使用記憶體資料庫
 const LOCAL_TEST_MODE = !process.env.ROULETTE_DATABASE_URL;
 const localPlayers = {}; // { username: { password, score } }
+const localFeedback = []; // { username, feedback, time }
 const localHistory = [];  // [{ username, result, color, win, amount }]
 
 if (LOCAL_TEST_MODE) {
@@ -943,6 +944,32 @@ app.post('/api/roulette/feedback', async (req, res) => {
     
     console.log('收到玩家反饋:', username, '-', feedback);
     
+    // 本地模式：存入 localFeedback
+    if (LOCAL_TEST_MODE) {
+        localFeedback.unshift({ username, feedback, time: new Date().toISOString() });
+    } else if (rouletteDbAvailable) {
+        // 存入資料庫
+        try {
+            await rouletteDb.execute({
+                sql: `INSERT INTO roulette_feedback (username, feedback, createdAt) VALUES (?, ?, ?)`,
+                args: [username, feedback, new Date().toISOString()]
+            });
+        } catch(e) {
+            // 表格可能不存在，先建立
+            try {
+                await rouletteDb.execute({
+                    sql: `CREATE TABLE IF NOT EXISTS roulette_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, feedback TEXT, createdAt TEXT)`
+                });
+                await rouletteDb.execute({
+                    sql: `INSERT INTO roulette_feedback (username, feedback, createdAt) VALUES (?, ?, ?)`,
+                    args: [username, feedback, new Date().toISOString()]
+                });
+            } catch(e2) {
+                console.log('儲存反饋失敗:', e2.message);
+            }
+        }
+    }
+    
     // 發送到 Discord
     try {
         await fetch(DISCORD_WEBHOOK, {
@@ -952,12 +979,28 @@ app.post('/api/roulette/feedback', async (req, res) => {
                 content: `📩 **輪盤遊戲反饋**\n👤 玩家：**${username}**\n💬 內容：${feedback}`
             })
         });
-        console.log('反饋已發送到 Discord');
     } catch(e) {
         console.log('發送 Discord 失敗:', e.message);
     }
     
     res.json({ success: true });
+});
+
+// 輪盤遊戲 - 管理員：查看所有反饋
+app.get('/api/roulette/admin/feedback', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        return res.json({ success: true, feedback: localFeedback.slice(0, 50) });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_feedback ORDER BY id DESC LIMIT 50`
+        });
+        res.json({ success: true, feedback: result.rows || [] });
+    } catch(e) {
+        console.log('查詢反饋失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
+    }
 });
 
 // 輪盤遊戲 - 清理過多歷史（每用戶最多100筆）
