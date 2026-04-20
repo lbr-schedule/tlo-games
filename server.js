@@ -840,6 +840,47 @@ app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 管理員：修改玩家帳號名稱
+app.post('/api/roulette/admin/update-username', async (req, res) => {
+    const { oldUsername, newUsername } = req.body;
+    if (!oldUsername || !newUsername) {
+        return res.json({ success: false, message: '請提供 oldUsername 和 newUsername' });
+    }
+    
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[oldUsername]) {
+            localPlayers[newUsername] = { ...localPlayers[oldUsername] };
+            delete localPlayers[oldUsername];
+        }
+        return res.json({ success: true, message: `已將 ${oldUsername} 改為 ${newUsername}` });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    
+    try {
+        // 檢查新帳號是否已存在
+        const check = await rouletteDb.execute({
+            sql: `SELECT id FROM players WHERE username = ?`,
+            args: [newUsername]
+        });
+        if (check.rows && check.rows.length > 0) {
+            return res.json({ success: false, message: '新帳號已存在' });
+        }
+        
+        await rouletteDb.execute({
+            sql: `UPDATE players SET username = ? WHERE username = ?`,
+            args: [newUsername, oldUsername]
+        });
+        console.log(`管理員將 ${oldUsername} 改為 ${newUsername}`);
+        res.json({ success: true, message: `已將 ${oldUsername} 改為 ${newUsername}` });
+    } catch(e) {
+        console.log('修改帳號失敗:', e.message);
+        res.json({ success: false, message: '修改失敗' });
+    }
+});
+
 // 輪盤遊戲 - 保存歷史記錄
 app.post('/api/roulette/save-history', async (req, res) => {
     const { username, result, color, win, amount } = req.body;
