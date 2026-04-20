@@ -571,7 +571,7 @@ app.get('/api/roulette/status', (req, res) => {
     }
 });
 
-app.post('/api/roulette/bet', (req, res) => {
+app.post('/api/roulette/bet', async (req, res) => {
     if (rouletteState.phase !== 'betting') {
         return res.json({ success: false, message: '現在不能下注' });
     }
@@ -580,6 +580,29 @@ app.post('/api/roulette/bet', (req, res) => {
     
     if (!username || !amount || amount < 10) {
         return res.json({ success: false, message: '請輸入正確的金額' });
+    }
+    
+    // 檢查玩家餘額是否足夠
+    let playerScore = 0;
+    if (LOCAL_TEST_MODE) {
+        playerScore = localPlayers[username]?.score || 0;
+    } else if (rouletteDbAvailable) {
+        try {
+            const r = await rouletteDb.execute({
+                sql: `SELECT score FROM players WHERE username = ?`,
+                args: [username]
+            });
+            if (r.rows && r.rows.length > 0) {
+                playerScore = r.rows[0].score || 0;
+            }
+        } catch(e) {
+            console.log('取得玩家分數失敗:', e.message);
+        }
+    }
+    
+    // 如果餘額不足 10 分，拒絕下注
+    if (playerScore < 10) {
+        return res.json({ success: false, message: '餘額不足，無法下注' });
     }
     
     // 隨機獎勵：3% 機會觸發 200 分 bonus
