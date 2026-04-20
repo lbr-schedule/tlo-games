@@ -698,16 +698,16 @@ app.post('/api/roulette/login', async (req, res) => {
         if (result.rows && result.rows.length > 0) {
             const row = result.rows[0];
             
-            // 每日登入獎勵：檢查是否是新的一天
+            // 每日登入獎勵：先用 lastLogin 欄位判斷（如果欄位存在且有效才發放）
+            // 如果 lastLogin 欄位不存在或無效，則不發放（避免每次登入都發放）
             let dailyBonus = 0;
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-            const lastLogin = row.lastLogin || '';
+            const lastLogin = row.lastLogin;
             
-            if (lastLogin !== today) {
-                // 新的一天，發放每日獎勵 100 分
+            // 只在 lastLogin 有值且不是今天時才發放
+            if (lastLogin && lastLogin !== today) {
                 dailyBonus = 100;
                 console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
-                // 更新 lastLogin 和 score
                 try {
                     await rouletteDb.execute({
                         sql: `UPDATE players SET lastLogin = ?, score = score + ? WHERE username = ?`,
@@ -719,7 +719,7 @@ app.post('/api/roulette/login', async (req, res) => {
             }
             
             const newScore = (row.score || 0) + dailyBonus;
-            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'dailyBonus:', dailyBonus);
+            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'dailyBonus:', dailyBonus, 'lastLogin:', lastLogin);
             playerJoined(); // 通知有玩家加入
             res.json({ success: true, player: { id: row.id, username: row.username, score: newScore, wins: row.wins || 0, losses: row.losses || 0, dailyBonus } });
         } else {
@@ -815,6 +815,28 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     } catch(e) {
         console.log('更新餘額失敗:', e.message);
         res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+// 輪盤遊戲 - 管理員：修補資料庫（新增lastLogin欄位）
+app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    try {
+        // 嘗試新增 lastLogin 欄位（如果已存在會失敗，但這是預期的）
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN lastLogin TEXT DEFAULT ''`
+        });
+        console.log('已新增 lastLogin 欄位');
+        res.json({ success: true, message: '已新增 lastLogin 欄位' });
+    } catch(e) {
+        if (e.message.includes('duplicate column')) {
+            res.json({ success: true, message: 'lastLogin 欄位已存在' });
+        } else {
+            console.log('修補失敗:', e.message);
+            res.json({ success: false, message: '修補失敗: ' + e.message });
+        }
     }
 });
 
