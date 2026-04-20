@@ -79,8 +79,35 @@ let rouletteState = {
     betTimer: null,
     BETTING_TIME: 8000,
     phaseStartTime: 0,
-    hasPlayer: false
+    hasPlayer: false,
+    lastResetDay: null // 用於每週重置追蹤
 };
+
+// 每週重置檢查（每週日半夜12點）
+function checkWeeklyReset() {
+    const now = new Date();
+    const day = now.getDay(); // 0=週日, 1=週一...
+    const today = now.toISOString().split('T')[0];
+    
+    if (day === 0 && rouletteState.lastResetDay !== today) {
+        // 週日了，執行重置
+        rouletteState.lastResetDay = today;
+        console.log('🔄 每週重置執行！');
+        
+        if (LOCAL_TEST_MODE) {
+            // 本地模式：所有玩家分數設為 1000
+            for (const username in localPlayers) {
+                localPlayers[username].totalWins = localPlayers[username].totalWins || 0;
+                localPlayers[username].score = 1000;
+            }
+        } else if (rouletteDbAvailable && rouletteDb) {
+            // 雲端模式：將所有玩家的分數重置為 1000，並保存 totalWins
+            rouletteDb.execute({
+                sql: `UPDATE players SET score = 1000`
+            }).catch(e => console.log('每週重置失敗:', e.message));
+        }
+    }
+}
 
 // ========== 骰子遊戲邏輯 ==========
 function createDiceGame(player1, player2) {
@@ -651,7 +678,7 @@ app.post('/api/roulette/register', async (req, res) => {
         // 帳號不存在，執行註冊（嘗試包含新欄位）
         try {
             const executePromise = rouletteDb.execute({
-                sql: `INSERT INTO players (username, password, score, realname, phone, email) VALUES (?, ?, 1000, ?, ?, ?)`,
+                sql: `INSERT INTO players (username, password, score, realname, phone, email, totalWins) VALUES (?, ?, 1000, ?, ?, ?, 0)`,
                 args: [username, password, realname || '', phone || '', email || '']
             });
             await Promise.race([executePromise, timeoutPromise]);
@@ -698,6 +725,9 @@ app.post('/api/roulette/login', async (req, res) => {
         if (result.rows && result.rows.length > 0) {
             const row = result.rows[0];
             
+            // 檢查每週重置（每週日12點）
+            checkWeeklyReset();
+            
             // 每日登入獎勵：先用 lastLogin 欄位判斷（如果欄位存在且有效才發放）
             // 如果 lastLogin 欄位不存在或無效，則不發放（避免每次登入都發放）
             let dailyBonus = 0;
@@ -719,9 +749,10 @@ app.post('/api/roulette/login', async (req, res) => {
             }
             
             const newScore = (row.score || 0) + dailyBonus;
-            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'dailyBonus:', dailyBonus, 'lastLogin:', lastLogin);
+            const totalWins = row.totalWins || 0;
+            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'totalWins:', totalWins, 'dailyBonus:', dailyBonus, 'lastLogin:', lastLogin);
             playerJoined(); // 通知有玩家加入
-            res.json({ success: true, player: { id: row.id, username: row.username, score: newScore, wins: row.wins || 0, losses: row.losses || 0, dailyBonus } });
+            res.json({ success: true, player: { id: row.id, username: row.username, score: newScore, totalWins, dailyBonus } });
         } else {
             res.json({ success: false, message: '帳號或密碼錯誤' });
         }
@@ -733,20 +764,22 @@ app.post('/api/roulette/login', async (req, res) => {
 
 // 輪盤遊戲 - 排行榜
 app.get('/api/roulette/leaderboard', async (req, res) => {
+    checkWeeklyReset(); // 檢查是否需要每週重置
+    
     if (LOCAL_TEST_MODE) {
-        // 本地模式：取 localPlayers 前10名
+        // 本地模式：取 localPlayers 前15名（顯示 totalWins）
         const sorted = Object.entries(localPlayers)
-            .map(([username, data]) => ({ username, score: data.score || 0 }))
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
+            .map(([username, data]) => ({ username, totalWins: data.totalWins || 0, score: data.score || 0 }))
+            .sort((a, b) => b.totalWins - a.totalWins)
+            .slice(0, 15);
         return res.json({ success: true, leaderboard: sorted });
     }
     
-    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維程中' });
     
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 15`
+            sql: `SELECT username, totalWins, score FROM players ORDER BY totalWins DESC LIMIT 15`
         });
         console.log('排行榜查詢成功, count:', result.rows?.length || 0);
         res.json({ success: true, leaderboard: result.rows || [] });
@@ -818,25 +851,36 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     }
 });
 
-// 輪盤遊戲 - 管理員：修補資料庫（新增lastLogin欄位）
+// 輪盤遊戲 - 管理員：修補資料庫（新增lastLogin和totalWins欄位）
 app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
     if (!rouletteDbAvailable || !rouletteDb) {
         return res.json({ success: false, message: '資料庫不可用' });
     }
     try {
-        // 嘗試新增 lastLogin 欄位（如果已存在會失敗，但這是預期的）
-        await rouletteDb.execute({
-            sql: `ALTER TABLE players ADD COLUMN lastLogin TEXT DEFAULT ''`
-        });
-        console.log('已新增 lastLogin 欄位');
-        res.json({ success: true, message: '已新增 lastLogin 欄位' });
-    } catch(e) {
-        if (e.message.includes('duplicate column')) {
-            res.json({ success: true, message: 'lastLogin 欄位已存在' });
-        } else {
-            console.log('修補失敗:', e.message);
-            res.json({ success: false, message: '修補失敗: ' + e.message });
+        // 嘗試新增 lastLogin 欄位
+        try {
+            await rouletteDb.execute({
+                sql: `ALTER TABLE players ADD COLUMN lastLogin TEXT DEFAULT ''`
+            });
+            console.log('已新增 lastLogin 欄位');
+        } catch(e) {
+            if (!e.message.includes('duplicate column')) throw e;
         }
+        
+        // 嘗試新增 totalWins 欄位
+        try {
+            await rouletteDb.execute({
+                sql: `ALTER TABLE players ADD COLUMN totalWins INTEGER DEFAULT 0`
+            });
+            console.log('已新增 totalWins 欄位');
+        } catch(e) {
+            if (!e.message.includes('duplicate column')) throw e;
+        }
+        
+        res.json({ success: true, message: '已修補 lastLogin 和 totalWins 欄位' });
+    } catch(e) {
+        console.log('修補失敗:', e.message);
+        res.json({ success: false, message: '修補失敗: ' + e.message });
     }
 });
 
