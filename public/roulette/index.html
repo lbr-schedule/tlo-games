@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎰 T-LO大轉盤</title>
     <style>
+        .winner-marquee {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+            color: #1a1a2e;
+            padding: 8px 0;
+            font-weight: bold;
+            font-size: 1rem;
+            z-index: 999;
+            display: none;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(255,215,0,0.5);
+        }
+        .winner-marquee.show {
+            display: block;
+            animation: marquee-slide 8s linear forwards;
+        }
+        @keyframes marquee-slide {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { height: 100%; }
         body { 
@@ -197,13 +220,14 @@
     </style>
 </head>
 <body>
+    <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
     <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showLeaderboard()">🏆</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
             <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
             <div>
-                <span class="result-badge neutral" id="resultBadge">-</span>
+                <button onclick="showMyInviteCode()" style="background:rgba(255,215,0,0.2);border:1px solid #ffd700;border-radius:8px;padding:4px 8px;font-size:0.75rem;color:#ffd700;cursor:pointer;">邀請</button>
             </div>
         </div>
         
@@ -225,6 +249,7 @@
                 <input type="text" id="regRealname" placeholder="姓名 *" style="border-color:#ff9966;">
                 <input type="tel" id="regPhone" placeholder="電話 *" style="border-color:#ff9966;">
                 <input type="email" id="regEmail" placeholder="信箱（選填）">
+                <input type="text" id="regInviteCode" placeholder="邀請碼（選填）">
                 <button onclick="doRegister()">註冊</button>
                 <div class="auth-msg" id="regMsg"></div>
             </div>
@@ -741,6 +766,7 @@
             const realname = document.getElementById('regRealname').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
             const email = document.getElementById('regEmail').value.trim();
+            const inviteCode = document.getElementById('regInviteCode').value.trim();
             const msg = document.getElementById('regMsg');
             
             if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
@@ -751,13 +777,17 @@
                 const res = await fetch('/api/roulette/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, realname, phone, email })
+                    body: JSON.stringify({ username, password, realname, phone, email, inviteCode })
                 });
                 const data = await res.json();
                 
                 if (data.success) {
-                    msg.textContent = '註冊成功！請登入';
-                    msg.className = 'auth-msg success';
+                    if (data.inviterBonus) {
+                        msg.textContent = '註冊成功！邀請人已獲得+200分'; msg.className = 'auth-msg success';
+                    } else {
+                        msg.textContent = '註冊成功！請登入';
+                        msg.className = 'auth-msg success';
+                    }
                     setTimeout(() => showAuth('login'), 1500);
                 } else {
                     msg.textContent = data.message;
@@ -1301,6 +1331,10 @@
             if (netWin > 0) {
                 msg.innerHTML = '🎉 恭喜！<br>贏了 <span style="color:#00ff00;font-size:1.4rem">+$' + netWin + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
                 msg.style.color = '#00ff00';
+                // 贏超過500分時顯示跑馬燈
+                if (netWin >= 500) {
+                    showWinnerMarquee(myName, netWin);
+                }
             } else if (netWin < 0) {
                 msg.innerHTML = '😢 很遺憾<br>輸了 <span style="color:#ff4444;font-size:1.4rem">-$' + Math.abs(netWin) + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
                 msg.style.color = '#ff6666';
@@ -1311,6 +1345,22 @@
             
             popup.classList.add('show');
             btn.onclick = () => popup.classList.remove('show');
+        }
+        
+        function showWinnerMarquee(username, amount) {
+            const marquee = document.getElementById('winnerMarquee');
+            if (!marquee) return;
+            marquee.textContent = '🎉 ' + username + ' 在 T-LO大轉盤 贏了 $' + amount + '！恭喜！';
+            marquee.classList.remove('show');
+            void marquee.offsetWidth; // 強制重繪動畫
+            marquee.classList.add('show');
+            // 8秒後自動隱藏
+            setTimeout(() => marquee.classList.remove('show'), 8000);
+        }
+        
+        function showMyInviteCode() {
+            if (!myName) return;
+            alert('您的邀請碼：' + myName + '\n邀請朋友註冊雙方都+200分！');
         }
         
         // 新手導引功能
