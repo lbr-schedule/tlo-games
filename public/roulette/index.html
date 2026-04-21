@@ -963,6 +963,12 @@
                         cd.style.color = '#ffd700';
                         cd.style.fontSize = '1.4rem';
                     }
+                } else {
+                    // betCountdown not found, update resultDisplay directly
+                    const resultDisplay = document.getElementById('resultDisplay');
+                    if (resultDisplay && data.phase === 'betting') {
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
+                    }
                 }
             } catch(e) {
                 console.log('Poll error:', e.message);
