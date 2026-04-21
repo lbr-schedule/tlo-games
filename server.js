@@ -995,6 +995,15 @@ app.post('/api/roulette/save-history', async (req, res) => {
             sql: `INSERT INTO roulette_history (username, result, color, win, amount) VALUES (?, ?, ?, ?, ?)`,
             args: [username, result, color, win ? 1 : 0, amount]
         });
+        // 更新玩家統計資料表
+        try {
+            await rouletteDb.execute({
+                sql: `INSERT INTO roulette_player_stats (username, total_bets, total_wins, total_losses, total_win_amount, total_lose_amount) VALUES (?, 1, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET total_bets = total_bets + 1, total_wins = total_wins + ?, total_losses = total_losses + ?, total_win_amount = total_win_amount + ?, total_lose_amount = total_lose_amount + ?`,
+                args: [username, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount]
+            });
+        } catch(e2) {
+            console.log('更新玩家統計失敗:', e2.message);
+        }
         res.json({ success: true });
     } catch(e) {
         console.log('保存歷史失敗:', e.message);
@@ -1037,6 +1046,13 @@ app.post('/api/roulette/feedback', async (req, res) => {
                 console.log('儲存反饋失敗:', e2.message);
             }
         }
+    }
+    
+    // 建立 roulette_player_stats 表格（如果不存在）
+    if (rouletteDbAvailable) {
+        rouletteDb.execute({
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
+        }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
     }
     
     // 發送到 Discord
