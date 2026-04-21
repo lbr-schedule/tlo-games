@@ -1,0 +1,20 @@
+{
+  "name": "T-LO大轉盤",
+  "short_name": "T-LO轉盤",
+  "description": "🎰 T-LO大轉盤 - 輪盤遊戲，每日登入送金幣，排行榜競賽赢獎品",
+  "start_url": "/roulette/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#ffd700",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/roulette/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "zh-TW"
+}

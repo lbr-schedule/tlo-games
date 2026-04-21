@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffd700">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="T-LO轉盤">
+    <meta name="description" content="🎰 T-LO大轉盤 - 輪盤遊戲，每日登入送金幣，排行榜競賽赢獎品">
+    <link rel="manifest" href="/roulette/manifest.json">
+    <link rel="apple-touch-icon" href="/roulette/icon-192.svg">
     <title>🎰 T-LO大轉盤</title>
     <style>
         .winner-marquee {
@@ -1803,6 +1810,19 @@
             } catch(e) {
                 showToast('載入排行榜失敗', 'error');
             }
+        }
+    </script>
+    <script>
+        // 註冊 Service Worker (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/roulette/service-worker.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker 註冊成功:', registration.scope);
+                    }, function(err) {
+                        console.log('ServiceWorker 註冊失敗:', err);
+                    });
+            });
         }
     </script>
 </body>
