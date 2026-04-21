@@ -1055,6 +1055,23 @@ app.post('/api/roulette/feedback', async (req, res) => {
     res.json({ success: true });
 });
 
+// 輪盤遊戲 - 管理員：查看所有玩家輸贏統計
+app.get('/api/roulette/admin/stats', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        return res.json({ success: true, stats: [] });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, COUNT(*) as total_bets, SUM(amount) as total_staked, SUM(win) as net_profit FROM roulette_history GROUP BY username ORDER BY net_profit DESC`
+        });
+        res.json({ success: true, stats: result.rows || [] });
+    } catch(e) {
+        console.log('查詢統計失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
+    }
+});
+
 // 輪盤遊戲 - 管理員：查看所有反饋
 app.get('/api/roulette/admin/feedback', async (req, res) => {
     if (LOCAL_TEST_MODE) {
