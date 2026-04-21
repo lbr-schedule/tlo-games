@@ -9,9 +9,15 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/roulette/icon-192.svg",
+      "src": "https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-21%2FMiniMax-M2.7%2F2042085561899950328%2F44dc2eda593e12f22ec1307a688f03bcb1371edb70f9d8da9f3ef8984debbabc..jpeg?Expires=1776834669&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=lw9eldlK%2B2MrDoJu33hpJS0ztUw%3D",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-21%2FMiniMax-M2.7%2F2042085561899950328%2F44dc2eda593e12f22ec1307a688f03bcb1371edb70f9d8da9f3ef8984debbabc..jpeg?Expires=1776834669&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=lw9eldlK%2B2MrDoJu33hpJS0ztUw%3D",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ],
