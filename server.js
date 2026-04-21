@@ -59,6 +59,10 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
     rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
         console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
         rouletteDbAvailable = true;
+        // 建立 roulette_player_stats 表格（如果不存在）
+        rouletteDb.execute({
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
+        }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
     }).catch(e => {
         console.log('輪盤資料庫連線測試失敗:', e.message);
         rouletteDbAvailable = false;
@@ -1046,13 +1050,6 @@ app.post('/api/roulette/feedback', async (req, res) => {
                 console.log('儲存反饋失敗:', e2.message);
             }
         }
-    }
-    
-    // 建立 roulette_player_stats 表格（如果不存在）
-    if (rouletteDbAvailable) {
-        rouletteDb.execute({
-            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
-        }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
     }
     
     // 發送到 Discord
