@@ -542,22 +542,68 @@
             }
         }
         
-        // 背景音樂（MP3 循環播放）
+        // 背景音樂（簡單的 Ambient 循環）
         function startBgMusic() {
-            if (bgmAudio) return;
+            if (!soundEnabled) return;
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
             bgMusicPlaying = true;
-            bgmAudio = new Audio('/roulette/bgm.mp3');
-            bgmAudio.loop = true;
-            bgmAudio.volume = 0.3;
-            bgmAudio.play().catch(e => console.log('BGM play failed:', e));
+            
+            const playNote = (freq, startTime, duration, gainVal = 0.04, type = 'square') => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.value = gainVal;
+                gain.gain.setValueAtTime(gainVal, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.01);
+                osc.connect(gain);
+                gain.connect(bgMusicGain);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+            
+            const scheduleMusic = () => {
+                if (!bgMusicPlaying || !soundEnabled) {
+                    bgMusicPlaying = false;
+                    return;
+                }
+                const now = audioCtx.currentTime;
+                
+                const melody = [
+                    392.00, 440.00, 523.25, 587.33,
+                    659.26, 587.33, 523.25, 440.00,
+                    392.00, 523.25, 659.26, 523.25,
+                    587.33, 523.25, 440.00, 392.00,
+                ];
+                const noteDur = 0.2;
+                
+                const chords = [
+                    [261.63, 329.63, 392.00],
+                    [261.63, 329.63, 392.00],
+                    [196.00, 246.94, 293.66],
+                    [196.00, 246.94, 293.66],
+                ];
+                
+                melody.forEach((freq, i) => {
+                    playNote(freq, now + i * noteDur, noteDur * 0.9, 0.05, 'square');
+                    const chordIdx = Math.floor(i / 4) % chords.length;
+                    chords[chordIdx].forEach((cf) => {
+                        playNote(cf, now + i * noteDur, noteDur * 0.7, 0.025, 'triangle');
+                    });
+                });
+                
+                bgMusicTimer = setTimeout(scheduleMusic, noteDur * melody.length * 1000);
+            };
+            
+            scheduleMusic();
         }
         
         function stopBgMusic() {
             bgMusicPlaying = false;
-            if (bgmAudio) {
-                bgmAudio.pause();
-                bgmAudio.currentTime = 0;
-            }
+            if (bgMusicTimer) clearTimeout(bgMusicTimer);
+        }
         }
         
         // 點擊音效（使用者互動時）
