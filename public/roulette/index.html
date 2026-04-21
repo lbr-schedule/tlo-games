@@ -228,7 +228,7 @@
 </head>
 <body>
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showLeaderboard()">🏆</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showTab('feedback')">💬</span><span class="help-toggle" onclick="showLeaderboard()">🏆</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -267,8 +267,8 @@
             
             <div class="game-tabs">
                 <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
-                <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
                 <button class="game-tab" onclick="showTab('feedback')">💬 反饋</button>
+                <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
             </div>
             
             <!-- 遊戲 Tab -->
@@ -442,8 +442,17 @@
                 <span class="even">雙數</span> - 2倍獎金（2,4,6...36）
             </div>
             <div class="bet-demo">
-                <span class="num">數字</span> - 10倍獎金（0-36）
+                <span class="num">📌 數字</span> - 10倍獎金（0-36）
+                <p style="color:#aaa;font-size:0.85rem;margin:5px 0 0 20px;">→ 先點「📌 數字」再輸入數字（0-36）</p>
             </div>
+            
+            <h3>🔧 工具按鈕說明</h3>
+            <p>🚪 離開遊戲 - 退出並返回登入畫面</p>
+            <p>🔊 / 🔇 靜音 - 開關背景音樂與音效</p>
+            <p>💬 反饋 - 提供建議或問題回報</p>
+            <p>📜 歷史 - 查看近期下注與結算紀錄</p>
+            <p>🏆 排行榜 - 查看 TOP 15 玩家積分</p>
+            <p>❓ 說明 - 查看遊戲規則與玩法</p>
             
             <button class="close-btn" onclick="hideHelp()">知道了！</button>
         </div>
