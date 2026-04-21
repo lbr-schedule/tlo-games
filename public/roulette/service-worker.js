@@ -1,4 +1,5 @@
-const CACHE_NAME = 'tlo-roulette-v1';
+const CACHE_VERSION = 'v6';
+const CACHE_NAME = 'tlo-roulette-' + CACHE_VERSION;
 const urlsToCache = [
   '/roulette/',
   '/roulette/index.html'
@@ -13,27 +14,25 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 取得快取內容
+// 取得快取內容 - 總是取得新版本
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
+        // 不快取非成功的回應
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
-        return fetch(event.request)
-          .then(response => {
-            // 不快取非成功的回應
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
           });
+        return response;
+      })
+      .catch(() => {
+        // 網路失敗時回使用快取
+        return caches.match(event.request);
       })
   );
 });
@@ -44,7 +43,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName.startsWith('tlo-roulette-') && cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
