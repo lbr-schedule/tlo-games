@@ -916,6 +916,9 @@
             quickAmount = amt;
             document.querySelectorAll('.quick-bet button').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            // 清除自定義金額，讓快捷金額立即生效
+            const customInput = document.getElementById('customBetAmt');
+            if (customInput) customInput.value = '';
         }
         
         function drawWheel() {
