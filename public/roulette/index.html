@@ -1878,15 +1878,17 @@
                 modal = document.createElement('div');
                 modal.id = 'feedbackModal';
                 modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:500;display:none;justify-content:center;align-items:center;';
-                modal.innerHTML = '<div style="background:#1a1a2e;border:2px solid #ffd700;border-radius:15px;padding:20px;max-width:320px;width:90%;color:white;"></div>';
+                modal.innerHTML = '<div style="background:#1a1a2e;border:2px solid #ffd700;border-radius:15px;padding:25px;max-width:300px;width:90%;color:white;"></div>';
                 document.body.appendChild(modal);
             }
-            modal.innerHTML = '<h2 style="color:#ffd700;margin-bottom:15px;">💬 意見反饋</h2>' +
-                '<p style="color:#aaa;margin-bottom:10px;">遇到問題或有建議？告訴我們！</p>' +
-                '<input type="text" id="feedbackText" placeholder="請輸入您的意見..." style="width:100%;padding:12px;border:2px solid #555;border-radius:10px;background:#2a2a4a;color:white;font-size:0.95rem;margin-bottom:10px;box-sizing:border-box;">' +
-                '<button onclick="submitFeedback()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;">送出反饋</button>' +
-                '<div id="feedbackMsg" style="margin-top:10px;font-size:0.9rem;"></div>' +
-                '<button onclick="document.getElementById(\x27feedbackModal\x27).style.display=\x27none\x27" style="margin-top:10px;width:100%;padding:8px;background:#444;border:none;border-radius:8px;cursor:pointer;color:#aaa;">關閉</button>';
+            modal.innerHTML = '<div style="text-align:center;">' +
+                '<h2 style="color:#ffd700;margin:0 0 8px 0;font-size:1.3rem;">💬 意見反饋</h2>' +
+                '<p style="color:#aaa;margin:0 0 15px 0;font-size:0.9rem;">遇到問題或有建議？告訴我們！</p>' +
+                '<input type="text" id="feedbackText" placeholder="請輸入您的意見..." style="width:100%;padding:12px;border:2px solid #555;border-radius:10px;background:#2a2a4a;color:white;font-size:0.95rem;margin-bottom:12px;box-sizing:border-box;display:block;">' +
+                '<button onclick="submitFeedback()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;display:block;">送出反饋</button>' +
+                '<div id="feedbackMsg" style="margin:10px 0;font-size:0.9rem;min-height:20px;"></div>' +
+                '<button onclick="document.getElementById(\x27feedbackModal\x27).style.display=\x27none\x27" style="width:100%;padding:10px;background:transparent;border:1px solid #555;border-radius:8px;cursor:pointer;color:#888;font-size:0.9rem;display:block;">關閉</button>' +
+                '</div>';
             modal.style.display = 'flex';
         }
         
