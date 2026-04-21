@@ -1420,7 +1420,23 @@
         
         function showMyInviteCode() {
             if (!myName) return;
-            alert('您的邀請碼：' + myName + '\n邀請朋友註冊雙方都+200分！');
+            let modal = document.getElementById('inviteModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'inviteModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:500;display:none;justify-content:center;align-items:center;backdrop-filter:blur(5px);';
+                modal.innerHTML = '<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:2px solid #ffd700;border-radius:20px;padding:30px 25px;max-width:280px;width:90%;color:white;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"></div>';
+                document.body.appendChild(modal);
+                modal.onclick = () => { modal.style.display = 'none'; };
+            }
+            modal.innerHTML = '<div style="text-align:center;">' +
+                '<h2 style="color:#ffd700;margin:0 0 10px 0;font-size:1.3rem;">邀請碼</h2>' +
+                '<div style="background:rgba(255,215,0,0.2);border:2px dashed #ffd700;border-radius:12px;padding:15px;margin:15px 0;">' +
+                '<span style="font-size:1.8rem;font-weight:bold;color:#ffd700;letter-spacing:3px;">' + myName + '</span></div>' +
+                '<p style="color:#aaa;font-size:0.85rem;margin:0 0 20px 0;">邀請朋友註冊，雙方都+200分！</p>' +
+                '<button onclick="document.getElementById(\x27inviteModal\x27).style.display=\x27none\x27" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;">知道了</button>' +
+                '</div>';
+            modal.style.display = 'flex';
         }
         
         // 新手導引功能
