@@ -401,6 +401,17 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal" style="border-color:#ff6b6b;">
+            <h2 style="color:#ff6b6b;">🚪 確認離開</h2>
+            <p style="text-align:center;font-size:1.1rem;margin:20px 0;">確定要離開遊戲嗎？</p>
+            <div style="display:flex;gap:10px;">
+                <button onclick="confirmLogout()" style="flex:1;padding:12px;background:#ff6b6b;border:none;border-radius:10px;font-size:1rem;font-weight:bold;color:white;cursor:pointer;">確定離開</button>
+                <button onclick="cancelLogout()" style="flex:1;padding:12px;background:#444;border:none;border-radius:10px;font-size:1rem;font-weight:bold;color:white;cursor:pointer;">取消</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
             <h2>🎰 T-LO大轉盤 玩法</h2>
@@ -880,7 +891,25 @@
         }
         
         function leaveGame() {
+            // 顯示確認彈窗
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) {
+                modal.classList.add('show');
+            } else {
+                // 萬一 modal 不存在，直接登出
+                doLogout();
+            }
+        }
+        
+        function confirmLogout() {
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) modal.classList.remove('show');
             doLogout();
+        }
+        
+        function cancelLogout() {
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) modal.classList.remove('show');
         }
         
         function setQuickAmount(amt) {
