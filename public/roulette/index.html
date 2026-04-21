@@ -447,6 +447,7 @@
         let bgMusicPlaying = false;
         let bgMusicTimer = null;
         let soundEnabled = true;
+        let bgmAudio = null;
         
         function initAudio() {
             if (audioCtx) return;
@@ -541,73 +542,22 @@
             }
         }
         
-        // 背景音樂（簡單的 Ambient 循環）
+        // 背景音樂（MP3 循環播放）
         function startBgMusic() {
-            if (!soundEnabled) return;
-            if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
+            if (bgmAudio) return;
             bgMusicPlaying = true;
-            
-            const playNote = (freq, startTime, duration, gainVal = 0.04, type = 'square') => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.value = freq;
-                gain.gain.value = gainVal;
-                gain.gain.setValueAtTime(gainVal, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.01);
-                osc.connect(gain);
-                gain.connect(bgMusicGain);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            };
-            
-            const scheduleMusic = () => {
-                if (!bgMusicPlaying || !soundEnabled) {
-                    bgMusicPlaying = false;
-                    return;
-                }
-                const now = audioCtx.currentTime;
-                
-                // 連續旋律音（每個音符0.2秒，無縫循環）
-                // G大調快節奏旋律：上上下下循環
-                const melody = [
-                    392.00, 440.00, 523.25, 587.33, // G A C D
-                    659.26, 587.33, 523.25, 440.00, // E D C A
-                    392.00, 523.25, 659.26, 523.25, // G C E C
-                    587.33, 523.25, 440.00, 392.00, // D C A G
-                ];
-                const noteDur = 0.2;
-                
-                // 和弦進行（每4個音符一個和弦）
-                const chords = [
-                    [261.63, 329.63, 392.00], // C
-                    [261.63, 329.63, 392.00], // C
-                    [196.00, 246.94, 293.66], // G
-                    [196.00, 246.94, 293.66], // G
-                ];
-                
-                // 持續播放（每個音符緊接下一個，無間斷）
-                melody.forEach((freq, i) => {
-                    // 旋律
-                    playNote(freq, now + i * noteDur, noteDur * 0.9, 0.05, 'square');
-                    // 和弦（每4個音符換一次）
-                    const chordIdx = Math.floor(i / 4) % chords.length;
-                    chords[chordIdx].forEach((cf) => {
-                        playNote(cf, now + i * noteDur, noteDur * 0.7, 0.025, 'triangle');
-                    });
-                });
-                
-                // 緊接著下一個循環（無縫）
-                bgMusicTimer = setTimeout(scheduleMusic, noteDur * melody.length * 1000);
-            };
-            
-            scheduleMusic();
+            bgmAudio = new Audio('/roulette/bgm.mp3');
+            bgmAudio.loop = true;
+            bgmAudio.volume = 0.3;
+            bgmAudio.play().catch(e => console.log('BGM play failed:', e));
         }
         
         function stopBgMusic() {
             bgMusicPlaying = false;
+            if (bgmAudio) {
+                bgmAudio.pause();
+                bgmAudio.currentTime = 0;
+            }
         }
         
         // 點擊音效（使用者互動時）
