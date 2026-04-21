@@ -33,8 +33,10 @@ let rouletteDbAvailable = false;
 
 // 本地測試模式：使用記憶體資料庫
 const LOCAL_TEST_MODE = !process.env.ROULETTE_DATABASE_URL;
-const localPlayers = {}; // { username: { password, score } }
+const localPlayers = {}; // { username: { password, score, invitedBy } }
 const localFeedback = []; // { username, feedback, time }
+const weeklyRewardConfig = { top1: 1000, top2: 800, top3: 500 }; // 每週前三名獎勵
+let lastWeeklyReset = new Date().toISOString().split('T')[0]; // 用於追蹤每週結算
 const localHistory = [];  // [{ username, result, color, win, amount }]
 
 if (LOCAL_TEST_MODE) {
@@ -637,14 +639,24 @@ app.post('/api/roulette/register', async (req, res) => {
         return res.json({ success: false, message: '請填寫帳號和密碼' });
     }
     
+    // 處理邀請碼
+    const { inviteCode } = req.body;
+    let inviterBonus = 0;
+    
     // 本地測試模式
     if (LOCAL_TEST_MODE) {
         if (localPlayers[username]) {
             return res.json({ success: false, message: '帳號已存在' });
         }
-        localPlayers[username] = { password, score: 1000, realname, phone, email };
+        localPlayers[username] = { password, score: 1000, realname, phone, email, invitedBy: inviteCode || null };
+        // 邀請人獲得獎勵
+        if (inviteCode && localPlayers[inviteCode]) {
+            localPlayers[inviteCode].score += 200;
+            inviterBonus = 200;
+            console.log('邀請獎勵發放:', inviteCode, '+200, 帳戶:', localPlayers[inviteCode].score);
+        }
         console.log('本地測試模式：註冊成功, username:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
-        return res.json({ success: true, message: '註冊成功！' });
+        return res.json({ success: true, message: '註冊成功！', inviterBonus });
     }
     
     if (!rouletteDbAvailable || !rouletteDb) {
@@ -779,6 +791,63 @@ app.get('/api/roulette/leaderboard', async (req, res) => {
         res.json({ success: false, message: '查詢失敗' });
     }
 });
+
+// 每週排行榜獎勵發放（每週一凌晨結算）
+function processWeeklyRewards() {
+    const today = new Date().toISOString().split('T')[0];
+    if (lastWeeklyReset === today) return; // 今天已結算
+    
+    // 檢查是否週一（ISO weekday: 1 = Monday）
+    const dayOfWeek = new Date().getDay();
+    if (dayOfWeek !== 1) return; // 不是週一不結算
+    
+    console.log('🎁 開始結算每週排行榜獎勵...');
+    
+    if (LOCAL_TEST_MODE) {
+        // 本地模式：取前三名發獎
+        const sorted = Object.entries(localPlayers)
+            .map(([username, data]) => ({ username, score: data.score || 0 }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
+        
+        const rewards = [1000, 800, 500];
+        sorted.forEach((player, i) => {
+            if (localPlayers[player.username]) {
+                localPlayers[player.username].score += rewards[i];
+                console.log(`每週獎勵: ${player.username} +${rewards[i]}`);
+            }
+        });
+    } else if (rouletteDbAvailable) {
+        // 資料庫模式：查前三名並發獎
+        rouletteDb.execute({
+            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 3`
+        }).then(result => {
+            const rewards = [1000, 800, 500];
+            (result.rows || []).forEach((player, i) => {
+                rouletteDb.execute({
+                    sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                    args: [rewards[i], player.username]
+                }).then(() => {
+                    console.log(`每週獎勵: ${player.username} +${rewards[i]}`);
+                    // 發 Discord 公告
+                    fetch(DISCORD_WEBHOOK, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: `🏆 **每週排行榜獎勵**\n🥇 ${result.rows[0]?.username || '-'} +1000分\n🥈 ${result.rows[1]?.username || '-'} +800分\n🥉 ${result.rows[2]?.username || '-'} +500分`
+                        })
+                    });
+                });
+            });
+        });
+    }
+    
+    lastWeeklyReset = today;
+}
+
+// 每小時檢查一次是否需要結算
+setInterval(processWeeklyRewards, 3600000);
+processWeeklyRewards(); // 啟動時也檢查一次
 
 // 輪盤遊戲 - 更新余額
 app.post('/api/roulette/update-score', async (req, res) => {
