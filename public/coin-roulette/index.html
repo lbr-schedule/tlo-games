@@ -471,7 +471,7 @@
         // ====== 登入/註冊 ======
         function switchAuthTab(tab) {
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.auth-tab').forEach(t => { if (t.textContent.includes(tab === 'login' ? '登入' : '註冊')) t.classList.add('active'); });
             document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
             document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
             document.getElementById('authMsg').textContent = '';
