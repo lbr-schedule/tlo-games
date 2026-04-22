@@ -1093,7 +1093,7 @@ app.get('/api/roulette/admin/feedback', async (req, res) => {
     if (!rouletteDbAvailable) return res.json({ success: false, message: '資料庫不可用' });
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT * FROM roulette_feedback ORDER BY id DESC LIMIT 50`
+            sql: `SELECT * FROM roulette_feedback ORDER BY id DESC LIMIT 100`
         });
         res.json({ success: true, feedback: result.rows || [] });
     } catch(e) {
@@ -1459,7 +1459,7 @@ app.get('/api/coin/history/:username', async (req, res) => {
     const { username } = req.params;
     if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, history: [] });
     try {
-        const result = await coinDb.execute({ sql: `SELECT * FROM coin_spin_logs WHERE username = ? ORDER BY id DESC LIMIT 50`, args: [username] });
+        const result = await coinDb.execute({ sql: `SELECT * FROM coin_spin_logs WHERE username = ? ORDER BY id DESC LIMIT 100`, args: [username] });
         res.json({ success: true, history: result.rows || [] });
     } catch(e) { res.json({ success: false, history: [] }); }
 });
@@ -1469,6 +1469,7 @@ app.post('/api/coin/feedback', async (req, res) => {
     if (!username || !feedback) return res.json({ success: false, message: '參數錯誤' });
     if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true });
     try {
+        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)` });
         await coinDb.execute({ sql: `INSERT INTO coin_feedback (username, feedback, created_at) VALUES (?, ?, ?)`, args: [username, feedback, new Date().toISOString()] });
         res.json({ success: true });
     } catch(e) { res.json({ success: false, message: '儲存失敗' }); }
@@ -1495,6 +1496,11 @@ app.post('/api/coin/spin', async (req, res) => {
         try {
             await coinDb.execute({ sql: `INSERT INTO coin_spin_logs (username, bet_amount, reward, multiplier, timestamp) VALUES (?, ?, ?, ?, ?)`, args: [user_id, BET, coins, reward.multiplier, new Date().toISOString()] });
             await coinDb.execute({ sql: `UPDATE coin_users SET coin_balance = coin_balance + ?, total_bet = total_bet + ?, total_win = total_win + ? WHERE username = ?`, args: [coins - BET, BET, coins, user_id] });
+            // 更新玩家統計
+            const isWin = reward.multiplier > 1;
+            const winAmt = isWin ? coins - BET : 0;
+            const loseAmt = !isWin ? BET - coins : 0;
+            await coinDb.execute({ sql: `INSERT INTO coin_player_stats (username, total_bets, total_wins, total_losses, total_win_amount, total_lose_amount) VALUES (?, 1, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET total_bets = total_bets + 1, total_wins = total_wins + ?, total_losses = total_losses + ?, total_win_amount = total_win_amount + ?, total_lose_amount = total_lose_amount + ?`, args: [user_id, isWin?1:0, isWin?0:1, winAmt, loseAmt, isWin?1:0, isWin?0:1, winAmt, loseAmt] });
             const bal = await coinDb.execute({ sql: `SELECT coin_balance FROM coin_users WHERE username = ?`, args: [user_id] });
             const balance = bal.rows && bal.rows[0] ? bal.rows[0].coin_balance : 1000;
             res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: balance, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
