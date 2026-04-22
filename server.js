@@ -1519,3 +1519,11 @@ app.get('/api/coin/balance', async (req, res) => {
     const s = getCoinSession(user_id);
     res.json({ user_id, balance: 1000 + s.totalWin - s.totalBet, total_bet: s.totalBet, total_win: s.totalWin, pulls: s.pulls, lose_streak: s.loseStreak });
 });
+
+app.get('/api/coin/admin/stats', async (req, res) => {
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, stats: [] });
+    try {
+        const result = await coinDb.execute({ sql: `SELECT username, total_bets, total_wins, total_losses, total_win_amount, total_lose_amount FROM coin_player_stats ORDER BY total_bets DESC` });
+        res.json({ success: true, stats: result.rows || [] });
+    } catch(e) { res.json({ success: false, message: e.message }); }
+});
