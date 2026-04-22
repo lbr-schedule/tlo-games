@@ -1346,8 +1346,9 @@ if (COIN_LOCAL_TEST_MODE) {
 } else {
     try {
         coinDb = createClient({ url: coinDbUrl, authToken: coinDbAuthToken });
-        console.log('轉轉金幣資料庫連線 URL:', coinDbUrl);
-    } catch(e) { console.log('轉轉金幣資料庫建立失敗:', e.message); }
+        coinDbAvailable = true;
+        console.log('轉轉金幣資料庫 Client 已建立, URL:', coinDbUrl);
+    } catch(e) { console.log('轉轉金幣資料庫建立失敗:', e.message); coinDbAvailable = false; }
 }
 
 const COIN_ADS = [
@@ -1414,6 +1415,7 @@ async function initCoinTables() {
         await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, coin_balance INTEGER DEFAULT 1000, total_bet INTEGER DEFAULT 0, total_win INTEGER DEFAULT 0, realname TEXT, phone TEXT, email TEXT, invited_by TEXT, created_at TEXT)` });
         await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_spin_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, bet_amount INTEGER, reward INTEGER, multiplier REAL, timestamp TEXT)` });
         await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, feedback TEXT, created_at TEXT)` });
+        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)` });
         console.log('轉轉金幣資料表初始化成功');
     } catch(e) { console.log('轉轉金幣資料表初始化失敗:', e.message); }
 }
@@ -1424,7 +1426,8 @@ app.post('/api/coin/register', async (req, res) => {
     const { username, password, realname, phone, email, inviteCode } = req.body;
     if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
     if (!realname || !phone) return res.json({ success: false, message: '請填寫姓名和電話' });
-    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, message: '註冊成功！獲得 1000 金幣！' });
+    if (COIN_LOCAL_TEST_MODE) return res.json({ success: true, message: '註冊成功！獲得 1000 金幣！' });
+    if (!coinDbAvailable) return res.json({ success: false, message: '資料庫連線失敗，請稍後再試' });
     try {
         const check = await coinDb.execute({ sql: `SELECT id FROM coin_users WHERE username = ?`, args: [username] });
         if (check.rows && check.rows.length > 0) return res.json({ success: false, message: '帳號已存在' });
@@ -1440,7 +1443,8 @@ app.post('/api/coin/register', async (req, res) => {
 app.post('/api/coin/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
-    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, player: { username, balance: 1000, total_bet: 0, total_win: 0 } });
+    if (COIN_LOCAL_TEST_MODE) return res.json({ success: true, player: { username, balance: 1000, total_bet: 0, total_win: 0 } });
+    if (!coinDbAvailable) return res.json({ success: false, message: '資料庫連線失敗，請稍後再試' });
     try {
         const result = await coinDb.execute({ sql: `SELECT * FROM coin_users WHERE username = ? AND password = ?`, args: [username, password] });
         if (result.rows && result.rows.length > 0) {
@@ -1453,7 +1457,8 @@ app.post('/api/coin/login', async (req, res) => {
 });
 
 app.get('/api/coin/leaderboard', async (req, res) => {
-    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, leaderboard: [] });
+    if (COIN_LOCAL_TEST_MODE) return res.json({ success: true, leaderboard: [] });
+    if (!coinDbAvailable) return res.json({ success: false, leaderboard: [] });
     try {
         const result = await coinDb.execute({ sql: `SELECT username, coin_balance as balance FROM coin_users ORDER BY coin_balance DESC LIMIT 15` });
         res.json({ success: true, leaderboard: result.rows || [] });
@@ -1462,7 +1467,8 @@ app.get('/api/coin/leaderboard', async (req, res) => {
 
 app.get('/api/coin/history/:username', async (req, res) => {
     const { username } = req.params;
-    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, history: [] });
+    if (COIN_LOCAL_TEST_MODE) return res.json({ success: true, history: [] });
+    if (!coinDbAvailable) return res.json({ success: false, history: [] });
     try {
         const result = await coinDb.execute({ sql: `SELECT * FROM coin_spin_logs WHERE username = ? ORDER BY id DESC LIMIT 100`, args: [username] });
         res.json({ success: true, history: result.rows || [] });
@@ -1472,9 +1478,9 @@ app.get('/api/coin/history/:username', async (req, res) => {
 app.post('/api/coin/feedback', async (req, res) => {
     const { username, feedback } = req.body;
     if (!username || !feedback) return res.json({ success: false, message: '參數錯誤' });
-    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true });
+    if (COIN_LOCAL_TEST_MODE) return res.json({ success: true });
+    if (!coinDbAvailable) return res.json({ success: false, message: '資料庫連線失敗' });
     try {
-        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)` });
         await coinDb.execute({ sql: `INSERT INTO coin_feedback (username, feedback, created_at) VALUES (?, ?, ?)`, args: [username, feedback, new Date().toISOString()] });
         res.json({ success: true });
     } catch(e) { res.json({ success: false, message: '儲存失敗' }); }
@@ -1514,6 +1520,10 @@ app.post('/api/coin/spin', async (req, res) => {
             res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: 1000 + s.totalWin - s.totalBet, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
         }
     } else {
+        res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: 1000 + s.totalWin - s.totalBet, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
+    }
+    // When coinDbAvailable is false but not LOCAL_TEST_MODE, still return data but don't save
+    if (!coinDbAvailable && !COIN_LOCAL_TEST_MODE) {
         res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: 1000 + s.totalWin - s.totalBet, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
     }
 });

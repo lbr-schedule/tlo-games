@@ -457,6 +457,13 @@
             soundEnabled = !soundEnabled;
             document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
             if (masterGain) masterGain.gain.setValueAtTime(soundEnabled ? 1 : 0, audioCtx.currentTime);
+            if (soundEnabled) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (!bgMusicPlaying) startBgMusic();
+            } else {
+                if (bgm) bgm.pause();
+                bgMusicPlaying = false;
+            }
         }
 
         // ====== 登入/註冊 ======
@@ -663,9 +670,12 @@
 
         // ====== 廣告 ======
         function showAd(ad) {
-            document.getElementById('adImg').src = ad.url;
-            document.getElementById('adLine').textContent = 'LINE：' + ad.lineId;
-            document.getElementById('adPopup').classList.add('show');
+            if (!ad || !ad.url) return;
+            const img = document.getElementById('adImg');
+            img.onload = () => { document.getElementById('adPopup').classList.add('show'); };
+            img.onerror = () => { document.getElementById('adPopup').classList.add('show'); };
+            img.src = ad.url;
+            document.getElementById('adLine').textContent = 'LINE：' + (ad.lineId || '@778ryayw');
             setTimeout(() => document.getElementById('adPopup').classList.remove('show'), 5000);
         }
         function closeAd() { document.getElementById('adPopup').classList.remove('show'); }
