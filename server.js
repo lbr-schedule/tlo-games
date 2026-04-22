@@ -1267,6 +1267,7 @@ app.get('/api/player/:username', async (req, res) => {
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
 app.use('/mahjong', express.static(path.join(__dirname, 'public')));
+app.use('/coin-roulette', express.static(path.join(__dirname, 'public/coin-roulette')));
 
 // 首頁
 app.get('/', (req, res) => {
@@ -1310,6 +1311,7 @@ server.listen(PORT, () => {
     console.log(`   首頁: http://localhost:${PORT}/`);
     console.log(`   骰子遊戲: http://localhost:${PORT}/dice`);
     console.log(`   俄羅斯輪盤: http://localhost:${PORT}/roulette`);
+    console.log(`   T-LO轉轉金幣: http://localhost:${PORT}/coin-roulette`);
 });
 // Fri Apr 17 23:08:45 CST 2026
 // deploy 1776439288
@@ -1321,3 +1323,193 @@ server.listen(PORT, () => {
 // force deploy 1776492179
 // fix 1776492794
 <!-- force deploy -->
+
+
+// =====================================================
+// T-LO轉轉金幣 遊戲（整合到 unified-games）
+// =====================================================
+
+const coinDbUrl = process.env.COIN_DATABASE_URL || 'libsql://lbr-coin-lbr-schedule.aws-ap-northeast-1.turso.io';
+const coinDbAuthToken = process.env.COIN_DATABASE_AUTH_TOKEN || '';
+let coinDb = null;
+let coinDbAvailable = false;
+const COIN_LOCAL_TEST_MODE = !process.env.COIN_DATABASE_URL;
+
+if (COIN_LOCAL_TEST_MODE) {
+    coinDbAvailable = true;
+    coinDb = { execute: async () => {} };
+} else {
+    try {
+        coinDb = createClient({ url: coinDbUrl, authToken: coinDbAuthToken });
+        console.log('轉轉金幣資料庫連線 URL:', coinDbUrl);
+    } catch(e) { console.log('轉轉金幣資料庫建立失敗:', e.message); }
+}
+
+const COIN_ADS = [
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fe31bd1d00652ef9c369cd2b3d5c24d10fe48f69af46990b15c3f5f72889d572b..jpeg?Expires=1776743361&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kChSadc08%2Byf41NVI6XQwUQ%2BTko%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776779408&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=4Gx9rRMpx0vFcSFSHxmK4VTRZ0o%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776780126&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=p1kj5rk75RTnrI3npoM9GukX2jU%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776780397&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=%2BksrIU57D38%2FtlKWFcI29psNMkk%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-22%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776905136&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9QXbabqQHI8BUaR54JjmhJ4eDxQ%3D'
+];
+let coinAdIndex = 0;
+const COIN_AD_RATE = 0.1;
+
+const COIN_REWARDS = [
+    { multiplier: 8, weight: 1 },
+    { multiplier: 3, weight: 6 },
+    { multiplier: 1.5, weight: 18 },
+    { multiplier: 1, weight: 20 },
+    { multiplier: 0.5, weight: 25 },
+    { multiplier: 0, weight: 30 }
+];
+
+const coinPlayerSessions = {};
+
+function getCoinSession(userId) {
+    if (!coinPlayerSessions[userId]) {
+        coinPlayerSessions[userId] = { pulls: 0, totalBet: 0, totalWin: 0, loseStreak: 0, dailyWin: 0, lastReset: new Date().toDateString() };
+    }
+    const s = coinPlayerSessions[userId];
+    if (s.lastReset !== new Date().toDateString()) { s.dailyWin = 0; s.lastReset = new Date().toDateString(); }
+    return s;
+}
+
+function calcCoinWeights(s, base) {
+    const w = [...base];
+    const phase = s.pulls < 10 ? 'early' : s.pulls < 25 ? 'mid' : 'late';
+    if (phase === 'early') { w[0] *= 3; w[1] *= 2; w[2] *= 1.5; }
+    else if (phase === 'late') { w[0] /= 3; w[1] /= 2; w[2] /= 1.5; }
+    if (s.loseStreak >= 10) { w[2] = Math.max(w[2], 50); w[3] = Math.max(w[3], 20); }
+    if (s.totalBet > 0) {
+        const rtp = s.totalWin / s.totalBet;
+        if (rtp > 0.8) { w[0] /= 2; w[1] /= 1.5; }
+        else if (rtp < 0.6 && s.totalBet > 1000) { w[0] *= 1.5; w[1] *= 1.2; }
+    }
+    if (s.dailyWin > 50000) { w[0] = 0; w[1] /= 3; w[2] /= 2; }
+    return w.map(x => Math.max(x, 0.1));
+}
+
+function coinWeightedRandom(weights) {
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) return i; }
+    return weights.length - 1;
+}
+
+function getNextCoinAd() {
+    coinAdIndex = (coinAdIndex + 1) % COIN_ADS.length;
+    return { url: COIN_ADS[coinAdIndex], lineId: '@778ryayw' };
+}
+
+// 初始化轉轉金幣資料表
+async function initCoinTables() {
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return;
+    try {
+        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, coin_balance INTEGER DEFAULT 1000, total_bet INTEGER DEFAULT 0, total_win INTEGER DEFAULT 0, realname TEXT, phone TEXT, email TEXT, invited_by TEXT, created_at TEXT)` });
+        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_spin_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, bet_amount INTEGER, reward INTEGER, multiplier REAL, timestamp TEXT)` });
+        await coinDb.execute({ sql: `CREATE TABLE IF NOT EXISTS coin_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, feedback TEXT, created_at TEXT)` });
+        console.log('轉轉金幣資料表初始化成功');
+    } catch(e) { console.log('轉轉金幣資料表初始化失敗:', e.message); }
+}
+initCoinTables();
+
+// 轉轉金幣 API
+app.post('/api/coin/register', async (req, res) => {
+    const { username, password, realname, phone, email, inviteCode } = req.body;
+    if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
+    if (!realname || !phone) return res.json({ success: false, message: '請填寫姓名和電話' });
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, message: '註冊成功！獲得 1000 金幣！' });
+    try {
+        const check = await coinDb.execute({ sql: `SELECT id FROM coin_users WHERE username = ?`, args: [username] });
+        if (check.rows && check.rows.length > 0) return res.json({ success: false, message: '帳號已存在' });
+        await coinDb.execute({ sql: `INSERT INTO coin_users (username, password, coin_balance, realname, phone, email, invited_by) VALUES (?, ?, 1000, ?, ?, ?, ?)`, args: [username, password, realname, phone, email || '', inviteCode || ''] });
+        if (inviteCode) {
+            await coinDb.execute({ sql: `UPDATE coin_users SET coin_balance = coin_balance + 200 WHERE username = ?`, args: [inviteCode] });
+            await coinDb.execute({ sql: `UPDATE coin_users SET coin_balance = coin_balance + 200 WHERE username = ?`, args: [username] });
+        }
+        res.json({ success: true, message: '註冊成功！獲得 1000 金幣！' });
+    } catch(e) { console.log('轉轉金幣註冊失敗:', e.message); res.json({ success: false, message: '註冊失敗' }); }
+});
+
+app.post('/api/coin/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, player: { username, balance: 1000, total_bet: 0, total_win: 0 } });
+    try {
+        const result = await coinDb.execute({ sql: `SELECT * FROM coin_users WHERE username = ? AND password = ?`, args: [username, password] });
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            res.json({ success: true, player: { username: row.username, balance: row.coin_balance, total_bet: row.total_bet, total_win: row.total_win } });
+        } else {
+            res.json({ success: false, message: '帳號或密碼錯誤' });
+        }
+    } catch(e) { console.log('轉轉金幣登入失敗:', e.message); res.json({ success: false, message: '登入失敗' }); }
+});
+
+app.get('/api/coin/leaderboard', async (req, res) => {
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, leaderboard: [] });
+    try {
+        const result = await coinDb.execute({ sql: `SELECT username, coin_balance as balance FROM coin_users ORDER BY coin_balance DESC LIMIT 15` });
+        res.json({ success: true, leaderboard: result.rows || [] });
+    } catch(e) { res.json({ success: false, leaderboard: [] }); }
+});
+
+app.get('/api/coin/history/:username', async (req, res) => {
+    const { username } = req.params;
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true, history: [] });
+    try {
+        const result = await coinDb.execute({ sql: `SELECT * FROM coin_spin_logs WHERE username = ? ORDER BY id DESC LIMIT 50`, args: [username] });
+        res.json({ success: true, history: result.rows || [] });
+    } catch(e) { res.json({ success: false, history: [] }); }
+});
+
+app.post('/api/coin/feedback', async (req, res) => {
+    const { username, feedback } = req.body;
+    if (!username || !feedback) return res.json({ success: false, message: '參數錯誤' });
+    if (COIN_LOCAL_TEST_MODE || !coinDbAvailable) return res.json({ success: true });
+    try {
+        await coinDb.execute({ sql: `INSERT INTO coin_feedback (username, feedback, created_at) VALUES (?, ?, ?)`, args: [username, feedback, new Date().toISOString()] });
+        res.json({ success: true });
+    } catch(e) { res.json({ success: false, message: '儲存失敗' }); }
+});
+
+app.post('/api/coin/spin', async (req, res) => {
+    const { user_id } = req.body;
+    if (!user_id) return res.json({ error: 'user_id is required' });
+    const s = getCoinSession(user_id);
+    const BET = 100;
+    s.pulls++;
+    const w = calcCoinWeights(s, COIN_REWARDS.map(r => r.weight));
+    const idx = coinWeightedRandom(w);
+    const reward = COIN_REWARDS[idx];
+    const coins = Math.floor(BET * reward.multiplier);
+    s.totalBet += BET;
+    s.totalWin += coins;
+    s.dailyWin += (coins - BET);
+    if (reward.multiplier <= 1) s.loseStreak++;
+    else s.loseStreak = 0;
+    const showAd = Math.random() < COIN_AD_RATE;
+    const ad = showAd ? getNextCoinAd() : null;
+    if (!COIN_LOCAL_TEST_MODE && coinDbAvailable) {
+        try {
+            await coinDb.execute({ sql: `INSERT INTO coin_spin_logs (username, bet_amount, reward, multiplier, timestamp) VALUES (?, ?, ?, ?, ?)`, args: [user_id, BET, coins, reward.multiplier, new Date().toISOString()] });
+            await coinDb.execute({ sql: `UPDATE coin_users SET coin_balance = coin_balance + ?, total_bet = total_bet + ?, total_win = total_win + ? WHERE username = ?`, args: [coins - BET, BET, coins, user_id] });
+            const bal = await coinDb.execute({ sql: `SELECT coin_balance FROM coin_users WHERE username = ?`, args: [user_id] });
+            const balance = bal.rows && bal.rows[0] ? bal.rows[0].coin_balance : 1000;
+            res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: balance, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
+        } catch(e) {
+            console.log('轉轉金幣結算失敗:', e.message);
+            res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: 1000 + s.totalWin - s.totalBet, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
+        }
+    } else {
+        res.json({ reward_multiplier: reward.multiplier, reward_coins: coins, updated_balance: 1000 + s.totalWin - s.totalBet, lose_streak: s.loseStreak, daily_win: s.dailyWin, ad });
+    }
+});
+
+app.get('/api/coin/balance', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id) return res.json({ error: 'user_id required' });
+    const s = getCoinSession(user_id);
+    res.json({ user_id, balance: 1000 + s.totalWin - s.totalBet, total_bet: s.totalBet, total_win: s.totalWin, pulls: s.pulls, lose_streak: s.loseStreak });
+});
