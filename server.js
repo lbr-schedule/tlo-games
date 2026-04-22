@@ -1299,6 +1299,11 @@ app.get('/', (req, res) => {
                     <p>單人對戰</p>
                     <a href="/roulette">開始玩</a>
                 </div>
+                <div class="game-card">
+                    <h2>🪙 T-LO轉轉金幣</h2>
+                    <p>金幣輪盤</p>
+                    <a href="/coin-roulette">開始玩</a>
+                </div>
             </div>
         </body>
         </html>
