@@ -1352,11 +1352,11 @@ if (COIN_LOCAL_TEST_MODE) {
 }
 
 const COIN_ADS = [
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fe31bd1d00652ef9c369cd2b3d5c24d10fe48f69af46990b15c3f5f72889d572b..jpeg?Expires=1776743361&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kChSadc08%2Byf41NVI6XQwUQ%2BTko%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776779408&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=4Gx9rRMpx0vFcSFSHxmK4VTRZ0o%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776780126&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=p1kj5rk75RTnrI3npoM9GukX2jU%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776780397&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=%2BksrIU57D38%2FtlKWFcI29psNMkk%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-22%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776905136&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9QXbabqQHI8BUaR54JjmhJ4eDxQ%3D'
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
+    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
+    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
+    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
 ];
 let coinAdIndex = 0;
 const COIN_AD_RATE = 0.1;

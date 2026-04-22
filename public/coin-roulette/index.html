@@ -2,6 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🪙 T-LO轉轉金幣</title>
     <style>
@@ -307,7 +309,7 @@
             <h2 style="color:#ffd700;font-size:1.2rem;margin-bottom:15px;">🚪 確定要登出？</h2>
             <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;">
                 <button onclick="document.getElementById('logoutModal').classList.remove('show')" style="padding:10px 24px;background:#444;border:none;border-radius:10px;color:white;cursor:pointer;">取消</button>
-                <button onclick="document.getElementById('logoutModal').classList.remove('show'); logout && logout();" id="logoutConfirmBtn" style="padding:10px 24px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:10px;color:#1a1a2e;font-weight:bold;cursor:pointer;">確定</button>
+                <button onclick="confirmLogout();" id="logoutConfirmBtn" style="padding:10px 24px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:10px;color:#1a1a2e;font-weight:bold;cursor:pointer;">確定</button>
             </div>
         </div>
     </div>
