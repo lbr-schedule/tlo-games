@@ -485,7 +485,7 @@
                 const data = await res.json();
                 if (data.success) { currentUser = data.player; showGame(); }
                 else { showAuthMsg(data.message || '登入失敗', 'error'); }
-            } catch(e) { showAuthMsg('網路錯誤', 'error'); }
+            } catch(e) { showAuthMsg('網路錯誤', 'error'); console.error('Login error:', e); }
         }
         async function doRegister() {
             const u = document.getElementById('regUsername').value.trim();
@@ -498,10 +498,11 @@
             if (!rn || !ph) { showAuthMsg('請填寫姓名和電話', 'error'); return; }
             try {
                 const res = await fetch(API_BASE + '/api/coin/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p, realname: rn, phone: ph, email: em, inviteCode: inv }) });
+                if (!res.ok) { showAuthMsg('伺服器錯誤:' + res.status, 'error'); return; }
                 const data = await res.json();
                 if (data.success) { showAuthMsg('註冊成功！請登入', 'success'); switchAuthTab('login'); }
                 else { showAuthMsg(data.message || '註冊失敗', 'error'); }
-            } catch(e) { showAuthMsg('網路錯誤', 'error'); }
+            } catch(e) { console.error('Register error:', e); showAuthMsg('網路錯誤(' + e.message + ')', 'error'); }
         }
         function showAuthMsg(msg, type) { const el = document.getElementById('authMsg'); el.textContent = msg; el.className = 'auth-msg ' + type; }
         function logout() {
