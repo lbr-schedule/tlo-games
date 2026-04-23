@@ -527,9 +527,12 @@ function spinWheel() {
         mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
     
-    // 如果中神秘，重置彩池
-    if (selected.num === 0) {
+    // 如果中神秘且彩池>0有人下注，才重置（否則彩池保留）
+    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
         rouletteState.mysteryPool = 0;
+        console.log('神秘中獎，彩池被領取');
+    } else if (selected.num === 0 && rouletteState.mysteryPool === 0) {
+        console.log('神秘沒人中，彩池累積');
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
