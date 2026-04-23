@@ -641,7 +641,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     // 神秘下注：固定1000，只能一次
     if (choice === '0') {
         if (amount !== 1000) {
-            return res.json({ success: false, message: '神秘下注固定1000金幣' });
+            return res.json({ success: false, message: '神秘下注固定500金幣' });
         }
         const roundKey = rouletteState.phaseStartTime;
         if (!rouletteState.mysteryBothers) rouletteState.mysteryBothers = {};
