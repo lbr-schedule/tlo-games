@@ -1804,7 +1804,20 @@
                 if (Math.random() < 0.1) {
                     setTimeout(() => showAdPopup(), 500);
                 }
-            } catch(e) { console.log('下注失敗:', e); }
+            } catch(e) {
+                    console.log('下注失敗:', e.message);
+                    // 502/網路錯誤時，自動重試一次
+                    setTimeout(() => {
+                        console.log('重試下注...');
+                        fetch('/api/roulette/bet', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num })
+                        }).then(r => r.json()).then(data => {
+                            if (data.success) showToast('已下注 $' + amt + ' 押 #' + num, 'success');
+                        }).catch(() => showToast('下注失敗，請稍后重試'));
+                    }, 1500);
+                }
         }
         
         function showHelp() {
