@@ -672,6 +672,61 @@ app.post('/api/roulette/bet', async (req, res) => {
     rouletteState.mysteryPool += poolContribution;
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
+
+// 看片領金幣
+app.post('/api/roulette/claim-video', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (LOCAL_TEST_MODE) {
+        const player = localPlayers[username];
+        if (!player) return res.json({ success: false, message: '玩家不存在' });
+        if (player.lastVideoClaim === today) {
+            return res.json({ success: false, message: '今天已領過了，明天再來！' });
+        }
+        player.score += 1000;
+        player.lastVideoClaim = today;
+        return res.json({ success: true, amount: 1000, newScore: player.score });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '伺服器維護中' });
+    }
+    
+    try {
+        const check = await rouletteDb.execute({
+            sql: `SELECT lastVideoClaim FROM players WHERE username = ?`,
+            args: [username]
+        });
+        
+        if (check.rows && check.rows.length > 0) {
+            const last = check.rows[0].lastVideoClaim || '';
+            if (last === today) {
+                return res.json({ success: false, message: '今天已領過了，明天再來！' });
+            }
+        }
+        
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = score + 1000, lastVideoClaim = ? WHERE username = ?`,
+            args: [today, username]
+        });
+        
+        const scoreResult = await rouletteDb.execute({
+            sql: `SELECT score FROM players WHERE username = ?`,
+            args: [username]
+        });
+        const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
+        
+        console.log('看片領金幣成功:', username, '+1000');
+        res.json({ success: true, amount: 1000, newScore });
+    } catch(e) {
+        console.log('claim-video錯誤:', e.message);
+        res.json({ success: false, message: '領取失敗，請稍後再試' });
+    }
+});
+
 });
 
 // 輪盤遊戲 - 註冊
