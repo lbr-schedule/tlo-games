@@ -752,7 +752,12 @@ app.post('/api/roulette/register', async (req, res) => {
         res.json({ success: true, message: '註冊成功！' });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
-        res.json({ success: false, message: '帳號已存在，請換一個' });
+        // 細分錯誤類型
+        if (e.message.includes('UNIQUE') || e.message.includes('duplicate') || e.message.includes('已存在')) {
+            res.json({ success: false, message: '此帳號或電話/信箱已被註冊過' });
+        } else {
+            res.json({ success: false, message: '註冊失敗，請稍後再試' });
+        }
     }
 });
 
