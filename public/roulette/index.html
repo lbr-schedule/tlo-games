@@ -1089,7 +1089,7 @@
                     const poolDisplay = document.getElementById('mysteryPoolDisplay');
                     if (poolDisplay) {
                         // 彩池 > 0 就顯示，否則在betting時顯示(让大家知道有彩池)
-                        poolDisplay.style.display = (data.mysteryPool > 0 || data.phase === 'betting') ? 'block' : 'none';
+                        poolDisplay.style.display = (data.mysteryPool > 0 || data.phase !== 'waiting') ? 'block' : 'none';
                     }
                 }
                 
