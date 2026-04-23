@@ -97,9 +97,9 @@
         .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
         .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         .ad-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 300; }
-        .video-claim-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-left: 8px; }
+        
         .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
-        .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
+        
         .video-popup.show { display: flex; }
         .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
         .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
@@ -107,7 +107,7 @@
         .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         .video-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 12px 20px; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,0,0.4); margin: 5px; }
         .video-btn:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
-        .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
+        
         .video-popup.show { display: flex; }
         .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
         .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
@@ -266,7 +266,7 @@
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
             <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
-            <button class="video-claim-btn" onclick="openVideoPopup()" style="padding:5px 10px;font-size:0.75rem;">🎬 看片</button>
+            <button class="video-claim-btn" id="videoClaimBtn" style="padding:5px 10px;font-size:0.75rem;">🎬 看片</button>
             <div>
                 <button onclick="showMyInviteCode()" style="background:rgba(255,215,0,0.2);border:1px solid #ffd700;border-radius:8px;padding:4px 8px;font-size:0.75rem;color:#ffd700;cursor:pointer;">邀請</button>
             </div>
@@ -1125,7 +1125,8 @@
                     }
                 }
                 
-                if (data.lastSpin) {
+                if (data.ad && data.ad.url) window.currentAdUrl = data.ad.url;
+                    if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
@@ -1855,14 +1856,9 @@
         
         // 廣告彈窗（LBR-STUDIO）
         function showAdPopup() {
-            const adImages = [
-                'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fe31bd1d00652ef9c369cd2b3d5c24d10fe48f69af46990b15c3f5f72889d572b..jpeg?Expires=1776743361&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kChSadc08%2Byf41NVI6XQwUQ%2BTko%3D',
-                'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776779408&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=4Gx9rRMpx0vFcSFSHxmK4VTRZ0o%3D',
-                'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776780126&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=p1kj5rk75RTnrI3npoM9GukX2jU%3D',
-                'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-20%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776780397&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=%2BksrIU57D38%2FtlKWFcI29psNMkk%3D',
-                'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-22%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776905136&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9QXbabqQHI8BUaR54JjmhJ4eDxQ%3D'
-            ];
-            const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
+            // Use ad from server response if available, otherwise fallback to first ad image
+            const fallbackImg = 'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776999011&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9fK03qy9LM0R26FbUmQ%2Frpic95w%3D';
+            const randomImg = window.currentAdUrl || fallbackImg;
             let modal = document.getElementById('adModal');
             if (!modal) {
                 modal = document.createElement('div');
@@ -2038,7 +2034,8 @@
         // 註冊 Service Worker (PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/roulette/service-worker.js')
+                document.getElementById('videoClaimBtn').addEventListener('click', openVideoPopup);
+            navigator.serviceWorker.register('/roulette/service-worker.js')
                     .then(function(registration) {
                         console.log('ServiceWorker 註冊成功:', registration.scope);
                     }, function(err) {
