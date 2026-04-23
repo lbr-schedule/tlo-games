@@ -702,7 +702,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     let betReward = 0;
     rouletteState.playerBetCounts[username] = (rouletteState.playerBetCounts[username] || 0) + 1;
     if (rouletteState.playerBetCounts[username] >= 10) {
-        betReward = 100;
+        betReward = 10;
         rouletteState.playerBetCounts[username] = 0;
         if (LOCAL_TEST_MODE) {
             if (localPlayers[username]) localPlayers[username].score += betReward;
