@@ -59,9 +59,6 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
     rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
         console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
         rouletteDbAvailable = true;
-        loadMysteryPool();
-        // 建立 game_config 表格（如果不存在）
-        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
@@ -81,25 +78,6 @@ const diceState = {
 };
 
 // 輪盤遊戲狀態（單人，無需 WebSocket）
-// 神秘彩池持久化
-async function loadMysteryPool() {
-    if (LOCAL_TEST_MODE || !rouletteDb) return;
-    try {
-        const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['mysteryPool'] });
-        if (r.rows && r.rows.length > 0) {
-            rouletteState.mysteryPool = parseInt(r.rows[0].value) || 0;
-            console.log('從資料庫載入神秘彩池:', rouletteState.mysteryPool);
-        }
-    } catch(e) { console.log('載入神秘彩池失敗:', e.message); }
-}
-
-async function saveMysteryPool() {
-    if (LOCAL_TEST_MODE || !rouletteDb) return;
-    try {
-        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('mysteryPool', ?)`, args: [String(rouletteState.mysteryPool)] });
-    } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
-}
-
 let rouletteState = {
     phase: 'waiting', // waiting, betting, spinning, result
     result: null,
@@ -109,26 +87,23 @@ let rouletteState = {
     BETTING_TIME: 8000,
     phaseStartTime: 0,
     hasPlayer: false,
-    mysteryPool: 0,  // 神秘彩池
-    playerBetCounts: {},  // {username: betCount}
-    mysteryBetters: {},  // {roundTime: [usernames who bet on 0]}
+    mysteryPool: 0  // 神秘彩池
 };
 
 // 輪盤廣告設定
 const ROULETTE_ADS = [
-    '/roulette/ad1.jpg',
-    '/roulette/ad2.jpg',
-    '/roulette/ad3.jpg',
-    '/roulette/ad4.jpg',
-    '/roulette/ad5.jpg',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F61be42fb79d12f20b19770757b6336a965adb6cbb9bb60a39cd715a5be17766a..jpeg?Expires=1777010694&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=oamckZ1zw127P8gsptNiEMzsVH0%3D'
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
+    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
+    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
+    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
 
 function getNextRouletteAd() {
-    const randomIndex = Math.floor(Math.random() * ROULETTE_ADS.length);
-    return { url: ROULETTE_ADS[randomIndex], lineId: '@778ryayw' };
+    rouletteAdIndex = (rouletteAdIndex + 1) % ROULETTE_ADS.length;
+    return { url: ROULETTE_ADS[rouletteAdIndex], lineId: '@778ryayw' };
 }
 
 // ========== 骰子遊戲邏輯 ==========
@@ -543,7 +518,6 @@ function spinWheel() {
     const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
-    // 簡化：假設1人中獎（伺服器結算時會重新計算）
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
@@ -551,19 +525,10 @@ function spinWheel() {
         mystery: selected.num === 0,
         mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
-    // 大贏家廣播會在結算時由前端通知設定
     
-    // 神秘中獎：只廣播，不立即歸零彩池（等中獎者自己領）
-    // 彩池會在中獎者下次下注並結算時自動扣除
-    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
-        rouletteState.lastWinner = {
-            username: '神秘中獎者',
-            amount: rouletteState.mysteryPool,
-            time: Date.now(),
-            type: 'mystery'
-        };
-        // 不歸零彩池，等中獎者自己領
-        console.log('神秘中獎，彩池累計:', rouletteState.mysteryPool);
+    // 如果中神秘，重置彩池
+    if (selected.num === 0) {
+        rouletteState.mysteryPool = 0;
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
@@ -605,8 +570,6 @@ function startBetting() {
     rouletteState.phase = 'betting';
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
-    rouletteState.lastWinner = null;
-    rouletteState.bigWinner = null;  // 新一局開始
     rouletteState.phaseStartTime = Date.now();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
 }
@@ -636,13 +599,11 @@ app.get('/api/roulette/status', (req, res) => {
             lastSpin: rouletteState.lastSpin,
             remaining: remaining,
             mysteryPool: rouletteState.mysteryPool,
-            lastWinner: rouletteState.lastWinner,
-            bigWinner: rouletteState.bigWinner,  // 大贏家廣播
             ad: null
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
-        if (rouletteState.phase === 'result' && rouletteState.lastSpin) {
+        if (rouletteState.phase === 'result' && rouletteState.lastSpin && Math.random() < ROULETTE_AD_RATE) {
             response.ad = getNextRouletteAd();
         }
         console.log('roulette/status 回應:', JSON.stringify(response));
@@ -659,20 +620,6 @@ app.post('/api/roulette/bet', async (req, res) => {
     }
     
     const { username, betType, amount, color, choice, number } = req.body;
-    
-    // 神秘下注：固定500，只能一次
-    if (choice === '0') {
-        if (amount !== 500) {
-            return res.json({ success: false, message: '神秘下注固定500金幣' });
-        }
-        const roundKey = rouletteState.phaseStartTime;
-        if (!rouletteState.mysteryBetters) rouletteState.mysteryBetters = {};
-        if (rouletteState.mysteryBetters[roundKey]?.includes(username)) {
-            return res.json({ success: false, message: '神秘已下注，不能重複' });
-        }
-        if (!rouletteState.mysteryBetters[roundKey]) rouletteState.mysteryBetters[roundKey] = [];
-        rouletteState.mysteryBetters[roundKey].push(username);
-    }
     
     if (!username || !amount || amount < 10) {
         return res.json({ success: false, message: '請輸入正確的金額' });
@@ -723,46 +670,8 @@ app.post('/api/roulette/bet', async (req, res) => {
     // 1% 进神秘彩池（所有下注都进）
     const poolContribution = Math.floor(amount * 0.01);
     rouletteState.mysteryPool += poolContribution;
-            saveMysteryPool();
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
-    // 保存下注到資料庫
-    if (!LOCAL_TEST_MODE && rouletteDb) {
-        const betType = choice === '0' ? 'number' : (color || betType || 'unknown');
-        const betValue = choice || number || '';
-        rouletteDb.execute({
-            sql: `INSERT INTO roulette_bets (username, round_time, bet_type, bet_value, amount, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [username, rouletteState.phaseStartTime, betType, String(betValue), amount, new Date().toISOString()]
-        }).catch(e => console.log('保存下注失敗:', e.message));
-    }
-    
-    
-    // 每下注10次送金幣100
-    let betReward = 0;
-    rouletteState.playerBetCounts[username] = (rouletteState.playerBetCounts[username] || 0) + 1;
-    if (rouletteState.playerBetCounts[username] >= 10) {
-        betReward = 10;
-        rouletteState.playerBetCounts[username] = 0;
-        if (LOCAL_TEST_MODE) {
-            if (localPlayers[username]) localPlayers[username].score += betReward;
-        } else if (rouletteDbAvailable) {
-            rouletteDb.execute({ sql: `UPDATE players SET score = score + ? WHERE username = ?`, args: [betReward, username] }).catch(e => console.log('發放10次下注獎勵失敗:', e.message));
-        }
-        console.log('下注10次獎勵! username:', username, 'bonus:', betReward);
-    }
-
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
-
-// 管理員設定神秘彩池
-app.post('/api/roulette/admin/set-pool', async (req, res) => {
-    const { amount } = req.body;
-    if (typeof amount !== 'number' || amount < 0) {
-        return res.json({ success: false, message: '請提供有效的金額' });
-    }
-    rouletteState.mysteryPool = amount;
-    console.log('管理員設定神秘彩池:', amount);
-    res.json({ success: true, mysteryPool: rouletteState.mysteryPool });
-});
-
 
 // 看片領金幣
 app.post('/api/roulette/claim-video', async (req, res) => {
@@ -814,21 +723,6 @@ app.post('/api/roulette/claim-video', async (req, res) => {
         res.json({ success: true, amount: 1000, newScore });
     } catch(e) {
         console.log('claim-video錯誤:', e.message);
-
-// 大贏家廣播（赢超過1000就廣播）
-app.post('/api/roulette/broadcast-win', async (req, res) => {
-    const { username, amount } = req.body;
-    if (!username || !amount) return res.json({ success: false, message: '缺少參數' });
-    
-    if (amount >= 1000) {
-        rouletteState.bigWinner = { username, amount, time: Date.now() };
-        console.log('大贏家廣播:', username, '赢了', amount);
-        res.json({ success: true, broadcast: true });
-    } else {
-        res.json({ success: true, broadcast: false });
-    }
-});
-
         res.json({ success: false, message: '領取失敗，請稍後再試' });
     }
 });
@@ -964,7 +858,7 @@ app.post('/api/roulette/login', async (req, res) => {
             
             // 只在 lastLogin 有值且不是今天時才發放（或是空值也表示從未領過，直接發放）
             if (!lastLogin || lastLogin !== today) {
-                dailyBonus = 1000;
+                dailyBonus = 100;
                 console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
                 try {
                     await rouletteDb.execute({
@@ -1570,11 +1464,11 @@ if (COIN_LOCAL_TEST_MODE) {
 }
 
 const COIN_ADS = [
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776999011&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9fK03qy9LM0R26FbUmQ%2Frpic95w%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776999012&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kEMJ4XjrLxYNffDgsNlPZiGPucc%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776999015&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=acG3Lmo8tDhvvMEEm2MxpEB3O00%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F9ef5d9059c89dac79deb2b2d5f3d1da9b3a3adf56fc381004f723472e2f46036..jpeg?Expires=1776999017&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=pbSyposxvOaOR0nbMOunumGG3PY%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776999020&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=G0cMAG1lE%2FAzzScU%2FP7En9c6h8g%3D'
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
+    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
+    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
+    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
+    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
 ];
 let coinAdIndex = 0;
 const COIN_AD_RATE = 0.1;
