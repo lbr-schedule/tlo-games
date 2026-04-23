@@ -518,36 +518,13 @@ function spinWheel() {
     const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
-    // 計算神秘彩池每人分配
-    let mysteryWinners = 0;
-    let perPersonPool = 0;
-    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
-        // 查有多少人下注0
-        if (!LOCAL_TEST_MODE && rouletteDb) {
-            try {
-                const winners = await rouletteDb.execute({
-                    sql: `SELECT COUNT(DISTINCT username) as cnt FROM roulette_bets WHERE round_time = ? AND bet_type = 'number' AND bet_value = '0'`,
-                    args: [rouletteState.phaseStartTime]
-                });
-                mysteryWinners = winners.rows?.[0]?.cnt || 1;
-            } catch(e) {
-                console.log('查詢神秘中獎人數失敗:', e.message);
-                mysteryWinners = 1;
-            }
-        } else {
-            mysteryWinners = 1;
-        }
-        perPersonPool = Math.floor(rouletteState.mysteryPool / mysteryWinners);
-    }
-    
+    // 簡化：假設1人中獎（伺服器結算時會重新計算）
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
         mystery: selected.num === 0,
-        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0,
-        mysteryWinners: mysteryWinners,
-        perPersonPool: perPersonPool
+        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
     
     // 如果中神秘，重置彩池
