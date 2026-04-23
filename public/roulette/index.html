@@ -1546,6 +1546,12 @@
                 return;
             }
             
+            // 神秘0最低下注500
+            if (choice === '0' && amount < 500) {
+                showToast('神秘下注最少 $500');
+                return;
+            }
+            
             // 防呆：餘額不足
             if (myBalance < amount) {
                 showToast('餘額不足！目前餘額 $' + myBalance);
