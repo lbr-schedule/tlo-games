@@ -605,84 +605,26 @@
         }
         
         // 背景音樂（簡單的 Ambient 循環）
-        function startBgMusic() {
-            if (!soundEnabled) return;
-            if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+function startBgMusic() {
+    if (!soundEnabled) return;
+    if (!audioCtx) initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    if (!bgmAudio) {
+        bgmAudio = new Audio('/roulette/bgm.mp3');
+        bgmAudio.loop = true;
+        bgmAudio.volume = 0.20;
+    }
+    
+    bgMusicPlaying = true;
+    bgmAudio.play().catch(e => console.log('BGM播放失敗:', e.message));
+}
+
+function stopBgMusic() {
+    if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; }
+    bgMusicPlaying = false;
+}
             
-            bgMusicPlaying = true;
-            
-            const playNote = (freq, startTime, duration, gainVal = 0.04, type = 'square') => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.value = freq;
-                gain.gain.value = gainVal;
-                gain.gain.setValueAtTime(gainVal, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.01);
-                osc.connect(gain);
-                gain.connect(bgMusicGain);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            };
-            
-            const scheduleMusic = () => {
-                if (!bgMusicPlaying || !soundEnabled) {
-                    if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
-                    return;
-                }
-                const now = audioCtx.currentTime;
-                
-                const melody = [
-                    392.00, 440.00, 523.25, 587.33,
-                    659.26, 587.33, 523.25, 440.00,
-                    392.00, 523.25, 659.26, 523.25,
-                    587.33, 523.25, 440.00, 392.00,
-                ];
-                const noteDur = 0.2;
-                
-                const chords = [
-                    [261.63, 329.63, 392.00],
-                    [261.63, 329.63, 392.00],
-                    [196.00, 246.94, 293.66],
-                    [196.00, 246.94, 293.66],
-                ];
-                
-                melody.forEach((freq, i) => {
-                    playNote(freq, now + i * noteDur, noteDur * 0.9, 0.05, 'square');
-                    const chordIdx = Math.floor(i / 4) % chords.length;
-                    chords[chordIdx].forEach((cf) => {
-                        playNote(cf, now + i * noteDur, noteDur * 0.7, 0.025, 'triangle');
-                    });
-                });
-                
-                bgMusicTimer = setTimeout(scheduleMusic, noteDur * melody.length * 1000);
-            };
-            
-            scheduleMusic();
-        }
-        
-        function stopBgMusic() {
-            if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
-            if (bgMusicTimer) clearTimeout(bgMusicTimer);
-        }
-        
-        // 點擊音效（使用者互動時）
-        function playClickSound() {
-            if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = 1200;
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.03);
-        }
-        
         // 使用者第一次互動後啟動背景音樂
         document.addEventListener('click', () => {
             if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
