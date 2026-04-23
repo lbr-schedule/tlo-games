@@ -518,12 +518,36 @@ function spinWheel() {
     const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
+    // 計算神秘彩池每人分配
+    let mysteryWinners = 0;
+    let perPersonPool = 0;
+    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
+        // 查有多少人下注0
+        if (!LOCAL_TEST_MODE && rouletteDb) {
+            try {
+                const winners = await rouletteDb.execute({
+                    sql: `SELECT COUNT(DISTINCT username) as cnt FROM roulette_bets WHERE round_time = ? AND bet_type = 'number' AND bet_value = '0'`,
+                    args: [rouletteState.phaseStartTime]
+                });
+                mysteryWinners = winners.rows?.[0]?.cnt || 1;
+            } catch(e) {
+                console.log('查詢神秘中獎人數失敗:', e.message);
+                mysteryWinners = 1;
+            }
+        } else {
+            mysteryWinners = 1;
+        }
+        perPersonPool = Math.floor(rouletteState.mysteryPool / mysteryWinners);
+    }
+    
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
         mystery: selected.num === 0,
-        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
+        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0,
+        mysteryWinners: mysteryWinners,
+        perPersonPool: perPersonPool
     };
     
     // 如果中神秘，重置彩池
@@ -671,6 +695,16 @@ app.post('/api/roulette/bet', async (req, res) => {
     const poolContribution = Math.floor(amount * 0.01);
     rouletteState.mysteryPool += poolContribution;
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
+    // 保存下注到資料庫
+    if (!LOCAL_TEST_MODE && rouletteDb) {
+        const betType = choice === '0' ? 'number' : (color || betType || 'unknown');
+        const betValue = choice || number || '';
+        rouletteDb.execute({
+            sql: `INSERT INTO roulette_bets (username, round_time, bet_type, bet_value, amount, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [username, rouletteState.phaseStartTime, betType, String(betValue), amount, new Date().toISOString()]
+        }).catch(e => console.log('保存下注失敗:', e.message));
+    }
+    
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
 
 // 管理員設定神秘彩池

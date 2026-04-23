@@ -1214,7 +1214,7 @@
                         }
                         // 如果中神秘彩池，顯示彈窗
                         if (lastSpin.mystery && lastSpin.mysteryPool > 0) {
-                            showMysteryPopup(lastSpin.mysteryPool);
+                            showMysteryPopup(lastSpin.perPersonPool || 0, lastSpin.mysteryWinners || 1);
                         }
                         processResult(lastSpin);
                     }, 100);
@@ -1280,7 +1280,7 @@
                 if (prizeMatch) {
                     mysteryBonus = parseInt(prizeMatch[1]);
                 }
-                const poolWin = lastSpin.mysteryPool || 0;
+                const poolWin = lastSpin.perPersonPool || 0;
                 myBalance += mysteryBonus + poolWin;
                 roundWin += mysteryBonus + poolWin;
             }
