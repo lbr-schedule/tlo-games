@@ -1546,17 +1546,15 @@
                 return;
             }
             
-            // 神秘0最低下注500
-            if (choice === '0' && amount < 500) {
-                showToast('神秘下注最少 $500');
-                return;
-            }
-            
-            // 神秘0只能下一次
+            // 神秘0只能下500
             if (choice === '0') {
                 const hasMystery = currentBets.some(b => b.type === 'number' && b.number === 0);
                 if (hasMystery) {
                     showToast('神秘每場只能下注一次');
+                    return;
+                }
+                if (amount !== 500) {
+                    showToast('神秘下注只能是 $500');
                     return;
                 }
             }
