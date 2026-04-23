@@ -673,6 +673,18 @@ app.post('/api/roulette/bet', async (req, res) => {
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
 
+// 管理員設定神秘彩池
+app.post('/api/roulette/admin/set-pool', async (req, res) => {
+    const { amount } = req.body;
+    if (typeof amount !== 'number' || amount < 0) {
+        return res.json({ success: false, message: '請提供有效的金額' });
+    }
+    rouletteState.mysteryPool = amount;
+    console.log('管理員設定神秘彩池:', amount);
+    res.json({ success: true, mysteryPool: rouletteState.mysteryPool });
+});
+
+
 // 看片領金幣
 app.post('/api/roulette/claim-video', async (req, res) => {
     const { username } = req.body;
