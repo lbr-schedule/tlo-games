@@ -123,7 +123,7 @@
         .bet-btn.has-bet .bet-amount { display: block; }
         .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
         .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
-        .bet-btn.green { background: linear-gradient(135deg, #009900, #00cc00); color: white; }
+        .bet-btn.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
         .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
@@ -305,7 +305,7 @@
                     <div class="bet-buttons" id="betButtons">
                         <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span><span class="bet-amount"></span></button>
                         <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span><span class="bet-amount"></span></button>
-                        <button class="bet-btn green disabled" onclick="placeBet('number', quickAmount, '0')">🟢 0<span class="multi">10x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn gold disabled" onclick="placeBet('number', quickAmount, '0')">⭐ 0<span class="multi">神秘</span><span class="bet-amount"></span></button>
                     </div>
                     <div class="bet-buttons" id="betButtons2">
                         <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span><span class="bet-amount"></span></button>
@@ -380,7 +380,7 @@
                 <h3>📌 第二步：選擇下注項目</h3>
                 <p>選擇你要押的項目：</p>
                 <p>🔴 <strong>紅</strong> / ⚫ <strong>黑</strong> - 2倍獎金（18個數字）</p>
-                <p>🟢 <strong>綠</strong>（0）- 10倍獎金（只有0）</p>
+                <p>⭐ <strong>神秘</strong>（0）- 神秘禮物</p>
                 <p>單 / 雙 - 2倍獎金（各18個數字）</p>
                 <p>📌 <strong>數字</strong> - 10倍獎金（0-36）</p>
                 <p style="margin-top:10px;color:#ffd700;">💡 點擊想押的項目完成下注</p>
@@ -443,7 +443,7 @@
                     <span class="black">⚫ 黑色</span> - 2倍獎金（18個數字）
                 </div>
                 <div class="bet-demo">
-                    <span class="green">🟢 綠色（數字0）</span> - 10倍獎金（僅1個數字）
+                    <span class="gold">⭐ 神秘（數字0）</span> - 神秘禮物
                 </div>
                 <div class="bet-demo">
                     <span class="odd">單數</span> - 2倍獎金（1,3,5...35）
@@ -1029,7 +1029,7 @@
             const prevPhase = gamePhase;
             gamePhase = data.phase;
             
-            const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
+            const colors = { red: '🔴 紅', black: '⚫ 黑', gold: '⭐ 神秘' };
             const badge = document.getElementById('resultBadge') || null;
             const wheel = document.getElementById('wheel') || null;
             const resultDisplay = document.getElementById('resultDisplay') || null;
@@ -1342,7 +1342,7 @@
             }
             
             let html = '';
-            const colors = { red: '🔴', black: '⚫', green: '🟢' };
+            const colors = { red: '🔴', black: '⚫', gold: '⭐' };
             
             for (const record of historyBets) {
                 const colorEmoji = colors[record.color] || '⚪';
@@ -1584,7 +1584,7 @@
             
             console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
             updateCurrentBetsUI();
-            const choiceNames = { red: '紅', black: '黑', green: '綠', odd: '單', even: '雙' };
+            const choiceNames = { red: '紅', black: '黑', gold: '神秘', odd: '單', even: '雙' };
             const choiceName = choiceNames[choice] || choice;
             showToast('已下注 $' + amount + ' 押' + choiceName, 'success');
                         playSound('bet');
