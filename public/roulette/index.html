@@ -2086,7 +2086,7 @@
             let videoWatched = false;
         
         function openVideoPopup() {
-            if (!currentUser) { showToast('請先登入'); return; }
+            if (!myName) { showToast('請先登入'); return; }
             document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
             document.getElementById('videoPopup').classList.add('show');
             document.getElementById('videoClaimSubmit').disabled = true;
@@ -2106,13 +2106,13 @@
         }
         
         async function claimVideoReward() {
-            if (!currentUser) { showToast('請先登入'); return; }
+            if (!myName) { showToast('請先登入'); return; }
             if (!videoWatched) { showToast('請先看完影片'); return; }
             try {
                 const resp = await fetch('/api/roulette/claim-video', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser })
+                    body: JSON.stringify({ username: myName })
                 });
                 const data = await resp.json();
                 if (data.success) {
