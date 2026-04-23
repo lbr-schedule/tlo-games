@@ -526,19 +526,18 @@ function spinWheel() {
         mystery: selected.num === 0,
         mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
+    // 大贏家廣播會在結算時由前端通知設定
     
-    // 如果中神秘，設定lastWinner並廣播
-    if (selected.num === 0) {
-        const winnerAmount = rouletteState.mysteryPool;
-        if (winnerAmount > 0) {
-            rouletteState.lastWinner = {
-                username: '神秘中獎者',
-                amount: winnerAmount,
-                time: Date.now()
-            };
-            rouletteState.mysteryPool = 0;
-            console.log('神秘中獎，彩池被領取，廣播給大家');
-        }
+    // 神秘中獎廣播（固定）
+    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
+        rouletteState.lastWinner = {
+            username: '神秘中獎者',
+            amount: rouletteState.mysteryPool,
+            time: Date.now(),
+            type: 'mystery'
+        };
+        rouletteState.mysteryPool = 0;
+        console.log('神秘中獎，彩池被領取');
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
@@ -580,7 +579,8 @@ function startBetting() {
     rouletteState.phase = 'betting';
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
-    rouletteState.lastWinner = null;  // 新一局開始，清除上局廣播
+    rouletteState.lastWinner = null;
+    rouletteState.bigWinner = null;  // 新一局開始
     rouletteState.phaseStartTime = Date.now();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
 }
@@ -611,6 +611,7 @@ app.get('/api/roulette/status', (req, res) => {
             remaining: remaining,
             mysteryPool: rouletteState.mysteryPool,
             lastWinner: rouletteState.lastWinner,
+            bigWinner: rouletteState.bigWinner,  // 大贏家廣播
             ad: null
         };
         
@@ -757,6 +758,21 @@ app.post('/api/roulette/claim-video', async (req, res) => {
         res.json({ success: true, amount: 1000, newScore });
     } catch(e) {
         console.log('claim-video錯誤:', e.message);
+
+// 大贏家廣播（赢超過1000就廣播）
+app.post('/api/roulette/broadcast-win', async (req, res) => {
+    const { username, amount } = req.body;
+    if (!username || !amount) return res.json({ success: false, message: '缺少參數' });
+    
+    if (amount >= 1000) {
+        rouletteState.bigWinner = { username, amount, time: Date.now() };
+        console.log('大贏家廣播:', username, '赢了', amount);
+        res.json({ success: true, broadcast: true });
+    } else {
+        res.json({ success: true, broadcast: false });
+    }
+});
+
         res.json({ success: false, message: '領取失敗，請稍後再試' });
     }
 });

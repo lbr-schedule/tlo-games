@@ -1135,15 +1135,13 @@
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             // 顯示神秘中獎廣播（大家都能看到）
-                            if (data.lastWinner) {
-                                const bc = document.getElementById('mysteryBroadcast');
-                                const bt = document.getElementById('broadcastText');
-                                if (bc && bt) {
-                                    bt.textContent = '🎉 ' + data.lastWinner.username + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！';
-                                    bc.style.display = 'block';
-                                    // 5秒後消失
-                                    setTimeout(() => { bc.style.display = 'none'; }, 5000);
-                                }
+                            if (data.lastWinner && data.lastWinner.type === 'mystery') {
+                                showBroadcast('🎁 ' + data.lastWinner.username + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！');
+                            }
+                            
+                            // 顯示大贏家廣播（赢>1000）
+                            if (data.bigWinner) {
+                                showBroadcast('🏆 ' + data.bigWinner.username + ' 大贏家！賺了 $' + data.bigWinner.amount + '！');
                             }
                             lastProcessedSpinId = spinId;
                             rotateToResult(data.lastSpin.result, data.lastSpin);
