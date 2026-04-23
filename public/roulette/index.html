@@ -1087,7 +1087,10 @@
                 if (data.mysteryPool !== undefined) {
                     document.getElementById('poolAmount').textContent = data.mysteryPool;
                     const poolDisplay = document.getElementById('mysteryPoolDisplay');
-                    if (poolDisplay) poolDisplay.style.display = data.mysteryPool > 0 ? 'block' : 'none';
+                    if (poolDisplay) {
+                        // 彩池 > 0 就顯示，否則在betting時顯示(让大家知道有彩池)
+                        poolDisplay.style.display = (data.mysteryPool > 0 || data.phase === 'betting') ? 'block' : 'none';
+                    }
                 }
                 
                 if (data.lastSpin) {
@@ -1176,9 +1179,9 @@
                             display.className = 'result-display ' + (lastSpin.color === 'gold' ? 'red' : lastSpin.color);
                             display.style.display = 'block';
                         }
-                        // 如果是神秘禮物，顯示神秘彈窗
-                        if (lastSpin.mystery && lastSpin.mysteryPrize) {
-                            showMysteryPopup(lastSpin.mysteryPrize, lastSpin.mysteryPool || 0);
+                        // 如果中神秘彩池，顯示彈窗
+                        if (lastSpin.mystery && lastSpin.mysteryPool > 0) {
+                            showMysteryPopup(lastSpin.mysteryPool);
                         }
                         processResult(lastSpin);
                     }, 100);
