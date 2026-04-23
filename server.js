@@ -486,7 +486,7 @@ function spinWheel() {
     rouletteState.phase = 'spinning';
     
     const allNumbers = [
-        {num:0,color:'green'},
+        {num:0,color:'gold'},
         {num:32,color:'red'},{num:15,color:'black'},{num:19,color:'red'},{num:4,color:'black'},
         {num:21,color:'red'},{num:2,color:'black'},{num:25,color:'red'},{num:17,color:'black'},
         {num:34,color:'red'},{num:6,color:'black'},{num:27,color:'red'},{num:13,color:'black'},
@@ -496,10 +496,9 @@ function spinWheel() {
         {num:14,color:'red'},{num:31,color:'black'},{num:9,color:'red'},{num:22,color:'black'},
         {num:18,color:'red'},{num:29,color:'black'},{num:7,color:'red'},{num:28,color:'black'},
         {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'},
-        {num:'M',color:'gold'}
     ];
     
-    const selectedIndex = Math.floor(Math.random() * 38);
+    const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
     // 神秘禮物設定
@@ -510,8 +509,8 @@ function spinWheel() {
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
-        mystery: selected.num === 'M',
-        mysteryPrize: selected.num === 'M' ? mysteryPrize : null
+        mystery: selected.num === 0,
+        mysteryPrize: selected.num === 0 ? mysteryPrize : null
     };
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環

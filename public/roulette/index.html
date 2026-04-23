@@ -655,7 +655,7 @@
         
         // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
         const wheelNumbers = [
-            { num: 0, color: 'green' },
+            { num: 0, color: 'gold' },
             { num: 32, color: 'red' }, { num: 15, color: 'black' }, { num: 19, color: 'red' }, { num: 4, color: 'black' },
             { num: 21, color: 'red' }, { num: 2, color: 'black' }, { num: 25, color: 'red' }, { num: 17, color: 'black' },
             { num: 34, color: 'red' }, { num: 6, color: 'black' }, { num: 27, color: 'red' }, { num: 13, color: 'black' },
@@ -664,8 +664,7 @@
             { num: 16, color: 'red' }, { num: 33, color: 'black' }, { num: 1, color: 'red' }, { num: 20, color: 'black' },
             { num: 14, color: 'red' }, { num: 31, color: 'black' }, { num: 9, color: 'red' }, { num: 22, color: 'black' },
             { num: 18, color: 'red' }, { num: 29, color: 'black' }, { num: 7, color: 'red' }, { num: 28, color: 'black' },
-            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' },
-            { num: 'M', color: 'gold' }
+            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' }
         ];
         
         // 檢查是否已登入
@@ -946,7 +945,7 @@
             const centerX = 150;
             const centerY = 150;
             const radius = 140;
-            const slotAngle = (2 * Math.PI) / 38;
+            const slotAngle = (2 * Math.PI) / 37;
             
             ctx.clearRect(0, 0, 300, 300);
             
@@ -973,10 +972,10 @@
                 ctx.translate(textX, textY);
                 ctx.rotate(textAngle + Math.PI / 2);
                 ctx.fillStyle = 'white';
-                ctx.font = item.num === 'M' ? 'bold 14px Arial' : 'bold 11px Arial';
+                ctx.font = item.num === 0 ? 'bold 14px Arial' : 'bold 11px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                const displayText = item.num === 'M' ? '★' : item.num;
+                const displayText = item.num === 0 ? '★' : item.num;
                 ctx.fillText(displayText, 0, 0);
                 ctx.restore();
             });
@@ -1108,7 +1107,7 @@
         
         function rotateToResult(result, lastSpin) {
             const index = wheelNumbers.findIndex(n => n.num === result);
-            const slotAngle = 360 / 38;
+            const slotAngle = 360 / 37;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
             // 最終位置：指針要停在每一格的正中央
@@ -1158,10 +1157,10 @@
                     
                     setTimeout(() => {
                         window.rouletteAnimating = false;
-                        const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠', gold: '⭐ 神秘' };
+                        const colors = { red: '🔴 紅', black: '⚫ 黑', gold: '⭐ 神秘' };
                         const colorName = colors[lastSpin.color] || '';
                         const display = document.getElementById('resultDisplay');
-                        const resultText = lastSpin.result === 'M' ? '⭐ 神秘禮物！' : '🎯 結果: ' + lastSpin.result;
+                        const resultText = lastSpin.result === 0 ? '⭐ 神秘禮物！' : '🎯 結果: ' + lastSpin.result;
                         if (display) {
                             display.textContent = resultText + ' ' + colorName;
                             display.className = 'result-display ' + (lastSpin.color === 'gold' ? 'red' : lastSpin.color);
