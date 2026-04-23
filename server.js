@@ -858,7 +858,7 @@ app.post('/api/roulette/login', async (req, res) => {
             
             // 只在 lastLogin 有值且不是今天時才發放（或是空值也表示從未領過，直接發放）
             if (!lastLogin || lastLogin !== today) {
-                dailyBonus = 100;
+                dailyBonus = 1000;
                 console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
                 try {
                     await rouletteDb.execute({
