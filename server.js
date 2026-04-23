@@ -96,7 +96,8 @@ const ROULETTE_ADS = [
     '/roulette/ad2.jpg',
     '/roulette/ad3.jpg',
     '/roulette/ad4.jpg',
-    '/roulette/ad5.jpg'
+    '/roulette/ad5.jpg',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F61be42fb79d12f20b19770757b6336a965adb6cbb9bb60a39cd715a5be17766a..jpeg?Expires=1777010694&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=oamckZ1zw127P8gsptNiEMzsVH0%3D'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
