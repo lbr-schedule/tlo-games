@@ -675,6 +675,7 @@ app.post('/api/roulette/bet', async (req, res) => {
 
 // 看片領金幣
 app.post('/api/roulette/claim-video', async (req, res) => {
+    console.log('>>> claim-video called, body:', JSON.stringify(req.body));
     const { username } = req.body;
     if (!username) return res.json({ success: false, message: '請先登入' });
     
