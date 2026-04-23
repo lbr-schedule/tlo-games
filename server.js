@@ -89,6 +89,7 @@ let rouletteState = {
     hasPlayer: false,
     mysteryPool: 0,  // 神秘彩池
     playerBetCounts: {},  // {username: betCount}
+    mysteryBetters: {},  // {roundTime: [usernames who bet on 0]}
 };
 
 // 輪盤廣告設定
@@ -636,6 +637,20 @@ app.post('/api/roulette/bet', async (req, res) => {
     }
     
     const { username, betType, amount, color, choice, number } = req.body;
+    
+    // 神秘下注：固定1000，只能一次
+    if (choice === '0') {
+        if (amount !== 1000) {
+            return res.json({ success: false, message: '神秘下注固定1000金幣' });
+        }
+        const roundKey = rouletteState.phaseStartTime;
+        if (!rouletteState.mysteryBothers) rouletteState.mysteryBothers = {};
+        if (rouletteState.mysteryBothers[roundKey]?.includes(username)) {
+            return res.json({ success: false, message: '神秘已下注，不能重複' });
+        }
+        if (!rouletteState.mysteryBothers[roundKey]) rouletteState.mysteryBothers[roundKey] = [];
+        rouletteState.mysteryBothers[roundKey].push(username);
+    }
     
     if (!username || !amount || amount < 10) {
         return res.json({ success: false, message: '請輸入正確的金額' });
