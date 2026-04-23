@@ -569,6 +569,11 @@ app.get('/api/roulette/status', (req, res) => {
         if (rouletteState.phase === 'betting') {
             const elapsed = (Date.now() - rouletteState.phaseStartTime) / 1000;
             remaining = Math.max(0, Math.ceil(rouletteState.BETTING_TIME / 1000 - elapsed));
+            // 如果剩餘時間為0但還在betting phase，強制開始轉盤
+            if (remaining === 0 && rouletteState.phase === 'betting') {
+                console.log('betting phase expired but spinning not triggered, forcing spin...');
+                spinWheel();
+            }
         } else if (rouletteState.phase === 'result') {
             remaining = 5;
         }
