@@ -1705,7 +1705,7 @@
                 if (Math.random() < 0.1) {
                     setTimeout(() => showAdPopup(), 500);
                 }
-            } catch(e) {}
+            } catch(e) { console.log('下注失敗:', e); }
         }
         
         // 選擇數字下注模式
@@ -1726,9 +1726,11 @@
         }
         
         async function placeNumberBet() {
+            console.log('placeNumberBet called');
             // 取得玩家輸入的數字
             const numInput = document.getElementById('betNum');
             const num = parseInt(numInput.value);
+            console.log('numInput.value:', numInput.value, 'num:', num);
             
             // 取得自訂金額（如果有的話）；否則用 quickAmount
             const customAmtInput = document.getElementById('customBetAmt');
@@ -1802,7 +1804,7 @@
                 if (Math.random() < 0.1) {
                     setTimeout(() => showAdPopup(), 500);
                 }
-            } catch(e) {}
+            } catch(e) { console.log('下注失敗:', e); }
         }
         
         function showHelp() {
