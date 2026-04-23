@@ -750,8 +750,8 @@ app.post('/api/roulette/login', async (req, res) => {
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
             const lastLogin = row.lastLogin;
             
-            // 只在 lastLogin 有值且不是今天時才發放
-            if (lastLogin && lastLogin !== today) {
+            // 只在 lastLogin 有值且不是今天時才發放（或是空值也表示從未領過，直接發放）
+            if (!lastLogin || lastLogin !== today) {
                 dailyBonus = 100;
                 console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
                 try {
