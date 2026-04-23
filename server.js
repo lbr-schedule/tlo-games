@@ -86,7 +86,8 @@ let rouletteState = {
     betTimer: null,
     BETTING_TIME: 8000,
     phaseStartTime: 0,
-    hasPlayer: false
+    hasPlayer: false,
+    mysteryPool: 0  // 神秘彩池
 };
 
 // ========== 骰子遊戲邏輯 ==========
@@ -510,8 +511,14 @@ function spinWheel() {
         color: selected.color, 
         time: Date.now(),
         mystery: selected.num === 0,
-        mysteryPrize: selected.num === 0 ? mysteryPrize : null
+        mysteryPrize: selected.num === 0 ? mysteryPrize : null,
+        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
+    
+    // 如果中神秘，重置彩池
+    if (selected.num === 0) {
+        rouletteState.mysteryPool = 0;
+    }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
     setTimeout(() => {
@@ -553,7 +560,7 @@ function startBetting() {
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
-    rouletteState.spinTimer = setTimeout(spinWheel, rouletteState.BETTING_TIME);
+    // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
 }
 
 // 不再自動開始，等待玩家加入
@@ -574,7 +581,8 @@ app.get('/api/roulette/status', (req, res) => {
         const response = {
             phase: rouletteState.phase,
             lastSpin: rouletteState.lastSpin,
-            remaining: remaining
+            remaining: remaining,
+            mysteryPool: rouletteState.mysteryPool
         };
         console.log('roulette/status 回應:', JSON.stringify(response));
         res.json(response);

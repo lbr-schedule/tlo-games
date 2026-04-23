@@ -86,6 +86,8 @@
         
         .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
+        #mysteryPoolDisplay { color: #ffd700; font-weight: bold; animation: pool-pulse 1.5s ease-in-out infinite; }
+        @keyframes pool-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
         .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
@@ -274,6 +276,7 @@
             <!-- 遊戲 Tab -->
             <div class="tab-content active" id="gameTab">
                 <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
+                <div id="mysteryPoolDisplay" style="text-align:center;color:#ffd700;font-size:0.9rem;margin-top:4px;display:none;">🎁 神秘彩池：$<span id="poolAmount">0</span></div>
                 <div class="result-badge" id="resultBadge" style="display:none"></div>
                 
                 <div class="wheel-container">
@@ -1080,7 +1083,14 @@
                     playSound('spin'); // 播放開始旋轉音效
                     
                     // 開始轉盤減速動畫（由快到慢）
-                    if (data.lastSpin) {
+                    // 更新神秘彩池顯示
+                if (data.mysteryPool !== undefined) {
+                    document.getElementById('poolAmount').textContent = data.mysteryPool;
+                    const poolDisplay = document.getElementById('mysteryPoolDisplay');
+                    if (poolDisplay) poolDisplay.style.display = data.mysteryPool > 0 ? 'block' : 'none';
+                }
+                
+                if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
                             lastProcessedSpinId = spinId;
@@ -1168,7 +1178,7 @@
                         }
                         // 如果是神秘禮物，顯示神秘彈窗
                         if (lastSpin.mystery && lastSpin.mysteryPrize) {
-                            showMysteryPopup(lastSpin.mysteryPrize);
+                            showMysteryPopup(lastSpin.mysteryPrize, lastSpin.mysteryPool || 0);
                         }
                         processResult(lastSpin);
                     }, 100);
@@ -1226,14 +1236,17 @@
             console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
             myBalance = myBalance - roundBet + roundWin;
             
-            // 神秘禮物 bonus
+            // 神秘禮物 bonus + 彩池（只有下注0並且中的人才有）
             let mysteryBonus = 0;
-            if (lastSpin.mystery && lastSpin.mysteryPrize) {
+            const wonMystery = betsToProcess.some(b => b.type === 'number' && b.number === 0);
+            if (wonMystery && lastSpin.mystery && lastSpin.mysteryPrize) {
                 const prizeMatch = lastSpin.mysteryPrize.match(/(\d+)/);
                 if (prizeMatch) {
                     mysteryBonus = parseInt(prizeMatch[1]);
-                    myBalance += mysteryBonus;
                 }
+                const poolWin = lastSpin.mysteryPool || 0;
+                myBalance += mysteryBonus + poolWin;
+                roundWin += mysteryBonus + poolWin;
             }
             
             console.log('myBalance after:', myBalance);
@@ -1429,11 +1442,12 @@
             btn.onclick = () => popup.classList.remove('show');
         }
         
-        function showMysteryPopup(prize) {
+        function showMysteryPopup(prize, poolAmount) {
             const popup = document.getElementById('mysteryPopup');
             if (!popup) return;
             const msg = document.getElementById('mysteryPrizeText');
-            if (msg) msg.textContent = prize;
+            const poolText = poolAmount > 0 ? '<br>🎁 彩池獎金 +$' + poolAmount : '';
+            if (msg) msg.innerHTML = prize + poolText;
             popup.classList.add('show');
             // 播放神秘音效
             setTimeout(() => playSound('win'), 200);
