@@ -645,7 +645,11 @@ app.post('/api/roulette/bet', async (req, res) => {
         }
     }
     
-    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount });
+    // 1% 进神秘彩池（所有下注都进）
+    const poolContribution = Math.floor(amount * 0.01);
+    rouletteState.mysteryPool += poolContribution;
+    console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
+    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
 });
 
 // 輪盤遊戲 - 註冊
