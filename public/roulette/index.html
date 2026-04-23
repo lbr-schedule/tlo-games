@@ -1577,6 +1577,21 @@
         // 防呆：防止快速連點（1秒內不能重複下注）
         let lastBetTime = 0;
         
+        let mysteryBetThisRound = false;
+        
+        async function placeMysteryBet() {
+            if (mysteryBetThisRound) {
+                alert('神秘已下注！');
+                return;
+            }
+            if (rouletteState.phase !== 'betting') {
+                alert('現在不能下注！');
+                return;
+            }
+            mysteryBetThisRound = true;
+            await placeBet('number', 1000, '0');
+        }
+        
         async function placeBet(type, amount, choice) {
             // 隱藏數字下注區（回歸初始狀態）
             document.getElementById('numberBetArea').style.display = 'none';
