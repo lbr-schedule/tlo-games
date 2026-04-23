@@ -1065,6 +1065,10 @@
             // 先更新 gamePhase，避免在切換階段時錯誤清除 currentBets
             const prevPhase = gamePhase;
             gamePhase = data.phase;
+            // 新下注階段開始時，重置神秘下注標記
+            if (prevPhase !== 'betting' && data.phase === 'betting') {
+                mysteryBetThisRound = false;
+            }
             
             const colors = { red: '🔴 紅', black: '⚫ 黑', gold: '⭐ 神秘' };
             const badge = document.getElementById('resultBadge') || null;
@@ -1584,7 +1588,7 @@
                 alert('神秘已下注！');
                 return;
             }
-            if (rouletteState.phase !== 'betting') {
+            if (gamePhase !== 'betting') {
                 alert('現在不能下注！');
                 return;
             }
