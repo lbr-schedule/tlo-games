@@ -104,8 +104,8 @@ let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
 
 function getNextRouletteAd() {
-    rouletteAdIndex = (rouletteAdIndex + 1) % ROULETTE_ADS.length;
-    return { url: ROULETTE_ADS[rouletteAdIndex], lineId: '@778ryayw' };
+    const randomIndex = Math.floor(Math.random() * ROULETTE_ADS.length);
+    return { url: ROULETTE_ADS[randomIndex], lineId: '@778ryayw' };
 }
 
 // ========== 骰子遊戲邏輯 ==========
