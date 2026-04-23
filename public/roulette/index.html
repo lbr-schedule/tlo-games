@@ -506,7 +506,7 @@
         let audioCtx = null;
         let bgMusicGain = null;
         let masterGain = null;
-        let bgMusicPlaying = false;
+        let if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
         let bgMusicTimer = null;
         let soundEnabled = true;
         let bgmAudio = null;
@@ -518,7 +518,7 @@
             masterGain.gain.value = 1;
             masterGain.connect(audioCtx.destination);
             bgMusicGain = audioCtx.createGain();
-            bgMusicGain.gain.value = 0.15;
+            bgMusicGain.gain.value = 0.20;
             bgMusicGain.connect(masterGain);
         }
         
@@ -533,11 +533,11 @@
                 masterGain.gain.setValueAtTime(soundEnabled ? 1 : 0, audioCtx.currentTime);
             }
             if (!soundEnabled) {
-                bgMusicPlaying = false;
+                if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
                 if (bgMusicTimer) clearTimeout(bgMusicTimer);
             } else if (myName) {
                 // 重新啟動背景音樂
-                bgMusicPlaying = false;
+                if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
                 if (bgMusicTimer) clearTimeout(bgMusicTimer);
                 startBgMusic();
             }
@@ -628,7 +628,7 @@
             
             const scheduleMusic = () => {
                 if (!bgMusicPlaying || !soundEnabled) {
-                    bgMusicPlaying = false;
+                    if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
                     return;
                 }
                 const now = audioCtx.currentTime;
@@ -663,7 +663,7 @@
         }
         
         function stopBgMusic() {
-            bgMusicPlaying = false;
+            if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; } bgMusicPlaying = false;
             if (bgMusicTimer) clearTimeout(bgMusicTimer);
         }
         
