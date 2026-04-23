@@ -92,11 +92,11 @@ let rouletteState = {
 
 // 輪盤廣告設定
 const ROULETTE_ADS = [
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F5d5eaccf1e58ab75fb8810879f20f63ebc91aa3e3bfd15784e0e0bfaa7cdbdcb..jpeg?Expires=1776999881&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=XLpa4U0raZD4aWgZPihDanJTOi8%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F2fc088b2a98ec1f17aa50b8fa1409f8457c83e35898db2fc8326f04d0526f7f6..jpeg?Expires=1776999887&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=5i%2B3BI7rzITOETy82IG3vHzGAsw%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F87c85a70adb9bec7b2e6e32bbfae2f2c45990676fd1bf6b8e1b48d5294ea4624..jpeg?Expires=1776999890&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=8D5lTYcE2jRt2PKhCoWBN65aRfk%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F510136116c8cb06eea8628578bd394d07fff7b661de93c9e9d1dcde4344af1be..jpeg?Expires=1776999899&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=jtgXNAoh4ndNyUfOywgbWlBokm4%3D',
-    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F7b54153f284db6e5a28af174c7b2f638d3beb3897f27aeea352e6f0ce9266a79..jpeg?Expires=1776999909&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=lCi6ZCok4EgrWmuitX%2FcPekwaP4%3D'
+    '/roulette/ad1.jpg',
+    '/roulette/ad2.jpg',
+    '/roulette/ad3.jpg',
+    '/roulette/ad4.jpg',
+    '/roulette/ad5.jpg'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
