@@ -530,7 +530,8 @@ function spinWheel() {
     };
     // 大贏家廣播會在結算時由前端通知設定
     
-    // 神秘中獎廣播（固定）
+    // 神秘中獎：只廣播，不立即歸零彩池（等中獎者自己領）
+    // 彩池會在中獎者下次下注並結算時自動扣除
     if (selected.num === 0 && rouletteState.mysteryPool > 0) {
         rouletteState.lastWinner = {
             username: '神秘中獎者',
@@ -538,8 +539,8 @@ function spinWheel() {
             time: Date.now(),
             type: 'mystery'
         };
-        rouletteState.mysteryPool = 0;
-        console.log('神秘中獎，彩池被領取');
+        // 不歸零彩池，等中獎者自己領
+        console.log('神秘中獎，彩池累計:', rouletteState.mysteryPool);
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
