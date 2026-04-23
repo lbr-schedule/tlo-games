@@ -27,6 +27,8 @@
             text-align: center;
             box-shadow: 0 2px 10px rgba(255,215,0,0.5);
         }
+        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; }
+        @keyframes broadcast-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
         .winner-marquee.show {
             display: block;
             animation: marquee-slide 8s linear forwards;
@@ -261,6 +263,9 @@
 </head>
 <body>
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
+    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+        🎁 <span id="broadcastText"></span>
+    </div>
     <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showFeedback()">💬</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
@@ -1129,6 +1134,17 @@
                     if (data.lastSpin) {
                         const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
                         if (spinId !== lastProcessedSpinId) {
+                            // 顯示神秘中獎廣播（大家都能看到）
+                            if (data.lastWinner) {
+                                const bc = document.getElementById('mysteryBroadcast');
+                                const bt = document.getElementById('broadcastText');
+                                if (bc && bt) {
+                                    bt.textContent = '🎉 ' + data.lastWinner.username + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！';
+                                    bc.style.display = 'block';
+                                    // 5秒後消失
+                                    setTimeout(() => { bc.style.display = 'none'; }, 5000);
+                                }
+                            }
                             lastProcessedSpinId = spinId;
                             rotateToResult(data.lastSpin.result, data.lastSpin);
                         }

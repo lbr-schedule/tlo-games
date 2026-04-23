@@ -527,12 +527,18 @@ function spinWheel() {
         mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
     
-    // 如果中神秘且彩池>0有人下注，才重置（否則彩池保留）
-    if (selected.num === 0 && rouletteState.mysteryPool > 0) {
-        rouletteState.mysteryPool = 0;
-        console.log('神秘中獎，彩池被領取');
-    } else if (selected.num === 0 && rouletteState.mysteryPool === 0) {
-        console.log('神秘沒人中，彩池累積');
+    // 如果中神秘，設定lastWinner並廣播
+    if (selected.num === 0) {
+        const winnerAmount = rouletteState.mysteryPool;
+        if (winnerAmount > 0) {
+            rouletteState.lastWinner = {
+                username: '神秘中獎者',
+                amount: winnerAmount,
+                time: Date.now()
+            };
+            rouletteState.mysteryPool = 0;
+            console.log('神秘中獎，彩池被領取，廣播給大家');
+        }
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
@@ -574,6 +580,7 @@ function startBetting() {
     rouletteState.phase = 'betting';
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
+    rouletteState.lastWinner = null;  // 新一局開始，清除上局廣播
     rouletteState.phaseStartTime = Date.now();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
 }
@@ -603,6 +610,7 @@ app.get('/api/roulette/status', (req, res) => {
             lastSpin: rouletteState.lastSpin,
             remaining: remaining,
             mysteryPool: rouletteState.mysteryPool,
+            lastWinner: rouletteState.lastWinner,
             ad: null
         };
         
