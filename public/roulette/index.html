@@ -88,7 +88,23 @@
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
         #mysteryPoolDisplay { color: #ffd700; font-weight: bold; animation: pool-pulse 1.5s ease-in-out infinite; }
         @keyframes pool-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .video-claim-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-left: 8px; }
+        .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
+        .video-popup.show { display: flex; }
+        .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
+        .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
+        .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         .ad-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 300; }
+        .video-claim-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-left: 8px; }
+        .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
+        .video-popup.show { display: flex; }
+        .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
+        .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
+        .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         .video-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 12px 20px; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,0,0.4); margin: 5px; }
         .video-btn:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
         .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
@@ -249,7 +265,9 @@
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
-            <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
+            <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span>
+                <button class="video-claim-btn" onclick="openVideoPopup()">🎬 看片</button>
+            </div>
             <div>
                 <button onclick="showMyInviteCode()" style="background:rgba(255,215,0,0.2);border:1px solid #ffd700;border-radius:8px;padding:4px 8px;font-size:0.75rem;color:#ffd700;cursor:pointer;">邀請</button>
             </div>
@@ -2027,8 +2045,56 @@
                     }, function(err) {
                         console.log('ServiceWorker 註冊失敗:', err);
                     });
-            });
+            // 看片領金幣功能
+        let videoWatched = false;
+        
+        function openVideoPopup() {
+            if (!currentUser) { showToast('請先登入'); return; }
+            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
+            document.getElementById('videoPopup').classList.add('show');
+            document.getElementById('videoClaimSubmit').disabled = true;
+            document.getElementById('videoClaimSubmit').textContent = '請等待...';
+            videoWatched = false;
+            // 30秒後可領取
+            setTimeout(() => { 
+                videoWatched = true;
+                document.getElementById('videoClaimSubmit').disabled = false;
+                document.getElementById('videoClaimSubmit').textContent = '✅ 領取 1000 金幣';
+            }, 30000);
         }
-    </script>
-</body>
+        
+        function closeVideoPopup() {
+            document.getElementById('videoPopup').classList.remove('show');
+            document.getElementById('videoFrame').src = '';
+        }
+        
+        async function claimVideoReward() {
+            if (!currentUser) { showToast('請先登入'); return; }
+            if (!videoWatched) { showToast('請先看完影片'); return; }
+            try {
+                const resp = await fetch('/api/roulette/claim-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('獲得 ' + data.amount + ' 金幣！');
+                    document.getElementById('balance').textContent = data.newScore;
+                    closeVideoPopup();
+                } else {
+                    showToast(data.message || '領取失敗');
+                }
+            } catch(e) { showToast('領取失敗'); }
+        }
+        </script>
+        <!-- 看片彈窗 -->
+        <div class="video-popup" id="videoPopup">
+            <button class="close-btn" onclick="closeVideoPopup()">✕</button>
+            <h3 style="color: #ffd700; margin-bottom: 10px;">🎬 觀看影片領取1000金幣</h3>
+            <iframe id="videoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
+            <button class="claim-btn" id="videoClaimSubmit" onclick="claimVideoReward()" disabled>請等待...</button>
+        </div>
+    </body>
 </html>
