@@ -695,15 +695,18 @@ app.post('/api/roulette/register', async (req, res) => {
         });
         
         const checkPromise = rouletteDb.execute({
-            sql: `SELECT id FROM players WHERE username = ?`,
-            args: [username]
+            sql: `SELECT id FROM players WHERE username = ? OR phone = ? OR email = ?`,
+            args: [username, phone || '', email || '']
         });
         
         const checkResult = await Promise.race([checkPromise, timeoutPromise]);
         
         if (checkResult.rows && checkResult.rows.length > 0) {
-            console.log('帳號已存在, username:', username);
-            return res.json({ success: false, message: '帳號已存在，請換一個' });
+            // 檢查是哪個重複
+            const existing = checkResult.rows[0];
+            // 這裡不做嚴格區分，統一提示
+            console.log('註冊重複, username:', username, 'phone:', phone, 'email:', email);
+            return res.json({ success: false, message: '此電話或信箱已被註冊過' });
         }
         
         // 帳號不存在，執行註冊（嘗試包含新欄位）
