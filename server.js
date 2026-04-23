@@ -502,16 +502,11 @@ function spinWheel() {
     const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
-    // 神秘禮物設定
-    const mysteryPrizes = ['MIYA禮物2000金幣', 'MIYA禮物5200金幣', 'MIYA禮物9900金幣'];
-    const mysteryPrize = mysteryPrizes[Math.floor(Math.random() * mysteryPrizes.length)];
-    
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
         mystery: selected.num === 0,
-        mysteryPrize: selected.num === 0 ? mysteryPrize : null,
         mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
     };
     
