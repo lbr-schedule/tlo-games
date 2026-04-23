@@ -1027,6 +1027,27 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     }
 });
 
+// 輪盤遊戲 - 管理員：修補資料庫（新增lastVideoClaim欄位）
+app.post('/api/roulette/admin/fix-video-claim', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    try {
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN lastVideoClaim TEXT DEFAULT ''`
+        });
+        console.log('已新增 lastVideoClaim 欄位');
+        res.json({ success: true, message: '已新增 lastVideoClaim 欄位' });
+    } catch(e) {
+        if (e.message.includes('duplicate column') || e.message.includes('already exists')) {
+            res.json({ success: true, message: 'lastVideoClaim 欄位已存在' });
+        } else {
+            console.log('修補失敗:', e.message);
+            res.json({ success: false, message: '修補失敗: ' + e.message });
+        }
+    }
+});
+
 // 輪盤遊戲 - 管理員：修補資料庫（新增lastLogin欄位）
 app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
     if (!rouletteDbAvailable || !rouletteDb) {
