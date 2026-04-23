@@ -1552,6 +1552,15 @@
                 return;
             }
             
+            // 神秘0只能下一次
+            if (choice === '0') {
+                const hasMystery = currentBets.some(b => b.type === 'number' && b.number === 0);
+                if (hasMystery) {
+                    showToast('神秘每場只能下注一次');
+                    return;
+                }
+            }
+            
             // 防呆：餘額不足
             if (myBalance < amount) {
                 showToast('餘額不足！目前餘額 $' + myBalance);
