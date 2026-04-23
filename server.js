@@ -92,11 +92,11 @@ let rouletteState = {
 
 // 輪盤廣告設定
 const ROULETTE_ADS = [
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
-    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
-    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
-    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776999011&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9fK03qy9LM0R26FbUmQ%2Frpic95w%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776999012&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kEMJ4XjrLxYNffDgsNlPZiGPucc%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776999015&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=acG3Lmo8tDhvvMEEm2MxpEB3O00%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F9ef5d9059c89dac79deb2b2d5f3d1da9b3a3adf56fc381004f723472e2f46036..jpeg?Expires=1776999017&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=pbSyposxvOaOR0nbMOunumGG3PY%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776999020&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=G0cMAG1lE%2FAzzScU%2FP7En9c6h8g%3D'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
@@ -1464,11 +1464,11 @@ if (COIN_LOCAL_TEST_MODE) {
 }
 
 const COIN_ADS = [
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
-    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
-    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
-    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F41db7be8f36a75e27f698c7df2fc38df8278dd34134649679ec7fc3b87a40e67..jpeg?Expires=1776999011&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=9fK03qy9LM0R26FbUmQ%2Frpic95w%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2Fa0341b29441c11c1b49b7514a4ea8fa9af655cc2b25a2048a4bcf5ab22e34085..jpeg?Expires=1776999012&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=kEMJ4XjrLxYNffDgsNlPZiGPucc%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F350fd95706f0eb5aef392f05fd99445ae08df872e58bfc779709ffb2a75c9f24..jpeg?Expires=1776999015&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=acG3Lmo8tDhvvMEEm2MxpEB3O00%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F9ef5d9059c89dac79deb2b2d5f3d1da9b3a3adf56fc381004f723472e2f46036..jpeg?Expires=1776999017&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=pbSyposxvOaOR0nbMOunumGG3PY%3D',
+    'https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-23%2FMiniMax-M2.7%2F2042085561899950328%2F7efef79fad4fa853d54803b00f59ba398679ff890442413343be9fb93adaab0b..jpeg?Expires=1776999020&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=G0cMAG1lE%2FAzzScU%2FP7En9c6h8g%3D'
 ];
 let coinAdIndex = 0;
 const COIN_AD_RATE = 0.1;
