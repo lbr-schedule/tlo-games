@@ -807,11 +807,8 @@
                         }, 500);
                     }
                     
-                    // 登入後顯示活動公告
-                    const announceKey = 'rouletteAnnounce_' + username;
-                    if (!localStorage.getItem(announceKey)) {
-                        setTimeout(() => showPromotionAnnounce(), 1500);
-                    }
+                    // 登入後顯示活動公告（每次都顯示）
+                    setTimeout(() => showPromotionAnnounce(), 1500);
                     
                     // 第一次登入顯示新手導引（如果這個帳號還沒看過）
                     const guideKey = 'rouletteGuided_' + username;
