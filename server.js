@@ -495,16 +495,23 @@ function spinWheel() {
         {num:16,color:'red'},{num:33,color:'black'},{num:1,color:'red'},{num:20,color:'black'},
         {num:14,color:'red'},{num:31,color:'black'},{num:9,color:'red'},{num:22,color:'black'},
         {num:18,color:'red'},{num:29,color:'black'},{num:7,color:'red'},{num:28,color:'black'},
-        {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'}
+        {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'},
+        {num:'M',color:'gold'}
     ];
     
-    const selectedIndex = Math.floor(Math.random() * 37);
+    const selectedIndex = Math.floor(Math.random() * 38);
     const selected = allNumbers[selectedIndex];
+    
+    // 神秘禮物設定
+    const mysteryPrizes = ['MIYA禮物2000金幣', 'MIYA禮物5200金幣', 'MIYA禮物9900金幣'];
+    const mysteryPrize = mysteryPrizes[Math.floor(Math.random() * mysteryPrizes.length)];
     
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
-        time: Date.now() 
+        time: Date.now(),
+        mystery: selected.num === 'M',
+        mysteryPrize: selected.num === 'M' ? mysteryPrize : null
     };
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環

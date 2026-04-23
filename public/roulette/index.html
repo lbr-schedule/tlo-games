@@ -664,7 +664,8 @@
             { num: 16, color: 'red' }, { num: 33, color: 'black' }, { num: 1, color: 'red' }, { num: 20, color: 'black' },
             { num: 14, color: 'red' }, { num: 31, color: 'black' }, { num: 9, color: 'red' }, { num: 22, color: 'black' },
             { num: 18, color: 'red' }, { num: 29, color: 'black' }, { num: 7, color: 'red' }, { num: 28, color: 'black' },
-            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' }
+            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' },
+            { num: 'M', color: 'gold' }
         ];
         
         // 檢查是否已登入
@@ -945,7 +946,7 @@
             const centerX = 150;
             const centerY = 150;
             const radius = 140;
-            const slotAngle = (2 * Math.PI) / 37;
+            const slotAngle = (2 * Math.PI) / 38;
             
             ctx.clearRect(0, 0, 300, 300);
             
@@ -957,7 +958,7 @@
                 ctx.moveTo(centerX, centerY);
                 ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                 ctx.closePath();
-                ctx.fillStyle = item.color === 'red' ? '#cc0000' : (item.color === 'black' ? '#1a1a1a' : '#009900');
+                ctx.fillStyle = item.color === 'red' ? '#cc0000' : (item.color === 'black' ? '#1a1a1a' : (item.color === 'gold' ? '#ffd700' : '#009900'));
                 ctx.fill();
                 ctx.strokeStyle = '#333';
                 ctx.lineWidth = 1;
@@ -972,10 +973,11 @@
                 ctx.translate(textX, textY);
                 ctx.rotate(textAngle + Math.PI / 2);
                 ctx.fillStyle = 'white';
-                ctx.font = 'bold 11px Arial';
+                ctx.font = item.num === 'M' ? 'bold 14px Arial' : 'bold 11px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(item.num, 0, 0);
+                const displayText = item.num === 'M' ? '★' : item.num;
+                ctx.fillText(displayText, 0, 0);
                 ctx.restore();
             });
             
@@ -1106,7 +1108,7 @@
         
         function rotateToResult(result, lastSpin) {
             const index = wheelNumbers.findIndex(n => n.num === result);
-            const slotAngle = 360 / 37;
+            const slotAngle = 360 / 38;
             const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
             
             // 最終位置：指針要停在每一格的正中央
@@ -1156,13 +1158,18 @@
                     
                     setTimeout(() => {
                         window.rouletteAnimating = false;
-                        const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠' };
-                        const colorName = colors[lastSpin.color];
+                        const colors = { red: '🔴 紅', black: '⚫ 黑', green: '🟢 綠', gold: '⭐ 神秘' };
+                        const colorName = colors[lastSpin.color] || '';
                         const display = document.getElementById('resultDisplay');
+                        const resultText = lastSpin.result === 'M' ? '⭐ 神秘禮物！' : '🎯 結果: ' + lastSpin.result;
                         if (display) {
-                            display.textContent = '🎯 結果: ' + lastSpin.result + ' ' + colorName;
-                            display.className = 'result-display ' + lastSpin.color;
+                            display.textContent = resultText + ' ' + colorName;
+                            display.className = 'result-display ' + (lastSpin.color === 'gold' ? 'red' : lastSpin.color);
                             display.style.display = 'block';
+                        }
+                        // 如果是神秘禮物，顯示神秘彈窗
+                        if (lastSpin.mystery && lastSpin.mysteryPrize) {
+                            showMysteryPopup(lastSpin.mysteryPrize);
                         }
                         processResult(lastSpin);
                     }, 100);
@@ -1219,6 +1226,17 @@
             
             console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
             myBalance = myBalance - roundBet + roundWin;
+            
+            // 神秘禮物 bonus
+            let mysteryBonus = 0;
+            if (lastSpin.mystery && lastSpin.mysteryPrize) {
+                const prizeMatch = lastSpin.mysteryPrize.match(/(\d+)/);
+                if (prizeMatch) {
+                    mysteryBonus = parseInt(prizeMatch[1]);
+                    myBalance += mysteryBonus;
+                }
+            }
+            
             console.log('myBalance after:', myBalance);
             localStorage.setItem('rouletteBalance', myBalance);
             updateBalanceUI();
@@ -1232,7 +1250,12 @@
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
                 }
+                // 神秘獎金顯示在結算彈窗
+            if (mysteryBonus > 0) {
+                setTimeout(() => showResultPopup(netWin + mysteryBonus, roundBet, mysteryBonus), 100);
+            } else {
                 setTimeout(() => showResultPopup(netWin, roundBet), 100);
+            }
             }
             
             // 檢查餘額是否歸零
@@ -1383,7 +1406,7 @@
         }
         
         // 顯示結算彈窗
-        function showResultPopup(netWin, totalBet) {
+        function showResultPopup(netWin, totalBet, mysteryBonus) {
             const popup = document.getElementById('resultPopup');
             const msg = document.getElementById('resultPopupMsg');
             const btn = document.getElementById('resultPopupBtn');
@@ -1405,6 +1428,23 @@
             
             popup.classList.add('show');
             btn.onclick = () => popup.classList.remove('show');
+        }
+        
+        function showMysteryPopup(prize) {
+            const popup = document.getElementById('mysteryPopup');
+            if (!popup) return;
+            const msg = document.getElementById('mysteryPrizeText');
+            if (msg) msg.textContent = prize;
+            popup.classList.add('show');
+            // 播放神秘音效
+            setTimeout(() => playSound('win'), 200);
+            // 8秒後自動關閉
+            setTimeout(() => popup.classList.remove('show'), 8000);
+        }
+        
+        function closeMysteryPopup() {
+            const popup = document.getElementById('mysteryPopup');
+            if (popup) popup.classList.remove('show');
         }
         
         function showWinnerMarquee(username, amount) {
