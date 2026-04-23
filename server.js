@@ -87,7 +87,8 @@ let rouletteState = {
     BETTING_TIME: 8000,
     phaseStartTime: 0,
     hasPlayer: false,
-    mysteryPool: 0  // 神秘彩池
+    mysteryPool: 0,  // 神秘彩池
+    playerBetCounts: {},  // {username: betCount}
 };
 
 // 輪盤廣告設定
@@ -695,6 +696,21 @@ app.post('/api/roulette/bet', async (req, res) => {
         }).catch(e => console.log('保存下注失敗:', e.message));
     }
     
+    
+    // 每下注10次送金幣100
+    let betReward = 0;
+    rouletteState.playerBetCounts[username] = (rouletteState.playerBetCounts[username] || 0) + 1;
+    if (rouletteState.playerBetCounts[username] >= 10) {
+        betReward = 100;
+        rouletteState.playerBetCounts[username] = 0;
+        if (LOCAL_TEST_MODE) {
+            if (localPlayers[username]) localPlayers[username].score += betReward;
+        } else if (rouletteDbAvailable) {
+            rouletteDb.execute({ sql: `UPDATE players SET score = score + ? WHERE username = ?`, args: [betReward, username] }).catch(e => console.log('發放10次下注獎勵失敗:', e.message));
+        }
+        console.log('下注10次獎勵! username:', username, 'bonus:', betReward);
+    }
+
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
 
 // 管理員設定神秘彩池
