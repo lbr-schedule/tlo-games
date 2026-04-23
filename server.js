@@ -616,7 +616,7 @@ app.get('/api/roulette/status', (req, res) => {
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
-        if (rouletteState.phase === 'result' && rouletteState.lastSpin && Math.random() < ROULETTE_AD_RATE) {
+        if (rouletteState.phase === 'result' && rouletteState.lastSpin) {
             response.ad = getNextRouletteAd();
         }
         console.log('roulette/status 回應:', JSON.stringify(response));
