@@ -716,10 +716,19 @@ app.post('/api/roulette/register', async (req, res) => {
             setTimeout(() => reject(new Error('資料庫操作超時')), 5000);
         });
         
-        const checkPromise = rouletteDb.execute({
-            sql: `SELECT id FROM players WHERE username = ? OR phone = ? OR email = ?`,
-            args: [username, phone || '', email || '']
-        });
+        // 只檢查有值的phone/email，避免空字串匹配既有用戶
+        let checkSql = `SELECT id FROM players WHERE username = ?`;
+        let checkArgs = [username];
+        if (phone && phone.trim()) {
+            checkSql += ` OR phone = ?`;
+            checkArgs.push(phone.trim());
+        }
+        if (email && email.trim()) {
+            checkSql += ` OR email = ?`;
+            checkArgs.push(email.trim());
+        }
+        
+        const checkPromise = rouletteDb.execute({ sql: checkSql, args: checkArgs });
         
         const checkResult = await Promise.race([checkPromise, timeoutPromise]);
         
