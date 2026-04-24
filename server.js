@@ -66,7 +66,7 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
-            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '')`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
         // 啟動時載入神秘彩池、廣告索引、贏家狀態
         loadMysteryPool();
@@ -156,6 +156,88 @@ function getNextRouletteAd() {
     rouletteState.rouletteAdIndex = (rouletteState.rouletteAdIndex + 1) % ROULETTE_ADS.length;
     saveRouletteAdIndex();
     return { url: ROULETTE_ADS[rouletteState.rouletteAdIndex], lineId: '@778ryayw' };
+}
+
+// ========== 每日任務系統 ==========
+const DAILY_TASKS = [
+    { id: 'bet_10', name: '初試身手', desc: '下注 10 次', condition: (p) => p.bet_count_today >= 10, reward: 100 },
+    { id: 'bet_50', name: '小試手氣', desc: '下注 50 次', condition: (p) => p.bet_count_today >= 50, reward: 300 },
+    { id: 'bet_100', name: '活躍玩家', desc: '下注 100 次', condition: (p) => p.bet_count_today >= 100, reward: 800 },
+    { id: 'win_5', name: '幸運玩家', desc: '贏 5 次', condition: (p) => p.wins_today >= 5, reward: 500 },
+    { id: 'mystery_1', name: '膽識玩家', desc: '下注神秘 1 次', condition: (p) => p.mystery_bets_today >= 1, reward: 200 }
+];
+
+const STREAK_REWARDS = [200, 300, 400, 500, 700, 1000, 2000];
+const STREAK_TITLES = ['', '', '', '', '', '', '連續登入王'];
+
+function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function getYesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+}
+
+async function checkAndResetDailyTasks(username) {
+    if (!rouletteDb) return;
+    const today = getTodayStr();
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, last_task_reset FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        if (r.rows && r.rows.length > 0) {
+            const lastReset = r.rows[0].last_task_reset || '';
+            if (lastReset !== today) {
+                await rouletteDb.execute({
+                    sql: 'UPDATE roulette_player_stats SET bet_count_today = 0, wins_today = 0, mystery_bets_today = 0, last_task_reset = ? WHERE username = ?',
+                    args: [today, username]
+                });
+            }
+        }
+    } catch(e) { console.log('檢查每日任務失敗:', e.message); }
+}
+
+async function processLoginStreak(username) {
+    if (!rouletteDb) return { streak: 0, bonus: 0, title: '' };
+    const today = getTodayStr();
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT last_login_date, login_streak, streak_title FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        if (r.rows && r.rows.length > 0) {
+            const lastDate = r.rows[0].last_login_date || '';
+            const prevStreak = r.rows[0].login_streak || 0;
+            const prevTitle = r.rows[0].streak_title || '';
+            let newStreak = 1;
+            let bonus = STREAK_REWARDS[0];
+            let title = '';
+            
+            if (lastDate === today) {
+                return { streak: prevStreak, bonus: 0, title: prevTitle, alreadyClaimed: true };
+            } else if (lastDate === getYesterdayStr()) {
+                newStreak = prevStreak + 1;
+                if (newStreak > 7) newStreak = 7;
+                bonus = STREAK_REWARDS[newStreak - 1] || 200;
+                title = STREAK_TITLES[newStreak - 1] || '';
+            } else {
+                newStreak = 1;
+                bonus = STREAK_REWARDS[0];
+                title = '';
+            }
+            
+            await rouletteDb.execute({
+                sql: 'UPDATE roulette_player_stats SET last_login_date = ?, login_streak = ?, streak_title = ? WHERE username = ?',
+                args: [today, newStreak, title, username]
+            });
+            
+            return { streak: newStreak, bonus, title, alreadyClaimed: false };
+        }
+    } catch(e) { console.log('處理登入連續失敗:', e.message); }
+    return { streak: 0, bonus: 0, title: '', alreadyClaimed: false };
 }
 
 // ========== 骰子遊戲邏輯 ==========
@@ -688,6 +770,124 @@ app.get('/api/roulette/status', (req, res) => {
     }
 });
 
+// 每日任務和連續登入 API
+app.get('/api/roulette/daily-tasks', async (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.json({ success: false, message: '缺少 username' });
+    
+    await checkAndResetDailyTasks(username);
+    
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, login_streak, streak_title, last_login_date FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '' };
+        if (r.rows && r.rows.length > 0) {
+            playerStats = { ...playerStats, ...r.rows[0] };
+        }
+        
+        // 計算任務進度
+        const tasks = DAILY_TASKS.map(t => ({
+            ...t,
+            completed: t.condition(playerStats)
+        }));
+        
+        res.json({
+            success: true,
+            tasks,
+            streak: playerStats.login_streak || 0,
+            streakTitle: playerStats.streak_title || '',
+            stats: {
+                betCount: playerStats.bet_count_today || 0,
+                winsCount: playerStats.wins_today || 0,
+                mysteryBets: playerStats.mystery_bets_today || 0
+            }
+        });
+    } catch(e) {
+        console.log('取得每日任務失敗:', e.message);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/roulette/claim-login', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '缺少 username' });
+    
+    await checkAndResetDailyTasks(username);
+    const result = await processLoginStreak(username);
+    
+    if (result.alreadyClaimed) {
+        return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
+    }
+    
+    // 發放獎勵
+    if (result.bonus > 0 && rouletteDb) {
+        await rouletteDb.execute({
+            sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+            args: [result.bonus, username]
+        });
+    }
+    
+    let newScore = 0;
+    if (rouletteDb) {
+        const r = await rouletteDb.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [username] });
+        if (r.rows && r.rows.length > 0) newScore = r.rows[0].score;
+    }
+    
+    res.json({
+        success: true,
+        message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`,
+        streak: result.streak,
+        bonus: result.bonus,
+        title: result.title,
+        newScore
+    });
+});
+
+app.post('/api/roulette/claim-task', async (req, res) => {
+    const { username, taskId } = req.body;
+    if (!username || !taskId) return res.json({ success: false, message: '缺少資料' });
+    
+    await checkAndResetDailyTasks(username);
+    
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0 };
+        if (r.rows && r.rows.length > 0) {
+            playerStats = { ...playerStats, ...r.rows[0] };
+        }
+        
+        const task = DAILY_TASKS.find(t => t.id === taskId);
+        if (!task) return res.json({ success: false, message: '任務不存在' });
+        if (!task.condition(playerStats)) return res.json({ success: false, message: '任務尚未完成' });
+        
+        // 發放獎勵
+        if (rouletteDb) {
+            await rouletteDb.execute({
+                sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+                args: [task.reward, username]
+            });
+        }
+        
+        let newScore = 0;
+        if (rouletteDb) {
+            const r2 = await rouletteDb.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [username] });
+            if (r2.rows && r2.rows.length > 0) newScore = r2.rows[0].score;
+        }
+        
+        res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
+    } catch(e) {
+        console.log('領取任務獎勵失敗:', e.message);
+        res.json({ success: false, message: e.message });
+    }
+});
+
 app.post('/api/roulette/bet', async (req, res) => {
     if (rouletteState.phase !== 'betting') {
         return res.json({ success: false, message: '現在不能下注' });
@@ -756,6 +956,17 @@ app.post('/api/roulette/bet', async (req, res) => {
         newPlayerScore = localPlayers[username]?.score || 0;
     }
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
+    
+    // 更新每日任務計數
+    await checkAndResetDailyTasks(username);
+    const isMystery = (betType === 'number' && choice === 0);
+    if (rouletteDbAvailable) {
+        rouletteDb.execute({
+            sql: 'UPDATE roulette_player_stats SET bet_count_today = bet_count_today + 1' + (isMystery ? ', mystery_bets_today = mystery_bets_today + 1' : '') + ' WHERE username = ?',
+            args: [username]
+        }).catch(e => console.log('更新每日任務計數失敗:', e.message));
+    }
+    
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool, newScore: newPlayerScore });
 
 // 看片領金幣
@@ -1306,6 +1517,13 @@ app.post('/api/roulette/save-history', async (req, res) => {
                 sql: `INSERT INTO roulette_player_stats (username, total_bets, total_wins, total_losses, total_win_amount, total_lose_amount) VALUES (?, 1, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET total_bets = total_bets + 1, total_wins = total_wins + ?, total_losses = total_losses + ?, total_win_amount = total_win_amount + ?, total_lose_amount = total_lose_amount + ?`,
                 args: [username, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount]
             });
+            // 更新每日任務勝利次數
+            if (win) {
+                rouletteDb.execute({
+                    sql: 'UPDATE roulette_player_stats SET wins_today = wins_today + 1 WHERE username = ?',
+                    args: [username]
+                }).catch(e3 => console.log('更新勝利計數失敗:', e3.message));
+            }
         } catch(e2) {
             console.log('更新玩家統計失敗:', e2.message);
         }

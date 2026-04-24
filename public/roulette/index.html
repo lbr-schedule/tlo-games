@@ -309,6 +309,7 @@
                 <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
                 <button class="game-tab" onclick="showTab('leaderboard')">🏆 排行</button>
                 <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
+                <button class="game-tab" onclick="showTab('tasks')">📋 任務</button>
             </div>
             
             <!-- 遊戲 Tab -->
@@ -380,6 +381,24 @@
                     <h4 style="color:#ffd700;margin-bottom:12px;">🏆 排行榜</h4>
                     <div id="leaderboardList" style="text-align:left;">載入中...</div>
                     <button onclick="loadLeaderboard()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.9rem;margin-top:10px;">重新整理</button>
+                </div>
+            </div>
+            <div class="tab-content" id="tasksTab">
+                <div style="padding:10px;">
+                    <h4 style="color:#ffd700;margin-bottom:12px;text-align:center;">📋 每日任務</h4>
+                    
+                    <!-- 連續登入 -->
+                    <div id="streakInfo" style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:12px;border-radius:10px;margin-bottom:12px;text-align:center;">
+                        <div style="color:#ffd700;font-size:1.1rem;font-weight:bold;">🔥 連續登入</div>
+                        <div id="streakDay" style="color:#fff;font-size:2rem;margin:5px 0;">Day ?</div>
+                        <div id="streakReward" style="color:#aaa;font-size:0.85rem;">下一個獎勵：$200</div>
+                        <div id="streakTitle" style="color:#ff6b00;font-size:0.9rem;margin-top:5px;"></div>
+                        <button id="claimStreakBtn" onclick="claimLogin()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:8px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.9rem;margin-top:10px;">領取登入獎勵</button>
+                        <div id="streakMsg" style="color:#0f0;font-size:0.85rem;margin-top:5px;"></div>
+                    </div>
+                    
+                    <!-- 任務列表 -->
+                    <div id="tasksList" style="text-align:left;">載入中...</div>
                 </div>
             </div>
         </div>
@@ -891,20 +910,112 @@
         }
         
 
+        async function loadTasks() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/daily-tasks?username=' + encodeURIComponent(myName));
+                const data = await res.json();
+                if (!data.success) return;
+                
+                // 顯示連續登入
+                const streakEl = document.getElementById('streakDay');
+                const rewardEl = document.getElementById('streakReward');
+                const titleEl = document.getElementById('streakTitle');
+                const claimBtn = document.getElementById('claimStreakBtn');
+                const streakMsg = document.getElementById('streakMsg');
+                
+                streakEl.textContent = 'Day ' + (data.streak || 0);
+                const rewards = [200, 300, 400, 500, 700, 1000, 2000];
+                const nextReward = rewards[Math.min(data.streak || 0, 7)] || 200;
+                rewardEl.textContent = '今日獎勵：$' + nextReward;
+                titleEl.textContent = data.streakTitle ? '🏆 ' + data.streakTitle : '';
+                claimBtn.style.display = 'block';
+                claimBtn.disabled = false;
+                streakMsg.textContent = '';
+                
+                // 顯示任務列表
+                const tasksList = document.getElementById('tasksList');
+                let html = '';
+                const tasks = data.tasks || [];
+                const stats = data.stats || {};
+                for (const t of tasks) {
+                    const progress = t.id === 'bet_10' ? stats.betCount + '/10' :
+                                    t.id === 'bet_50' ? stats.betCount + '/50' :
+                                    t.id === 'bet_100' ? stats.betCount + '/100' :
+                                    t.id === 'win_5' ? stats.winsCount + '/5' :
+                                    t.id === 'mystery_1' ? stats.mysteryBets + '/1' : '';
+                    const bg = t.completed ? 'linear-gradient(135deg,#1a472a,#2d5a3d)' : 'linear-gradient(135deg,#1a1a2e,#16213e)';
+                    const btn = t.completed ? 
+                        '<button onclick="claimTask(\'' + t.id + '\')" style="padding:6px 12px;background:#ffd700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.8rem;">領取 $' + t.reward + '</button>' :
+                        '<button disabled style="padding:6px 12px;background:#555;border:none;border-radius:6px;color:#888;font-size:0.8rem;cursor:not-allowed;">未完成</button>';
+                    html += '<div style="background:' + bg + ';padding:10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">' +
+                            '<div><div style="color:#fff;font-weight:bold;">' + t.name + '</div><div style="color:#aaa;font-size:0.8rem;">' + t.desc + '</div><div style="color:#ffd700;font-size:0.75rem;margin-top:3px;">進度：' + progress + '</div></div>' + btn + '</div>';
+                }
+                tasksList.innerHTML = html;
+            } catch(e) { console.log('載入任務失敗:', e); }
+        }
+        
+        async function claimLogin() {
+            if (!myName) return;
+            const btn = document.getElementById('claimStreakBtn');
+            const msg = document.getElementById('streakMsg');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/roulette/claim-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.textContent = '✅ ' + data.message;
+                    msg.style.color = '#0f0';
+                    myBalance = data.newScore || myBalance;
+                    updateBalanceDisplay();
+                    setTimeout(loadTasks, 500);
+                } else {
+                    msg.textContent = data.message;
+                    msg.style.color = '#ff6b6b';
+                    btn.disabled = false;
+                }
+            } catch(e) {
+                msg.textContent = '連線失敗';
+                msg.style.color = '#ff6b6b';
+                btn.disabled = false;
+            }
+        }
+        
+        async function claimTask(taskId) {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/claim-task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, taskId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    myBalance = data.newScore || myBalance;
+                    updateBalanceDisplay();
+                    setTimeout(loadTasks, 500);
+                } else {
+                    alert(data.message || '領取失敗');
+                }
+            } catch(e) { alert('連線失敗'); }
+        }
+        
         function showTab(tab) {
             document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            if (tab === 'game') {
-                document.querySelector('.game-tab:nth-child(1)').classList.add('active');
-                document.getElementById('gameTab').classList.add('active');
-            } else if (tab === 'leaderboard') {
-                document.querySelector('.game-tab:nth-child(2)').classList.add('active');
-                document.getElementById('leaderboardTab').classList.add('active');
-                loadLeaderboard();
-            } else if (tab === 'history') {
-                document.querySelector('.game-tab:nth-child(3)').classList.add('active');
-                document.getElementById('historyTab').classList.add('active');
-            }
+            document.querySelectorAll('.game-tab').forEach((t, i) => {
+                t.classList.remove('active');
+                if ((tab === 'game' && i === 0) || (tab === 'leaderboard' && i === 1) || (tab === 'history' && i === 2) || (tab === 'tasks' && i === 3)) t.classList.add('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tab === 'game') document.getElementById('gameTab').classList.add('active');
+            else if (tab === 'leaderboard') { document.getElementById('leaderboardTab').classList.add('active'); loadLeaderboard(); }
+            else if (tab === 'history') document.getElementById('historyTab').classList.add('active');
+            else if (tab === 'tasks') { document.getElementById('tasksTab').classList.add('active'); loadTasks(); }
         }
         
         async function submitFeedback() {
