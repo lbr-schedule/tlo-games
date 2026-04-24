@@ -552,6 +552,7 @@ function spinWheel() {
     // 如果中神秘，重置彩池
     if (selected.num === 0) {
         rouletteState.mysteryPool = 0;
+        saveMysteryPool();
     }
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
@@ -613,6 +614,23 @@ app.get('/api/roulette/status', (req, res) => {
                 console.log('betting phase expired but spinning not triggered, forcing spin...');
                 spinWheel();
             }
+        } else if (rouletteState.phase === 'waiting' && rouletteState.hasPlayer) {
+            // 卡在waiting超過2秒，自動開始下注
+            const waitingTime = (Date.now() - rouletteState.phaseStartTime) / 1000;
+            if (waitingTime > 2) {
+                console.log('stuck in waiting with player, auto-starting bet...');
+                startBetting();
+            }
+            remaining = 1;
+        } else if (rouletteState.phase === 'spinning' && rouletteState.spinTimer === null) {
+            // 卡在spinning超過15秒，強制結算
+            const spinTime = rouletteState.lastSpin ? (Date.now() - rouletteState.lastSpin.time) / 1000 : 0;
+            if (spinTime > 15) {
+                console.log('stuck in spinning, forcing result...');
+                rouletteState.phase = 'result';
+                rouletteState.result = { num: Math.floor(Math.random() * 37), time: Date.now() };
+            }
+            remaining = 0;
         } else if (rouletteState.phase === 'result') {
             remaining = 5;
         }
