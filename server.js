@@ -886,13 +886,14 @@ app.post('/api/roulette/register', async (req, res) => {
         }
     }
     
-    // 電子郵件格式驗證
-    if (email && email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-            console.log('Email格式不符:', email);
-            return res.json({ success: false, message: 'Email格式錯誤，請輸入正確的電子郵件地址' });
-        }
+    // 電子郵件必填+格式驗證
+    if (!email || !email.trim()) {
+        return res.json({ success: false, message: '請填寫電子郵件地址' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        console.log('Email格式不符:', email);
+        return res.json({ success: false, message: 'Email格式錯誤，請輸入正確的電子郵件地址' });
     }
     
     // 處理邀請碼
