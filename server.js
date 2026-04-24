@@ -97,6 +97,7 @@ async function saveMysteryPool() {
     if (LOCAL_TEST_MODE || !rouletteDb) return;
     try {
         await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('mysteryPool', ?)`, args: [String(rouletteState.mysteryPool)] });
+        console.log('✅ 彩池已持久化:', rouletteState.mysteryPool);
     } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
 }
 
@@ -541,19 +542,20 @@ function spinWheel() {
     const selectedIndex = Math.floor(Math.random() * 37);
     const selected = allNumbers[selectedIndex];
     
+    // 保存當前彩池金額（用於顯示）
+    const poolBeforeResult = rouletteState.mysteryPool;
+    
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
         mystery: selected.num === 0,
-        mysteryPool: selected.num === 0 ? rouletteState.mysteryPool : 0
+        mysteryPool: selected.num === 0 ? poolBeforeResult : 0
     };
     
-    // 如果中神秘，重置彩池
-    if (selected.num === 0) {
-        rouletteState.mysteryPool = 0;
-        saveMysteryPool();
-    }
+    // 只有當有人中神秘（0）且有下注神秘時，才在結算時歸零彩池
+    // 彩池歸零的時機：結算時玩家領取獎金後才歸零（見 bet API 中的神秘中獎邏輯）
+    // 不在這裡歸零
     
     // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
     setTimeout(() => {
