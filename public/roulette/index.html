@@ -1300,7 +1300,8 @@
             }
             
             console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
-            myBalance = myBalance - roundBet + roundWin;
+            // 結算：只加贏的錢（輸的情況不再扣，因為下注時已扣過）
+            myBalance = myBalance + roundWin;
             
             // 神秘禮物 bonus + 彩池（只有下注0並且中的人才有）
             let mysteryBonus = 0;
