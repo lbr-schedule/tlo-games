@@ -65,8 +65,10 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
-        // 啟動時載入神秘彩池
+        // 啟動時載入神秘彩池、廣告索引、贏家狀態
         loadMysteryPool();
+        loadRouletteAdIndex();
+        loadWinnerState();
     }).catch(e => {
         console.log('輪盤資料庫連線測試失敗:', e.message);
         rouletteDbAvailable = false;
@@ -101,6 +103,23 @@ async function saveMysteryPool() {
     } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
 }
 
+async function loadRouletteAdIndex() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['rouletteAdIndex'] });
+        if (r.rows && r.rows.length > 0) {
+            rouletteState.rouletteAdIndex = parseInt(r.rows[0].value) || 0;
+        }
+    } catch(e) { console.log('載入廣告索引失敗:', e.message); }
+}
+
+async function saveRouletteAdIndex() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('rouletteAdIndex', ?)`, args: [String(rouletteState.rouletteAdIndex)] });
+    } catch(e) { console.log('保存廣告索引失敗:', e.message); }
+}
+
 // 輪盤遊戲狀態（單人，無需 WebSocket）
 let rouletteState = {
     phase: 'waiting', // waiting, betting, spinning, result
@@ -113,7 +132,8 @@ let rouletteState = {
     hasPlayer: false,
     mysteryPool: 0,  // 神秘彩池
     lastWinner: null,    // 神秘中獎者 {username, amount, type}
-    bigWinner: null      // 大贏家 {username, amount}
+    bigWinner: null,     // 大贏家 {username, amount}
+    rouletteAdIndex: 0   // 廣告輪播索引（持久化）
 };
 
 // 輪盤廣告設定
@@ -128,8 +148,9 @@ let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
 
 function getNextRouletteAd() {
-    rouletteAdIndex = (rouletteAdIndex + 1) % ROULETTE_ADS.length;
-    return { url: ROULETTE_ADS[rouletteAdIndex], lineId: '@778ryayw' };
+    rouletteState.rouletteAdIndex = (rouletteState.rouletteAdIndex + 1) % ROULETTE_ADS.length;
+    saveRouletteAdIndex();
+    return { url: ROULETTE_ADS[rouletteState.rouletteAdIndex], lineId: '@778ryayw' };
 }
 
 // ========== 骰子遊戲邏輯 ==========
@@ -599,6 +620,10 @@ function startBetting() {
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
+    // 清除舊的贏家廣播（進入新回合）
+    rouletteState.lastWinner = null;
+    rouletteState.bigWinner = null;
+    saveWinnerState();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
 }
 
@@ -1098,7 +1123,29 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
 });
 
 // 玩家上報中獎結果，伺服器廣播給所有人
-app.post('/api/roulette/report-winner', (req, res) => {
+async function saveWinnerState() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('lastWinner', ?)`, args: [JSON.stringify(rouletteState.lastWinner)] });
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('bigWinner', ?)`, args: [JSON.stringify(rouletteState.bigWinner)] });
+    } catch(e) { console.log('保存贏家狀態失敗:', e.message); }
+}
+
+async function loadWinnerState() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const lw = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['lastWinner'] });
+        if (lw.rows && lw.rows.length > 0 && lw.rows[0].value && lw.rows[0].value !== 'null') {
+            try { rouletteState.lastWinner = JSON.parse(lw.rows[0].value); } catch(e) {}
+        }
+        const bw = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['bigWinner'] });
+        if (bw.rows && bw.rows.length > 0 && bw.rows[0].value && bw.rows[0].value !== 'null') {
+            try { rouletteState.bigWinner = JSON.parse(bw.rows[0].value); } catch(e) {}
+        }
+    } catch(e) { console.log('載入贏家狀態失敗:', e.message); }
+}
+
+app.post('/api/roulette/report-winner', async (req, res) => {
     const { username, winAmount, type } = req.body;
     if (!username || winAmount === undefined) return res.json({ success: false });
     
@@ -1110,6 +1157,7 @@ app.post('/api/roulette/report-winner', (req, res) => {
         rouletteState.bigWinner = { username, amount: winAmount };
         console.log('🏆 大贏家廣播:', username, 'win', winAmount);
     }
+    await saveWinnerState();
     res.json({ success: true });
 });
 
