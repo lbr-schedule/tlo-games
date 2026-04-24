@@ -821,6 +821,15 @@ app.post('/api/roulette/register', async (req, res) => {
         return res.json({ success: false, message: '請填寫帳號和密碼' });
     }
     
+    // 台灣手機號碼驗證
+    if (phone && phone.trim()) {
+        const phoneRegex = /^09[0-9]{8}$/;
+        if (!phoneRegex.test(phone.trim())) {
+            console.log('電話格式不符:', phone);
+            return res.json({ success: false, message: '電話格式錯誤，請輸入正確的台灣手機號碼（例：0912345678）' });
+        }
+    }
+    
     // 處理邀請碼
     const { inviteCode } = req.body;
     let inviterBonus = 0;
