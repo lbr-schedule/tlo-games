@@ -547,6 +547,11 @@ function getRouletteColor(num) {
 }
 
 function spinWheel() {
+    // 清除上一局的贏家廣播，確保新一輪干擾
+    rouletteState.lastWinner = null;
+    rouletteState.bigWinner = null;
+    saveWinnerState();
+    
     rouletteState.phase = 'spinning';
     
     const allNumbers = [
@@ -620,11 +625,8 @@ function startBetting() {
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
-    // 清除舊的贏家廣播（進入新回合）
-    rouletteState.lastWinner = null;
-    rouletteState.bigWinner = null;
-    saveWinnerState();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
+    // 贏家廣播在 spinWheel 開始時才清除（確保 result 階段都能看到）
 }
 
 // 不再自動開始，等待玩家加入
