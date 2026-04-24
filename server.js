@@ -59,10 +59,14 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
     rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
         console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
         rouletteDbAvailable = true;
+        // 建立 game_config 表格（神秘彩池持久化）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0)`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
+        // 啟動時載入神秘彩池
+        loadMysteryPool();
     }).catch(e => {
         console.log('輪盤資料庫連線測試失敗:', e.message);
         rouletteDbAvailable = false;
@@ -76,6 +80,25 @@ const diceState = {
     players: new Map(),  // { username: { lastPoll: timestamp, pendingMessages: [] } }
     pollInterval: 1000    // 1秒polling
 };
+
+// 神秘彩池持久化
+async function loadMysteryPool() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['mysteryPool'] });
+        if (r.rows && r.rows.length > 0) {
+            rouletteState.mysteryPool = parseInt(r.rows[0].value) || 0;
+            console.log('從資料庫載入神秘彩池:', rouletteState.mysteryPool);
+        }
+    } catch(e) { console.log('載入神秘彩池失敗:', e.message); }
+}
+
+async function saveMysteryPool() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('mysteryPool', ?)`, args: [String(rouletteState.mysteryPool)] });
+    } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
+}
 
 // 輪盤遊戲狀態（單人，無需 WebSocket）
 let rouletteState = {
@@ -670,6 +693,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     // 1% 进神秘彩池（所有下注都进）
     const poolContribution = Math.floor(amount * 0.01);
     rouletteState.mysteryPool += poolContribution;
+        saveMysteryPool();
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
     res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
 
@@ -1072,6 +1096,19 @@ app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
 });
 
 // 輪盤遊戲 - 管理員：修改玩家帳號名稱
+
+// 管理員手動設定彩池
+app.post('/api/roulette/admin/set-pool', async (req, res) => {
+    const { amount } = req.body;
+    if (typeof amount !== 'number' || amount < 0) {
+        return res.json({ success: false, message: '無效金額' });
+    }
+    rouletteState.mysteryPool = amount;
+    await saveMysteryPool();
+    console.log('管理員設定彩池為:', amount);
+    res.json({ success: true, message: '彩池已設為 $' + amount, mysteryPool: amount });
+});
+
 app.post('/api/roulette/admin/update-username', async (req, res) => {
     const { oldUsername, newUsername } = req.body;
     if (!oldUsername || !newUsername) {
