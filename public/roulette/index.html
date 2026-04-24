@@ -1655,15 +1655,12 @@
                 }
             }
             
-            // 防呆：餘額不足
-            if (myBalance < amount) {
-                showToast('餘額不足！目前餘額 $' + myBalance);
-                return;
-            }
-            
-            // 防呆：單次下注不能超過餘額
-            if (amount > myBalance) {
-                showToast('下注金額不能超過餘額');
+            // 防呆：計算目前所有下注的總額
+            const totalBets = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            // 檢查：剩餘可用餘額 = myBalance - totalBets
+            const remaining = myBalance - totalBets;
+            if (remaining < amount) {
+                showToast('餘額不足！可用餘額 $' + remaining);
                 return;
             }
             
@@ -1782,9 +1779,11 @@
             }
             lastBetTime = now;
             
-            // 防呆：餘額不足
-            if (myBalance < amt) {
-                showToast('餘額不足！目前餘額 $' + myBalance);
+            // 防呆：計算目前所有下注的總額
+            const totalBets = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            const remaining = myBalance - totalBets;
+            if (remaining < amt) {
+                showToast('餘額不足！可用餘額 $' + remaining);
                 return;
             }
             
