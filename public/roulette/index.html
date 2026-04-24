@@ -723,10 +723,25 @@
         let lastProcessedSpinId = 0;
         let selectedBets = []; // Track which bet options are selected
         
-        if (savedUsername && savedBalance) {
-            // 已登入，恢復 session
-            console.log('Restoring session for:', myName);
-            document.getElementById('balance').textContent = myBalance;
+        if (savedUsername) {
+            // 已登入，先從伺服器拿最新分數再恢復 session
+            fetch('/api/roulette/player/' + encodeURIComponent(savedUsername))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.player && data.player.score !== undefined) {
+                        myBalance = data.player.score;
+                        localStorage.setItem('rouletteBalance', myBalance);
+                        console.log('✅ 從伺服器恢復分數:', myBalance);
+                    } else if (savedBalance) {
+                        myBalance = parseInt(savedBalance);
+                    }
+                    document.getElementById('balance').textContent = myBalance;
+                })
+                .catch(() => {
+                    if (savedBalance) myBalance = parseInt(savedBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                });
+            console.log('Restoring session for:', savedUsername);
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('topBar').style.display = 'flex';
             document.getElementById('resultDisplay').style.display = 'block';

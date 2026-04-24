@@ -1445,6 +1445,24 @@ app.get('/api/player/:username', async (req, res) => {
     }
 });
 
+// 輪盤玩家即時分數 API
+app.get('/api/roulette/player/:username', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ player: null });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, score FROM players WHERE username = ?`,
+            args: [req.params.username]
+        });
+        if (result.rows && result.rows.length > 0) {
+            res.json({ player: result.rows[0] });
+        } else {
+            res.json({ player: null });
+        }
+    } catch(e) {
+        res.json({ player: null });
+    }
+});
+
 // 靜態檔案
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
