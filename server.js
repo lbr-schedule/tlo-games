@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const { createClient } = require('@libsql/client');
 
 const app = express();
@@ -10,7 +11,62 @@ const server = http.createServer(app);
 const dbUrl = process.env.DATABASE_URL || 'libsql://lbr-dice-lbr-schedule.aws-ap-northeast-1.turso.io';
 const dbAuthToken = process.env.DATABASE_AUTH_TOKEN || '';
 
-let db = null;
+// Gmail SMTP  transporter
+const gmailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER || '',
+        pass: process.env.GMAIL_PASS || ''
+    }
+});
+
+// 驗證郵件快取（記憶體， Railway 重啟後歸零但可接受）
+const emailVerifyCache = new Map(); // key: username, value: { code, expires, email }
+
+// 發送驗證郵件
+async function sendVerificationEmail(email, username, code) {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+        console.log('⚠️ Gmail 未設定，跳過發送驗證郵件');
+        return false;
+    }
+    try {
+        await gmailTransporter.sendMail({
+            from: '"T-LO遊戲" <' + process.env.GMAIL_USER + '>',
+            to: email,
+            subject: '【T-LO遊戲】驗證您的電子郵件',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #ff6b00;">🎰 T-LO遊戲 電子郵件驗證</h2>
+                    <p>您好，<b>${username}</b>，感謝您註冊 T-LO遊戲！</p>
+                    <p>您的驗證碼：</p>
+                    <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #ff6b00; margin: 20px 0;">
+                        ${code}
+                    </div>
+                    <p>請在 30 分鐘內輸入驗證碼完成註冊。</p>
+                    <p>如果這不是您本人註冊，請忽略此郵件。</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #888; font-size: 12px;">T-LO遊戲 - LBR-STUDIO</p>
+                </div>
+            `
+        });
+        console.log('✅ 驗證郵件已發送至:', email);
+        return true;
+    } catch(e) {
+        console.log('❌ 發送驗證郵件失敗:', e.message);
+        return false;
+    }
+}
+
+// 清除過期的驗證碼（定期清理）
+setInterval(() => {
+    const now = Date.now();
+    for (const [user, data] of emailVerifyCache) {
+        if (data.expires < now) {
+            emailVerifyCache.delete(user);
+        }
+    }
+}, 60000); // 每分鐘清理一次
+
 let dbAvailable = false;
 
 try {
@@ -830,6 +886,15 @@ app.post('/api/roulette/register', async (req, res) => {
         }
     }
     
+    // 電子郵件格式驗證
+    if (email && email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            console.log('Email格式不符:', email);
+            return res.json({ success: false, message: 'Email格式錯誤，請輸入正確的電子郵件地址' });
+        }
+    }
+    
     // 處理邀請碼
     const { inviteCode } = req.body;
     let inviterBonus = 0;
@@ -904,8 +969,24 @@ app.post('/api/roulette/register', async (req, res) => {
             await Promise.race([fallbackPromise, timeoutPromise]);
         }
         
-        console.log('註冊成功, username:', username);
-        res.json({ success: true, message: '註冊成功！' });
+        // 產生驗證碼並發送郵件
+        const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
+        emailVerifyCache.set(username, {
+            code: verifyCode,
+            expires: Date.now() + 30 * 60 * 1000, // 30分鐘
+            email: email
+        });
+        
+        const emailSent = await sendVerificationEmail(email, username, verifyCode);
+        if (!emailSent) {
+            // 郵件發送失敗，但帳號已建立，告知用戶
+            console.log('⚠️ 驗證郵件發送失敗，但帳號已建立');
+            res.json({ success: true, needVerify: false, message: '註冊成功！' });
+            return;
+        }
+        
+        console.log('✅ 註冊成功（需要驗證）, username:', username);
+        res.json({ success: true, needVerify: true, message: '註冊成功！請去信箱收取驗證碼並完成驗證。' });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
         // 細分錯誤類型
@@ -915,6 +996,32 @@ app.post('/api/roulette/register', async (req, res) => {
             res.json({ success: false, message: '註冊失敗，請稍後再試' });
         }
     }
+});
+
+// 輪盤遊戲 - 驗證Email
+app.post('/api/roulette/verify-email', async (req, res) => {
+    const { username, code } = req.body;
+    if (!username || !code) return res.json({ success: false, message: '缺少資料' });
+    
+    const cached = emailVerifyCache.get(username);
+    if (!cached || cached.code !== code) {
+        return res.json({ success: false, message: '驗證碼錯誤或已過期' });
+    }
+    if (cached.expires < Date.now()) {
+        emailVerifyCache.delete(username);
+        return res.json({ success: false, message: '驗證碼已過期，請重新註冊' });
+    }
+    
+    // 驗證成功，更新資料庫
+    if (!LOCAL_TEST_MODE && rouletteDb) {
+        await rouletteDb.execute({
+            sql: `UPDATE players SET email_verified = 1 WHERE username = ?`,
+            args: [username]
+        });
+    }
+    emailVerifyCache.delete(username);
+    console.log('✅ Email驗證成功:', username);
+    res.json({ success: true, message: '驗證成功！' });
 });
 
 // 輪盤遊戲 - 登入
