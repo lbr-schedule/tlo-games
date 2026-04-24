@@ -666,27 +666,20 @@ app.post('/api/roulette/bet', async (req, res) => {
         return res.json({ success: false, message: '請輸入正確的金額' });
     }
     
-    // 檢查玩家餘額是否足夠
-    let playerScore = 0;
+    // 原子扣款：一步完成，餘額不足會失敗
     if (LOCAL_TEST_MODE) {
-        playerScore = localPlayers[username]?.score || 0;
-    } else if (rouletteDbAvailable) {
-        try {
-            const r = await rouletteDb.execute({
-                sql: `SELECT score FROM players WHERE username = ?`,
-                args: [username]
-            });
-            if (r.rows && r.rows.length > 0) {
-                playerScore = r.rows[0].score || 0;
-            }
-        } catch(e) {
-            console.log('取得玩家分數失敗:', e.message);
+        if ((localPlayers[username]?.score || 0) < amount) {
+            return res.json({ success: false, message: '餘額不足，無法下注' });
         }
-    }
-    
-    // 如果餘額不足 10 分，拒絕下注
-    if (playerScore < 10) {
-        return res.json({ success: false, message: '餘額不足，無法下注' });
+        localPlayers[username].score -= amount;
+    } else if (rouletteDbAvailable) {
+        const deductResult = await rouletteDb.execute({
+            sql: `UPDATE players SET score = score - ? WHERE username = ? AND score >= ?`,
+            args: [amount, username, amount]
+        });
+        if (deductResult.rowsAffected === 0) {
+            return res.json({ success: false, message: '餘額不足，無法下注' });
+        }
     }
     
     // 隨機獎勵：3% 機會觸發 200 分 bonus
