@@ -548,6 +548,19 @@
             }
         }
         
+        // 全服公告廣播
+        function showBroadcast(message) {
+            const el = document.getElementById('mysteryBroadcast');
+            const text = document.getElementById('broadcastText');
+            if (!el || !text) return;
+            text.textContent = message;
+            el.style.display = 'block';
+            el.style.animation = 'none';
+            void el.offsetWidth;
+            el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
         // 播放音效（通用）
         function playSound(type) {
             if (!soundEnabled) return;
