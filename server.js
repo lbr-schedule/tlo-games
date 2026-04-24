@@ -709,8 +709,23 @@ app.post('/api/roulette/bet', async (req, res) => {
     const poolContribution = Math.floor(amount * 0.01);
     rouletteState.mysteryPool += poolContribution;
         saveMysteryPool();
+    // 取回玩家最新分數並回傳
+    let newPlayerScore = playerScore;
+    if (rouletteDbAvailable) {
+        try {
+            const scoreResult = await rouletteDb.execute({
+                sql: `SELECT score FROM players WHERE username = ?`,
+                args: [username]
+            });
+            if (scoreResult.rows && scoreResult.rows.length > 0) {
+                newPlayerScore = scoreResult.rows[0].score;
+            }
+        } catch(e) { console.log('取回分數失敗:', e.message); }
+    } else if (LOCAL_TEST_MODE) {
+        newPlayerScore = localPlayers[username]?.score || 0;
+    }
     console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
-    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool });
+    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool, newScore: newPlayerScore });
 
 // 看片領金幣
 app.post('/api/roulette/claim-video', async (req, res) => {

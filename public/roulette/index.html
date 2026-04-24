@@ -1708,6 +1708,12 @@
                     body: JSON.stringify({ username: myName, betType: type, amount, color: choice, choice })
                 });
                 const data = await res.json();
+                // 更新玩家餘額（使用伺服器回傳的最新分數）
+                if (data.newScore !== undefined) {
+                    myBalance = data.newScore;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                }
                 // 處理隨機獎勵
                 if (data.bonusTriggered && data.bonusAmount > 0) {
                     myBalance += data.bonusAmount;
@@ -1807,6 +1813,12 @@
                     body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num })
                 });
                 const data = await res.json();
+                // 更新玩家餘額（使用伺服器回傳的最新分數）
+                if (data.newScore !== undefined) {
+                    myBalance = data.newScore;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                }
                 // 處理隨機獎勵
                 if (data.bonusTriggered && data.bonusAmount > 0) {
                     myBalance += data.bonusAmount;
