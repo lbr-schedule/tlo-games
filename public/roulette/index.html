@@ -1314,6 +1314,23 @@
                 const poolWin = lastSpin.perPersonPool || 0;
                 myBalance += mysteryBonus + poolWin;
                 roundWin += mysteryBonus + poolWin;
+                // 通知伺服器有神秘中獎，廣播給所有人
+                if (mysteryBonus > 0) {
+                    fetch('/api/roulette/report-winner', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: myName, winAmount: mysteryBonus + poolWin, type: 'mystery' })
+                    }).catch(() => {});
+                }
+            }
+            
+            // 如果贏超過1000，通知伺服器廣播大贏家
+            if (roundWin >= 1000 && myName) {
+                fetch('/api/roulette/report-winner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, winAmount: roundWin, type: 'normal' })
+                }).catch(() => {});
             }
             
             console.log('myBalance after:', myBalance);

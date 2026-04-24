@@ -111,7 +111,9 @@ let rouletteState = {
     BETTING_TIME: 8000,
     phaseStartTime: 0,
     hasPlayer: false,
-    mysteryPool: 0  // 神秘彩池
+    mysteryPool: 0,  // 神秘彩池
+    lastWinner: null,    // 神秘中獎者 {username, amount, type}
+    bigWinner: null      // 大贏家 {username, amount}
 };
 
 // 輪盤廣告設定
@@ -642,7 +644,9 @@ app.get('/api/roulette/status', (req, res) => {
             lastSpin: rouletteState.lastSpin,
             remaining: remaining,
             mysteryPool: rouletteState.mysteryPool,
-            ad: null
+            ad: null,
+            lastWinner: rouletteState.lastWinner,
+            bigWinner: rouletteState.bigWinner
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
@@ -1091,6 +1095,22 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
         console.log('更新餘額失敗:', e.message);
         res.json({ success: false, message: '更新失敗' });
     }
+});
+
+// 玩家上報中獎結果，伺服器廣播給所有人
+app.post('/api/roulette/report-winner', (req, res) => {
+    const { username, winAmount, type } = req.body;
+    if (!username || winAmount === undefined) return res.json({ success: false });
+    
+    if (type === 'mystery') {
+        rouletteState.lastWinner = { username, amount: winAmount, type: 'mystery' };
+        console.log('🎁 神秘中獎廣播:', username, 'win', winAmount);
+    }
+    if (winAmount >= 1000) {
+        rouletteState.bigWinner = { username, amount: winAmount };
+        console.log('🏆 大贏家廣播:', username, 'win', winAmount);
+    }
+    res.json({ success: true });
 });
 
 // 輪盤遊戲 - 管理員：修補資料庫（新增lastVideoClaim欄位）
