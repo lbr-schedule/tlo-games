@@ -669,6 +669,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     }
     
     // 原子扣款：一步完成，餘額不足會失敗
+    console.log('🔴 ATOMIC BET TEST: username=' + username + ', amount=' + amount);
     if (LOCAL_TEST_MODE) {
         if ((localPlayers[username]?.score || 0) < amount) {
             return res.json({ success: false, message: '餘額不足，無法下注' });
@@ -679,6 +680,7 @@ app.post('/api/roulette/bet', async (req, res) => {
             sql: `UPDATE players SET score = score - ? WHERE username = ? AND score >= ?`,
             args: [amount, username, amount]
         });
+        console.log('🔴 rowsAffected=', deductResult.rowsAffected);
         if (deductResult.rowsAffected === 0) {
             return res.json({ success: false, message: '餘額不足，無法下注' });
         }
