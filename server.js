@@ -109,6 +109,7 @@ async function loadRouletteAdIndex() {
         const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['rouletteAdIndex'] });
         if (r.rows && r.rows.length > 0) {
             rouletteState.rouletteAdIndex = parseInt(r.rows[0].value) || 0;
+            console.log('✅ 廣告索引已載入:', rouletteState.rouletteAdIndex);
         }
     } catch(e) { console.log('載入廣告索引失敗:', e.message); }
 }
@@ -117,6 +118,7 @@ async function saveRouletteAdIndex() {
     if (LOCAL_TEST_MODE || !rouletteDb) return;
     try {
         await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('rouletteAdIndex', ?)`, args: [String(rouletteState.rouletteAdIndex)] });
+        console.log('✅ 廣告索引已持久化:', rouletteState.rouletteAdIndex);
     } catch(e) { console.log('保存廣告索引失敗:', e.message); }
 }
 
@@ -547,11 +549,6 @@ function getRouletteColor(num) {
 }
 
 function spinWheel() {
-    // 清除上一局的贏家廣播，確保新一輪干擾
-    rouletteState.lastWinner = null;
-    rouletteState.bigWinner = null;
-    saveWinnerState();
-    
     rouletteState.phase = 'spinning';
     
     const allNumbers = [
@@ -626,7 +623,7 @@ function startBetting() {
     rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
-    // 贏家廣播在 spinWheel 開始時才清除（確保 result 階段都能看到）
+    // 贏家廣播保留直到下一個新贏家出現（不主動清除，確保所有人都能看到）
 }
 
 // 不再自動開始，等待玩家加入
