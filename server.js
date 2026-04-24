@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { createClient } = require('@libsql/client');
 
 const app = express();
@@ -11,27 +11,21 @@ const server = http.createServer(app);
 const dbUrl = process.env.DATABASE_URL || 'libsql://lbr-dice-lbr-schedule.aws-ap-northeast-1.turso.io';
 const dbAuthToken = process.env.DATABASE_AUTH_TOKEN || '';
 
-// Gmail SMTP  transporter
-const gmailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER || '',
-        pass: process.env.GMAIL_PASS || ''
-    }
-});
+// Resend email API
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 驗證郵件快取（記憶體， Railway 重啟後歸零但可接受）
 const emailVerifyCache = new Map(); // key: username, value: { code, expires, email }
 
 // 發送驗證郵件
 async function sendVerificationEmail(email, username, code) {
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-        console.log('⚠️ Gmail 未設定，跳過發送驗證郵件');
+    if (!process.env.RESEND_API_KEY) {
+        console.log('⚠️ Resend API Key 未設定，跳過發送驗證郵件');
         return false;
     }
     try {
-        await gmailTransporter.sendMail({
-            from: '"T-LO遊戲" <' + process.env.GMAIL_USER + '>',
+        await resend.emails.send({
+            from: 'T-LO遊戲 <onboarding@resend.dev>',
             to: email,
             subject: '【T-LO遊戲】驗證您的電子郵件',
             html: `
