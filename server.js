@@ -1035,17 +1035,22 @@ app.post('/api/roulette/update-score', async (req, res) => {
 
 // 輪盤遊戲 - 管理員：修改玩家餘額（老闆用）
 app.post('/api/roulette/admin/update-score', async (req, res) => {
-    const { username, newScore } = req.body;
-    if (!username || newScore === undefined) {
-        return res.json({ success: false, message: '請提供 username 和 newScore' });
+    const { username, amount } = req.body;
+    if (!username || amount === undefined) {
+        return res.json({ success: false, message: '請提供 username 和 amount' });
+    }
+    
+    const delta = parseInt(amount);
+    if (isNaN(delta)) {
+        return res.json({ success: false, message: 'amount 必須是數字' });
     }
     
     // 本地測試模式
     if (LOCAL_TEST_MODE) {
         if (localPlayers[username]) {
-            localPlayers[username].score = newScore;
+            localPlayers[username].score += delta;
         }
-        return res.json({ success: true, message: `已將 ${username} 的餘額更新為 ${newScore}` });
+        return res.json({ success: true, message: `已將 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}` });
     }
     
     if (!rouletteDbAvailable || !rouletteDb) {
@@ -1053,12 +1058,18 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     }
     
     try {
-        await rouletteDb.execute({
-            sql: `UPDATE players SET score = ? WHERE username = ?`,
-            args: [newScore, username]
+        // 先取得目前分數
+        const current = await rouletteDb.execute({
+            sql: `SELECT score FROM players WHERE username = ?`,
+            args: [username]
         });
-        console.log(`管理員更新 ${username} 的餘額為 ${newScore}`);
-        res.json({ success: true, message: `已將 ${username} 的餘額更新為 ${newScore}` });
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+            args: [delta, username]
+        });
+        const newScore = current.rows && current.rows.length > 0 ? current.rows[0].score + delta : delta;
+        console.log(`管理員更新 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}`);
+        res.json({ success: true, message: `已將 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}`, newScore });
     } catch(e) {
         console.log('更新餘額失敗:', e.message);
         res.json({ success: false, message: '更新失敗' });
