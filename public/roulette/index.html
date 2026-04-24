@@ -298,14 +298,7 @@
                 <input type="text" id="regInviteCode" placeholder="邀請碼（選填）">
                 <button onclick="doRegister()">註冊</button>
                 <div class="auth-msg" id="regMsg"></div>
-                <!-- 信箱驗證區 -->
-                <div id="verifySection" style="display:none; margin-top:15px; padding:15px; background:#f5f5f5; border-radius:8px;">
-                    <h4 style="margin:0 0 10px 0; color:#ff6b00;">📧 信箱驗證</h4>
-                    <input type="hidden" id="verifyUsername">
-                    <input type="text" id="verifyCode" placeholder="輸入驗證碼（6位數）" maxlength="6" style="width:100%; margin-bottom:8px; padding:8px; border-radius:6px; border:1px solid #ddd;">
-                    <button onclick="doVerifyEmail()" style="width:100%; padding:8px; background:#ff6b00; color:#fff; border:none; border-radius:6px; cursor:pointer;">驗證</button>
-                    <div class="auth-msg" id="verifyMsg"></div>
-                </div>
+
             </div>
         </div>
         
@@ -884,20 +877,9 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    if (data.needVerify) {
-                        // 需要驗證信箱
-                        msg.textContent = '請去信箱收取驗證碼並完成驗證';
-                        msg.className = 'auth-msg success';
-                        // 顯示驗證碼輸入框
-                        document.getElementById('verifySection').style.display = 'block';
-                        document.getElementById('verifyUsername').value = username;
-                        document.getElementById('verifyCode').value = '';
-                        document.getElementById('verifyMsg').textContent = '';
-                    } else {
-                        msg.textContent = '註冊成功！請登入';
-                        msg.className = 'auth-msg success';
-                        setTimeout(() => showAuth('login'), 1500);
-                    }
+                    msg.textContent = '註冊成功！請登入';
+                    msg.className = 'auth-msg success';
+                    setTimeout(() => showAuth('login'), 1500);
                 } else {
                     msg.textContent = data.message;
                     msg.className = 'auth-msg';
@@ -908,35 +890,7 @@
             }
         }
         
-        async function doVerifyEmail() {
-            const username = document.getElementById('verifyUsername').value.trim();
-            const code = document.getElementById('verifyCode').value.trim();
-            const msg = document.getElementById('verifyMsg');
-            if (!username || !code) { msg.textContent = '請輸入驗證碼'; msg.className = 'auth-msg'; return; }
-            try {
-                const res = await fetch('/api/roulette/verify-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, code })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    msg.textContent = '✅ 驗證成功！請登入';
-                    msg.className = 'auth-msg success';
-                    setTimeout(() => {
-                        document.getElementById('verifySection').style.display = 'none';
-                        showAuth('login');
-                    }, 1500);
-                } else {
-                    msg.textContent = data.message || '驗證失敗';
-                    msg.className = 'auth-msg';
-                }
-            } catch(e) {
-                msg.textContent = '連線失敗';
-                msg.className = 'auth-msg';
-            }
-        }
-        
+
         function showTab(tab) {
             document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
