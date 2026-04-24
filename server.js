@@ -710,7 +710,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     rouletteState.mysteryPool += poolContribution;
         saveMysteryPool();
     // 取回玩家最新分數並回傳
-    let newPlayerScore = playerScore;
+    let newPlayerScore = 0;
     if (rouletteDbAvailable) {
         try {
             const scoreResult = await rouletteDb.execute({
