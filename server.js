@@ -971,7 +971,7 @@ app.post('/api/roulette/claim-task', async (req, res) => {
 
 app.post('/api/roulette/bet', async (req, res) => {
     if (rouletteState.phase !== 'betting') {
-        return res.json({ success: false, message: '現在不能下注' });
+        return res.json({ success: false, message: '現在不能下注', phase: rouletteState.phase });
     }
     
     const { username, betType, amount, color, choice, number } = req.body;
