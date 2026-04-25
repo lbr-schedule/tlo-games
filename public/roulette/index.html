@@ -999,7 +999,8 @@
                     showToast(data.message || '領取失敗', 'error');
                 }
             } catch(e) {
-                showToast('連線失敗，請稍後再試', 'error');
+                console.log('❌ claimTask ERROR:', e.message, '| status:', res ? res.status : 'no-response', '| url:', res ? res.url : 'unknown');
+                showToast('連線失敗：' + (e.message || '未知錯誤'), 'error');
             } finally {
                 if (btn) { btn.disabled = false; }
             }
