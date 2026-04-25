@@ -2160,15 +2160,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName })
                 });
-                let data;
-                try {
-                    data = await res.json();
-                } catch(e) {
-                    console.log('JSON parse error:', e);
-                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-                    showToast('連線失敗', 'error');
-                    return;
-                }
+                const data = await res.json();
                 if (data.success) {
                     if (btn) { btn.textContent = '已領取 ✅'; btn.style.background = '#1a472a'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0'; }
                     myBalance = data.newScore || myBalance;
