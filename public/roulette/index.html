@@ -998,8 +998,22 @@
                     document.getElementById('balance').textContent = myBalance;
                     showToast('✅ 領取成功！+$' + (data.reward || 0), 'success');
                     setTimeout(loadTasks, 500);
+                    // 更新按鈕為已領取狀態
+                    if (btn) {
+                        btn.textContent = '已領取 ✅';
+                        btn.style.background = '#1a472a';
+                        btn.style.color = '#0f0';
+                        btn.style.borderColor = '#0f0';
+                        btn.disabled = true;
+                    }
                 } else {
                     showToast(data.message || '領取失敗', 'error');
+                    if (btn) {
+                        btn.textContent = '已領取';
+                        btn.style.background = '#555';
+                        btn.style.color = '#888';
+                        btn.disabled = true;
+                    }
                 }
             } catch(e) {
                 console.log('❌ claimTask ERROR:', e.message, '| status:', res ? res.status : 'N/A', '| url:', res ? res.url : window.location.href);
