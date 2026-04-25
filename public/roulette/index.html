@@ -612,10 +612,17 @@
         }
 
         // 播放音效（通用）
-        function playSound(type) {
+        async function playSound(type) {
             if (!soundEnabled) return;
             if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') {
+                try { await audioCtx.resume(); } catch(e) {}
+                // 如果resume失敗，等用戶互動後再試
+                if (audioCtx.state !== 'running') {
+                    console.log('AudioContext still suspended, waiting for user interaction');
+                    return;
+                }
+            }
             
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -706,7 +713,8 @@
         // 點擊音效（使用者互動時）
         function playClickSound() {
             if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
@@ -733,6 +741,17 @@
                 startBgMusic();
             }
         }, { passive: true });
+        
+        // 萬用音頻解鎖：任何互動都嘗試恢復 AudioContext
+        ['click', 'touchstart', 'keydown', 'mousemove'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        console.log('AudioContext resumed via', evt);
+                    });
+                }
+            }, { passive: true });
+        });
         
         // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
         const wheelNumbers = [
