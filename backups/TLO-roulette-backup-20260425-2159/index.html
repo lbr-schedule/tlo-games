@@ -1,0 +1,2582 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffd700">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="T-LO轉盤">
+    <meta name="description" content="🎰 T-LO大轉盤 - 輪盤遊戲，每日登入送金幣，排行榜競賽赢獎品">
+    <link rel="manifest" href="/roulette/manifest.json">
+    <link rel="apple-touch-icon" href="https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-04-21%2FMiniMax-M2.7%2F2042085561899950328%2F44dc2eda593e12f22ec1307a688f03bcb1371edb70f9d8da9f3ef8984debbabc..jpeg?Expires=1776834669&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=lw9eldlK%2B2MrDoJu33hpJS0ztUw%3D">
+    <title>🎰 T-LO大轉盤</title>
+    <style>
+        .winner-marquee {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+            color: #1a1a2e;
+            padding: 8px 0;
+            font-weight: bold;
+            font-size: 1rem;
+            z-index: 999;
+            display: none;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(255,215,0,0.5);
+        }
+        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; }
+        @keyframes broadcast-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+        .winner-marquee.show {
+            display: block;
+            animation: marquee-slide 8s linear forwards;
+        }
+        @keyframes marquee-slide {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { height: 100%; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
+            height: 100%; /* fallback */
+            color: white; 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            -webkit-overflow-scrolling: touch;
+        }
+        .container { 
+            max-width: 100%; 
+            margin: 0 auto; 
+            padding: 0.5rem; 
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+        
+        h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
+        #playerNameDisplay { display: flex; align-items: center; height: 100%; }
+        #balanceBox { display: flex; align-items: center; height: 100%; }
+        .balance { font-size: 0.95rem; }
+        .balance span { color: #ffd700; font-weight: bold; }
+        .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
+        .result-badge.show { display: inline-block; }
+        .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
+        .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
+        .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
+        .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; }
+        
+        .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; }
+        
+        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
+        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
+        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
+        .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
+        @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        
+        .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
+        .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
+        #mysteryPoolDisplay { color: #ffd700; font-weight: bold; animation: pool-pulse 1.5s ease-in-out infinite; }
+        @keyframes pool-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .video-claim-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-left: 8px; }
+        .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
+        .video-popup.show { display: flex; }
+        .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
+        .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
+        .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .ad-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 300; }
+        
+        .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        
+        .video-popup.show { display: flex; }
+        .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
+        .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
+        .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .video-btn { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; border: none; padding: 12px 20px; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,0,0.4); margin: 5px; }
+        .video-btn:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
+        
+        .video-popup.show { display: flex; }
+        .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
+        .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
+        .video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .ad-popup.show { display: flex; }
+        .ad-card { background: white; border-radius: 15px; padding: 15px; max-width: 290px; width: 88%; text-align: center; position: relative; }
+        .ad-card img { width: 100%; border-radius: 10px; max-height: 280px; object-fit: cover; }
+        .ad-close { position: absolute; top: 5px; right: 10px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; }
+        .ad-text { color: #333; font-size: 0.85rem; margin: 8px 0 5px; }
+        .ad-line { background: #00b900; color: white; padding: 8px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
+        .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
+        .result-display.waiting { background: rgba(255,255,255,0.1); }
+        .result-display.spinning { background: rgba(0,0,0,0.3); }
+        .result-display.red { background: rgba(180,0,0,0.7); border: 2px solid #ff4444; font-size: 1.1rem; }
+        .result-display.black { background: rgba(50,50,50,0.8); border: 2px solid #888; font-size: 1.1rem; }
+        .result-display.green { background: rgba(0,120,0,0.7); border: 2px solid #00ff00; font-size: 1.1rem; }
+        
+        .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 2px 4px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 2px; border: 1px solid rgba(255,255,255,0.25); width: 30px; height: 26px; box-sizing: border-box; }
+        .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; }
+        .modal h2 { color: #ffd700; text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
+        .modal h3 { color: #ffd700; margin: 12px 0 8px; font-size: 1rem; }
+        .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin: 5px 0; }
+        .modal .close-btn { width: 100%; padding: 12px; background: #ffd700; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 15px; }
+        .modal .close-btn:hover { background: #ffdd44; }
+        .modal .bet-demo { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 8px 0; }
+        .modal .bet-demo span { display: inline-block; padding: 5px 10px; border-radius: 5px; margin: 2px; font-size: 0.85rem; }
+        .modal .bet-demo .red { background: #cc0000; }
+        .modal .bet-demo .black { background: #333; }
+        .modal .bet-demo .green { background: #009900; }
+        .modal .bet-demo .odd { background: #0066cc; }
+        .modal .bet-demo .even { background: #660066; }
+        .modal .bet-demo .num { background: #ffd700; color: #1a1a2e; }
+        
+        .bet-section { background: rgba(255,255,255,0.05); padding: clamp(8px, 2vw, 12px); border-radius: 12px; margin-bottom: 8px; }
+        .bet-section h3 { color: #ffd700; margin-bottom: 8px; font-size: clamp(0.9rem, 3vw, 1rem); }
+        
+        .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(4px, 1vw, 6px); margin-bottom: clamp(4px, 1vw, 6px); }
+        .bet-btn { padding: clamp(8px, 2vw, 12px) 3px; border: none; border-radius: 10px; font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: bold; cursor: pointer; width: 100%; min-height: clamp(45px, 10vw, 55px); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        .bet-btn:hover:not(.disabled) { transform: scale(1.02); }
+        .bet-btn .bet-amount { font-size: clamp(0.7rem, 2vw, 0.8rem); color: #ffd700; display: none; margin-top: 2px; }
+        .bet-btn.has-bet .bet-amount { display: block; }
+        .bet-btn.red { background: linear-gradient(135deg, #cc0000, #ff4444); color: white; }
+        .bet-btn.black { background: linear-gradient(135deg, #1a1a1a, #444444); color: white; }
+        .bet-btn.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; }
+        .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
+        .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
+        .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+        .bet-btn.disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .bet-btn .multi { display: block; font-size: clamp(0.6rem, 1.8vw, 0.65rem); opacity: 0.8; }
+        .bet-btn.selected { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,215,0,0.8); border: 2px solid #ffd700; }
+        
+        .quick-bet { display: flex; gap: clamp(4px, 1vw, 6px); margin-bottom: 8px; justify-content: center; flex-wrap: wrap; }
+        .quick-bet button { padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 15px); background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 0.9rem); font-weight: bold; }
+        .quick-bet button:hover { background: #444; }
+        .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
+        
+        .number-bet { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; transition: all 0.2s; }
+        .number-bet input:focus { border-color: #ffd700; outline: none; }
+        .number-bet input:disabled { opacity: 0.4; cursor: not-allowed; }
+        .number-bet input.active { border-color: #ffd700; background: #3a3a5a; }
+        .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
+        .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
+        .number-bet button:hover:not(.disabled) { background: #ffdd44; }
+        
+        .bets-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 8px; border-radius: 12px; margin: 6px 0; transition: all 0.3s ease; flex-shrink: 0; }
+        .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
+        .title-shine { position: relative; overflow: hidden; display: inline-block; }
+        .title-shine::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent); animation: title-shine-slide 1.5s linear infinite; }
+        @keyframes title-shine-slide {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+        .current-bets-box h4 { color: #00ff88; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; }
+        @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
+        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; width: 316px; height: 180px; overflow-y: auto; flex-shrink: 0; box-sizing: border-box; }
+        .history-bets-box h4 { color: #888; margin-bottom: 5px; font-size: 0.85rem; }
+        
+        .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
+        .bet-row.total { border-top: 1px dashed #444; margin-top: 5px; padding-top: 8px; font-weight: bold; }
+        .history-row { padding: 5px 0; font-size: clamp(0.75rem, 2.2vw, 0.85rem); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-row:last-child { border-bottom: none; }
+        .history-row .result-num { font-weight: bold; margin-right: 5px; }
+        .history-row.win { color: #00ff00; }
+        .history-row.lose { color: #ff6666; }
+        
+        .auth-section { background: rgba(255,255,255,0.1); padding: clamp(15px, 4vw, 25px); border-radius: 15px; text-align: center; }
+        .auth-tabs { display: flex; margin-bottom: 15px; }
+        .auth-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; color: #aaa; cursor: pointer; font-size: clamp(0.9rem, 3vw, 1rem); }
+        .auth-tab:first-child { border-radius: 10px 0 0 10px; }
+        .auth-tab:last-child { border-radius: 0 10px 10px 0; }
+        .auth-tab.active { background: #ffd700; color: #1a1a2e; font-weight: bold; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-form input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: clamp(0.9rem, 3vw, 1rem); text-align: center; }
+        .auth-form input:focus { border-color: #ffd700; outline: none; }
+        .auth-form button { width: 100%; padding: clamp(12px, 3vw, 14px); background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; }
+        .auth-form button:hover { background: linear-gradient(135deg, #ffdd44, #ffa020); }
+        .auth-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .auth-msg { color: #ff6666; margin-top: 10px; font-size: 0.9rem; }
+        .auth-msg.success { color: #00ff00; }
+        .auth-section p { color: #aaa; margin-bottom: 15px; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
+        
+        .no-bets { color: #666; font-style: italic; font-size: clamp(0.8rem, 2.5vw, 0.85rem); text-align: center; padding: 8px; }
+        
+        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; width: 316px; height: 45px; box-sizing: border-box; }
+        .game-tab { width: 155.5px; height: 45px; padding: 0; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .game-tab.active { background: #ffd700; color: #1a1a2e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .leave-btn { width: 100%; padding: 12px; background: rgba(255,100,100,0.2); border: 2px solid #ff6666; border-radius: 10px; color: #ff6666; font-size: clamp(0.9rem, 3vw, 1rem); font-weight: bold; cursor: pointer; margin-top: 8px; }
+        .leave-btn:hover { background: rgba(255,100,100,0.4); }
+        
+        .logout-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+        
+        .balance.low span { color: #ff6666 !important; animation: blink 1s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .broke-overlay.show { display: flex; }
+        .broke-overlay > div { text-align: center; padding: clamp(20px, 5vw, 40px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: clamp(280px, 90vw, 320px); box-shadow: 0 0 30px rgba(255,100,100,0.3); }
+        .broke-overlay h2 { color: #ff6666; font-size: clamp(1.5rem, 5vw, 2rem); margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
+        .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: clamp(1rem, 3vw, 1.1rem); line-height: 1.6; }
+        .broke-overlay button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
+        .broke-overlay button:hover { transform: scale(1.05); }
+
+        /* 結算彈窗 */
+        .result-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; justify-content: center; align-items: center; }
+        .result-popup-overlay.show { display: flex; }
+        .result-popup-box { text-align: center; padding: clamp(25px, 6vw, 45px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 20px; max-width: clamp(280px, 90vw, 350px); box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+        .result-popup-box p { font-size: clamp(1.2rem, 4vw, 1.5rem); margin-bottom: 25px; line-height: 1.6; font-weight: bold; }
+        .result-popup-box button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ffd700, #ffaa00); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,215,0,0.4); transition: transform 0.2s; }
+        .result-popup-box button:hover { transform: scale(1.05); }
+        
+        .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
+        .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
+        .modal .guide-step p strong { color: #fff; }
+
+        /* 桌面設備隱藏滾動条（滑鼠用戶不需要） */
+        @media (hover: hover) and (pointer: fine) {
+            * {
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+            }
+            *::-webkit-scrollbar {
+                display: none; /* Chrome/Safari/Opera */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
+    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+        🎁 <span id="broadcastText"></span>
+    </div>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
+    
+    <div class="container">
+        <div class="top-bar" id="topBar" style="display:none;">
+            <span id="playerNameDisplay"></span><span id="balanceBox">💰 <span id="balance">1000</span></span>
+        </div>
+        
+<!-- 登入/註冊區塊 -->
+        <div class="auth-section" id="authSection">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showAuth('login')">登入</button>
+                <button class="auth-tab" onclick="showAuth('register')">註冊</button>
+            </div>
+            <div class="auth-form active" id="loginForm">
+                <input type="text" id="loginUsername" placeholder="帳號">
+                <input type="password" id="loginPassword" placeholder="密碼">
+                <button onclick="doLogin()">登入</button>
+                <div class="auth-msg" id="loginMsg"></div>
+            </div>
+            <div class="auth-form" id="registerForm">
+                <input type="text" id="regUsername" placeholder="帳號">
+                <input type="password" id="regPassword" placeholder="密碼">
+                <input type="text" id="regRealname" placeholder="姓名 *" style="border-color:#ff9966;">
+                <input type="tel" id="regPhone" placeholder="電話 *" style="border-color:#ff9966;">
+                <input type="email" id="regEmail" placeholder="信箱" required>
+                <input type="text" id="regInviteCode" placeholder="邀請碼（選填）">
+                <button onclick="doRegister()">註冊</button>
+                <div class="auth-msg" id="regMsg"></div>
+
+            </div>
+        </div>
+        
+        <!-- 遊戲區塊 -->
+        <div class="game-section" id="gameSection" style="display:none;">
+            
+            <div class="game-tabs">
+                <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
+                <button class="game-tab" onclick="showTab('leaderboard')">🏆 排行</button>
+                <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
+                <button class="game-tab" onclick="showTab('tasks')">📋 任務</button>
+            </div>
+            
+            <!-- 遊戲 Tab -->
+            <div class="tab-content active" id="gameTab">
+                <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
+                <div id="mysteryPoolDisplay" style="text-align:center;color:#ffd700;font-size:0.9rem;margin-top:4px;display:none;">🎁 神秘彩池：$<span id="poolAmount">0</span></div>
+                <div class="result-badge" id="resultBadge" style="display:none"></div>
+                
+                <div class="wheel-container">
+                    <div class="wheel-border"></div>
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel-outer">
+                        <div class="wheel" id="wheel">
+                            <canvas id="wheelCanvas" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bet-section">
+                    <h3>💰 選擇下注</h3>
+                    
+                    <div class="quick-bet">
+                        <button onclick="setQuickAmount(10)">10</button>
+                        <button onclick="setQuickAmount(50)">50</button>
+                        <button onclick="setQuickAmount(100)" class="active">100</button>
+                        <button onclick="setQuickAmount(500)">500</button>
+                    </div>
+                    
+                    <!-- 自行輸入下注金額（放在快捷鍵旁邊） -->
+                    <div class="custom-amount-area" id="customAmountArea" style="margin-top:8px; text-align:center;">
+                        <input type="number" id="customBetAmt" placeholder="自行輸入金額" min="10" style="width:100px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #00c6ff; border-radius:8px; padding:8px; font-size:0.9rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        <span style="color:#fff; font-size:0.8rem;">最小$10</span>
+                    </div>
+                    
+                    <div class="bet-buttons" id="betButtons">
+                        <button class="bet-btn red disabled" onclick="placeBet('color', quickAmount, 'red')">🔴 紅<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn black disabled" onclick="placeBet('color', quickAmount, 'black')">⚫ 黑<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn gold" onclick="placeMysteryBet()">⭐ 0<span class="multi">神秘</span><span class="bet-amount"></span></button>
+                    </div>
+                    <div class="bet-buttons" id="betButtons2">
+                        <button class="bet-btn odd disabled" onclick="placeBet('odd_even', quickAmount, 'odd')">單數<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn even disabled" onclick="placeBet('odd_even', quickAmount, 'even')">雙數<span class="multi">2x</span><span class="bet-amount"></span></button>
+                        <button class="bet-btn number-btn disabled" onclick="selectNumberBet()">📌 數字<span class="multi">10x</span><span class="bet-amount"></span></button>
+                    </div>
+                    
+                    <div class="number-bet" id="numberBetArea" style="margin-top:5px; flex-wrap:wrap; justify-content:center; display: none;">
+                        <input type="number" id="betNum" placeholder="填數字(0-36)" min="0" max="36" disabled style="width:70px; background:rgba(0,0,0,0.3); color:#fff; border:2px solid #ffd700; border-radius:8px; padding:8px; font-size:0.9rem; text-align:center;">
+                        <button id="numberBetBtn" class="disabled" onclick="placeNumberBet()" style="padding:10px 18px; background:#ffd700; border:none; border-radius:8px; font-weight:bold; font-size:0.9rem; color:#1a1a2e;">✔ 確認</button>
+                    </div>
+                </div>
+                
+                <div class="current-bets-box">
+                    <h4>🎯 本局下注 <span id="betTotal">0</span></h4>
+                    <div id="currentBetsList"><span class="no-bets">點擊上方按鈕下注</span></div>
+                </div>
+            </div>
+            
+            <!-- 歷史 Tab -->
+            <div class="tab-content" id="historyTab">
+                <div class="history-bets-box" style="max-height:none;">
+                    <h4>📜 遊戲歷史記錄</h4>
+                    <div id="historyBetsList"><span class="no-bets">尚無記錄</span></div>
+                </div>
+            </div>
+            
+            <!-- 排行 Tab -->
+            <div class="tab-content" id="leaderboardTab">
+                <div style="padding:10px;text-align:center;">
+                    <h4 style="color:#ffd700;margin-bottom:12px;">🏆 排行榜</h4>
+                    <div id="leaderboardList" style="text-align:left;">載入中...</div>
+                    <button onclick="loadLeaderboard()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.9rem;margin-top:10px;">重新整理</button>
+                </div>
+            </div>
+            <div class="tab-content" id="tasksTab">
+                <div style="padding:10px;">
+                    <h4 style="color:#ffd700;margin-bottom:12px;text-align:center;">📋 每日任務</h4>
+                    
+                    <!-- 任務列表 -->
+                    <div id="tasksList" style="text-align:left;">載入中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="broke-overlay" id="brokeOverlay">
+        <div>
+            <h2>💸 餘額不足</h2>
+            <p>您的餘額不足，無法繼續遊戲。</p>
+            <p style="color:#ffd700;font-size:0.9rem;">需要更多硬幣嗎？</p>
+            <p style="color:#00c864;font-size:1rem;margin-top:10px;">📱 聯繫 LINE：<strong>@778ryayw</strong></p>
+            <p style="color:#aaa;font-size:0.85rem;margin-top:5px;">（直接點擊下方按鈕開啟LINE聯繫）</p>
+            <button onclick="window.open('https://line.me/ti/p/@778ryayw','_blank')" style="margin-top:10px;padding:12px 25px;background:#00c864;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:white;">💬 聯繫LINE</button>
+            <button onclick="hideBrokeOverlay()" style="margin-top:10px;padding:10px 20px;background:rgba(255,255,255,0.1);border:1px solid #666;border-radius:20px;font-size:0.9rem;cursor:pointer;color:#aaa;">稍後再說</button>
+        </div>
+    </div>
+
+    <!-- 結算彈窗 -->
+    <div class="result-popup-overlay" id="resultPopup">
+        <div class="result-popup-box">
+            <p id="resultPopupMsg"></p>
+            <button id="resultPopupBtn">確定</button>
+        </div>
+    </div>
+
+    <!-- 新手導引彈窗 -->
+    <div class="modal-overlay" id="guideModal">
+        <div class="modal">
+            <h2>🎮 新手導引</h2>
+            
+            <div class="guide-step" id="guideStep1">
+                <h3>📌 第一步：選擇下注金額</h3>
+                <p>在下方可以看到快捷金額按鈕：<br><strong>10 / 50 / 100 / 500</strong></p>
+                <p>如果想要其他金額，<br>可以自行輸入在「自行輸入金額」欄位</p>
+                <p style="margin-top:10px;color:#ffd700;">💡 快捷金額和自訂金額都可以用</p>
+            </div>
+            
+            <div class="guide-step" id="guideStep2" style="display:none;">
+                <h3>📌 第二步：選擇下注項目</h3>
+                <p>選擇你要押的項目：</p>
+                <p>🔴 <strong>紅</strong> / ⚫ <strong>黑</strong> - 2倍獎金（18個數字）</p>
+                <p>⭐ <strong>神秘</strong>（0）- 神秘禮物</p>
+                <p>單 / 雙 - 2倍獎金（各18個數字）</p>
+                <p>📌 <strong>數字</strong> - 10倍獎金（0-36）</p>
+                <p style="margin-top:10px;color:#ffd700;">💡 點擊想押的項目完成下注</p>
+            </div>
+            
+            <div class="guide-step" id="guideStep3" style="display:none;">
+                <h3>📌 第三步：等待開獎</h3>
+                <p>✅ 下注完成後，等待開獎時間結束</p>
+                <p>🎰 轉盤停止後，結果自動顯示</p>
+                <p>💰 猜對獲得獎金，猜錯沒收本金</p>
+                <p style="margin-top:10px;">🔄 可以持續下注，累積獎金！</p>
+                <p style="margin-top:10px;color:#aaa;">有任何問題，點擊右上角 ❓ 查看說明</p>
+            </div>
+            
+            <button id="guideNextBtn" onclick="nextGuide(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一步</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal" style="border-color:#ff6b6b;">
+            <h2 style="color:#ff6b6b;">🚪 確認離開</h2>
+            <p style="text-align:center;font-size:1.1rem;margin:20px 0;">確定要離開遊戲嗎？</p>
+            <div style="display:flex;gap:10px;">
+                <button onclick="confirmLogout()" style="flex:1;padding:12px;background:#ff6b6b;border:none;border-radius:10px;font-size:1rem;font-weight:bold;color:white;cursor:pointer;">確定離開</button>
+                <button onclick="cancelLogout()" style="flex:1;padding:12px;background:#444;border:none;border-radius:10px;font-size:1rem;font-weight:bold;color:white;cursor:pointer;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <h2>🎰 T-LO大轉盤 玩法</h2>
+            
+            <div id="helpPage1">
+                <h3>📌 遊戲流程</h3>
+                <p>1. 下注時間結束後開始旋轉</p>
+                <p>2. 轉盤停止後，指針指的數字就是結果</p>
+                <p>3. 猜對即可獲得獎金</p>
+                
+                <h3>💰 下注方式</h3>
+                <p>選擇你要下注的金額（快捷：10 / 50 / 100 / 500）</p>
+                <p>或自行輸入金額下注</p>
+                
+                <h3>🔧 工具按鈕</h3>
+                <p>☰ 玩家專區 - 整合所有玩家功能（反饋/說明/影片/邀請/登入）</p>
+                <p>🚪 離開遊戲 - 退出並返回登入畫面</p>
+                <p>🔊 / 🔇 靜音 - 開關背景音樂與音效</p>
+                <p>🏆 排行榜 - 查看 TOP 15 玩家積分</p>
+                <p>📜 歷史 - 查看近期下注與結算紀錄</p>
+                <p>📋 任務 - 每日挑戰與獎勵領取</p>
+                
+                <button onclick="showHelpPage(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一頁 →</button>
+            </div>
+            
+            <div id="helpPage2" style="display:none;">
+                <h3>🎯 下注類型</h3>
+                <div class="bet-demo">
+                    <span class="red">🔴 紅色</span> - 2倍獎金（18個數字）
+                </div>
+                <div class="bet-demo">
+                    <span class="black">⚫ 黑色</span> - 2倍獎金（18個數字）
+                </div>
+                <div class="bet-demo">
+                    <span class="gold">⭐ 神秘（數字0）</span> - 神秘禮物
+                </div>
+                <div class="bet-demo">
+                    <span class="odd">單數</span> - 2倍獎金（1,3,5...35）
+                </div>
+                <div class="bet-demo">
+                    <span class="even">雙數</span> - 2倍獎金（2,4,6...36）
+                </div>
+                <div class="bet-demo">
+                    <span class="num">📌 數字</span> - 10倍獎金（0-36）
+                    <p style="color:#aaa;font-size:0.85rem;margin:5px 0 0 20px;">→ 先點「📌 數字」再輸入數字（0-36）</p>
+                </div>
+                
+                <div style="display:flex;gap:10px;margin-top:15px;">
+                    <button onclick="showHelpPage(1)" style="flex:1;padding:10px;background:#444;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;color:white;cursor:pointer;">← 上一頁</button>
+                    <button onclick="hideHelp()" style="flex:1;padding:10px;background:#ffd700;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">知道了！</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 玩家專區選單 -->
+    <div class="modal-overlay" id="playerMenuModal">
+        <div class="modal" style="max-width:320px;">
+            <h2>🎯 玩家專區</h2>
+            
+            <button onclick="showFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                📝 提供反饋
+            </button>
+            
+            <button onclick="showHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                ❓ 遊戲說明
+            </button>
+            
+            <button onclick="openVideoPopup();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                🎬 看影片領獎勵
+            </button>
+            
+            <button onclick="showMyInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                👥 邀請碼
+            </button>
+            
+            <button onclick="showLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                🔥 連續登入
+            </button>
+            
+            <button onclick="showLevelInfo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                🎖️ 等級
+            </button>
+            
+            <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('Roulette script starting...');
+        
+        // ========== 音樂與音效系統 ==========
+        let audioCtx = null;
+        let bgMusicGain = null;
+        let masterGain = null;
+        let bgMusicPlaying = false;
+        let bgMusicTimer = null;
+        let soundEnabled = true;
+        let bgmAudio = null;
+        let bgMusicBlocked = false;
+        
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 1;
+            masterGain.connect(audioCtx.destination);
+            bgMusicGain = audioCtx.createGain();
+            bgMusicGain.gain.value = 0.15;
+            bgMusicGain.connect(masterGain);
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            if (btn) {
+                btn.textContent = soundEnabled ? '🔊' : '🔇';
+            }
+            // 立即靜音/取消靜音
+            if (masterGain) {
+                masterGain.gain.setValueAtTime(soundEnabled ? 1 : 0, audioCtx.currentTime);
+            }
+            if (!soundEnabled) {
+                bgMusicPlaying = false;
+                if (bgMusicTimer) clearTimeout(bgMusicTimer);
+                if (bgmAudio) { bgmAudio.pause(); }
+            } else if (myName) {
+                // 重新啟動背景音樂
+                bgMusicPlaying = false;
+                if (bgMusicTimer) clearTimeout(bgMusicTimer);
+                startBgMusic();
+            }
+        }
+        
+        // 全服公告廣播
+        function showBroadcast(message) {
+            const el = document.getElementById('mysteryBroadcast');
+            const text = document.getElementById('broadcastText');
+            if (!el || !text) return;
+            text.textContent = message;
+            el.style.display = 'block';
+            el.style.animation = 'none';
+            void el.offsetWidth;
+            el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        // 播放音效（通用）
+        async function playSound(type) {
+            if (!soundEnabled) return;
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') {
+                try { await audioCtx.resume(); } catch(e) {}
+                // 如果resume失敗，等用戶互動後再試
+                if (audioCtx.state !== 'running') {
+                    console.log('AudioContext still suspended, waiting for user interaction');
+                    return;
+                }
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            const now = audioCtx.currentTime;
+            
+            if (type === 'bet') {
+                // 下注音效：短促的嗶聲
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'tick') {
+                // 轉盤滴答聲
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            } else if (type === 'win') {
+                // 贏錢音效：上升音調
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'lose') {
+                // 輸錢音效：下降音調
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'spin') {
+                // 開始旋轉音效
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        }
+        
+        // 背景音樂（簡單的 Ambient 循環）
+        function startBgMusic() {
+            if (!soundEnabled) return;
+            // Use HTML Audio which has simpler autoplay rules
+            if (!bgmAudio) {
+                bgmAudio = new Audio();
+                bgmAudio.src = 'bg-music.mp3';
+                bgmAudio.loop = true;
+                bgmAudio.volume = 0.4;
+            }
+            const playPromise = bgmAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    bgMusicPlaying = true;
+                    bgMusicBlocked = false;
+                }).catch(e => {
+                    console.log('BGM autoplay blocked, waiting for interaction');
+                    bgMusicBlocked = true;
+                    bgMusicPlaying = false;
+                });
+            }
+        }
+        
+        function stopBgMusic() {
+            if (bgmAudio) {
+                bgmAudio.pause();
+                bgmAudio.currentTime = 0;
+            }
+            bgMusicPlaying = false;
+        }
+        
+        // 點擊音效（使用者互動時）
+        function playClickSound() {
+            if (!audioCtx) initAudio();
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = 1200;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.03);
+        }
+        
+        // 背景音樂在登入後啟動（見 login success 和 session restore）
+        // 如果 audio 被瀏覽器封鎖，等使用者互動後再播
+        document.addEventListener('click', () => {
+            if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
+                startBgMusic();
+            }
+        }, { passive: true });
+        
+        // 也監聽 touchstart（手機用戶）
+        document.addEventListener('touchstart', () => {
+            if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
+                startBgMusic();
+            }
+        }, { passive: true });
+        
+        // 萬用音頻解鎖：任何互動都嘗試恢復 AudioContext
+        ['click', 'touchstart', 'keydown', 'mousemove'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        console.log('AudioContext resumed via', evt);
+                    });
+                }
+            }, { passive: true });
+        });
+        
+        // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
+        const wheelNumbers = [
+            { num: 0, color: 'gold' },
+            { num: 32, color: 'red' }, { num: 15, color: 'black' }, { num: 19, color: 'red' }, { num: 4, color: 'black' },
+            { num: 21, color: 'red' }, { num: 2, color: 'black' }, { num: 25, color: 'red' }, { num: 17, color: 'black' },
+            { num: 34, color: 'red' }, { num: 6, color: 'black' }, { num: 27, color: 'red' }, { num: 13, color: 'black' },
+            { num: 36, color: 'red' }, { num: 11, color: 'black' }, { num: 30, color: 'red' }, { num: 8, color: 'black' },
+            { num: 23, color: 'red' }, { num: 10, color: 'black' }, { num: 5, color: 'red' }, { num: 24, color: 'black' },
+            { num: 16, color: 'red' }, { num: 33, color: 'black' }, { num: 1, color: 'red' }, { num: 20, color: 'black' },
+            { num: 14, color: 'red' }, { num: 31, color: 'black' }, { num: 9, color: 'red' }, { num: 22, color: 'black' },
+            { num: 18, color: 'red' }, { num: 29, color: 'black' }, { num: 7, color: 'red' }, { num: 28, color: 'black' },
+            { num: 12, color: 'red' }, { num: 35, color: 'black' }, { num: 3, color: 'red' }, { num: 26, color: 'black' }
+        ];
+        
+        // 檢查是否已登入
+        const savedUsername = localStorage.getItem('rouletteUsername');
+        const savedBalance = localStorage.getItem('rouletteBalance');
+        
+        // 初始化變數
+        let myName = savedUsername || '';
+        let myBalance = savedBalance ? parseInt(savedBalance) : 1000;
+        let gamePhase = 'waiting', lastResult = null;
+        let currentBets = [];
+        console.log('currentBets initialized:', JSON.stringify(currentBets));
+        let historyBets = [];
+        let quickAmount = 100;
+        let pollInterval;
+        let lastProcessedSpinId = 0;
+        let selectedBets = []; // Track which bet options are selected
+        
+        if (savedUsername) {
+            // 已登入，先從伺服器拿最新分數再恢復 session
+            fetch('/api/roulette/player/' + encodeURIComponent(savedUsername))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.player && data.player.score !== undefined) {
+                        myBalance = data.player.score;
+                        localStorage.setItem('rouletteBalance', myBalance);
+                        console.log('✅ 從伺服器恢復分數:', myBalance);
+                    } else if (savedBalance) {
+                        myBalance = parseInt(savedBalance);
+                    }
+                    document.getElementById('balance').textContent = myBalance;
+                })
+                .catch(() => {
+                    if (savedBalance) myBalance = parseInt(savedBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                });
+            console.log('Restoring session for:', savedUsername);
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('topBar').style.display = 'flex';
+            document.getElementById('resultDisplay').style.display = 'block';
+            document.getElementById('gameSection').style.display = 'block';
+            const nameEl2 = document.getElementById('playerNameDisplay');
+            if (nameEl2) nameEl2.textContent = savedUsername || '';
+            loadPlayerLevel();
+            drawWheel();
+            updateCurrentBetsUI();
+            loadHistoryFromDB();
+            pollStatus();
+            pollInterval = setInterval(pollStatus, 1000);
+            // 通知伺服器玩家上線
+            fetch('/api/roulette/ping', { method: 'POST' });
+            
+            // 第一次使用顯示新手導引（如果這個帳號還沒看過）
+            const guideKey = 'rouletteGuided_' + myName;
+            if (!localStorage.getItem(guideKey)) {
+                console.log('=== SHOWING GUIDE for user:', myName, '===');
+                setTimeout(() => showGuide(), 1000);
+            }
+        }
+        
+        function showAuth(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.auth-tab:nth-child(1)').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.auth-tab:nth-child(2)').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+        
+        async function doLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const msg = document.getElementById('loginMsg');
+            
+            if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
+            
+            try {
+                const res = await fetch('/api/roulette/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    console.log('Login success, setting up game UI');
+                    myName = username;
+                    myBalance = data.player.score;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    localStorage.setItem('rouletteUsername', username);
+                    document.getElementById('balance').textContent = myBalance;
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('topBar').style.display = 'flex';
+                    const nameEl = document.getElementById('playerNameDisplay');
+                    if (nameEl) nameEl.textContent = username || '';
+                    document.getElementById('resultDisplay').style.display = 'block';
+                    document.getElementById('gameSection').style.display = 'block';
+                    console.log('Calling drawWheel...');
+                    loadHistoryFromDB();
+                    drawWheel();
+                    console.log('drawWheel called, setting up polling');
+                    currentBets = [];
+                    historyBets = [];
+                    lastProcessedSpinId = 0;
+                    updateCurrentBetsUI();
+                    updateHistoryUI();
+                    console.log('Calling initial pollStatus...');
+                    pollStatus();
+                    console.log('Setting up poll interval');
+                    pollInterval = setInterval(pollStatus, 1000);
+                    
+                    // 每日登入獎勵提示
+                    if (data.player.dailyBonus > 0) {
+                        setTimeout(() => {
+                            showBonusPopup('🎁 每日登入獎勵！', '+' + data.player.dailyBonus + ' 分');
+                            vibrateDevice([200, 100, 200]);
+                        }, 500);
+                    }
+                    
+                    // 登入後顯示活動公告（每次都顯示）
+                    setTimeout(() => showPromotionAnnounce(), 1500);
+                    
+                    // 第一次登入顯示新手導引（如果這個帳號還沒看過）
+                    const guideKey = 'rouletteGuided_' + username;
+                    if (!localStorage.getItem(guideKey)) {
+                        setTimeout(() => showGuide(), 1000);
+                    }
+                    
+                    // 載入玩家階級稱號
+                    loadPlayerLevel();
+                } else {
+                    msg.textContent = data.message;
+                    msg.className = 'auth-msg';
+                }
+            } catch(e) {
+                console.log('Login fetch error:', e.message);
+                msg.textContent = '連線失敗: ' + e.message;
+                msg.className = 'auth-msg';
+            }
+        }
+        
+        async function doRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const realname = document.getElementById('regRealname').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const inviteCode = document.getElementById('regInviteCode').value.trim();
+            const msg = document.getElementById('regMsg');
+            
+            if (!username || !password) { msg.textContent = '請填寫帳號和密碼'; msg.className = 'auth-msg'; return; }
+            if (!realname) { msg.textContent = '請填寫姓名'; msg.className = 'auth-msg'; return; }
+            if (!phone) { msg.textContent = '請填寫電話'; msg.className = 'auth-msg'; return; }
+            
+            try {
+                const res = await fetch('/api/roulette/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, realname, phone, email, inviteCode })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    msg.textContent = '註冊成功！請登入';
+                    msg.className = 'auth-msg success';
+                    setTimeout(() => showAuth('login'), 1500);
+                } else {
+                    msg.textContent = data.message;
+                    msg.className = 'auth-msg';
+                }
+            } catch(e) {
+                msg.textContent = '連線失敗';
+                msg.className = 'auth-msg';
+            }
+        }
+        
+
+        async function loadTasks() {
+            console.log('loadTasks called, myName:', myName);
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/daily-tasks?username=' + encodeURIComponent(myName));
+                const data = await res.json();
+                console.log('loadTasks API response:', JSON.stringify(data));
+                if (!data.success) return;
+                
+                const tasksList = document.getElementById('tasksList');
+                console.log('tasksList element:', tasksList);
+                let html = '';
+                const tasks = data.tasks || [];
+                const stats = data.stats || {};
+                for (const t of tasks) {
+                    const progress = t.id === 'bet_10' ? stats.betCount + '/10' :
+                                    t.id === 'bet_50' ? stats.betCount + '/50' :
+                                    t.id === 'bet_100' ? stats.betCount + '/100' :
+                                    t.id === 'win_5' ? stats.winsCount + '/5' :
+                                    t.id === 'mystery_1' ? stats.mysteryBets + '/1' : '';
+                    const bg = (t.completed && !t.alreadyClaimed) ? 'linear-gradient(135deg,#1a472a,#2d5a3d)' : (t.alreadyClaimed ? 'linear-gradient(135deg,#2d5a3d,#1a472a)' : 'linear-gradient(135deg,#1a1a2e,#16213e)');
+                    const btn = (t.completed && !t.alreadyClaimed) ? 
+                        '<button onclick="claimTask(\'' + t.id + '\')" style="padding:6px 12px;background:#ffd700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.8rem;">領取 $' + t.reward + '</button>' :
+                        (t.alreadyClaimed ? 
+                            '<button disabled style="padding:6px 12px;background:#1a472a;border:none;border-radius:6px;color:#0f0;font-size:0.8rem;cursor:not-allowed;">已領取 ✅</button>' :
+                            '<button disabled style="padding:6px 12px;background:#555;border:none;border-radius:6px;color:#888;font-size:0.8rem;cursor:not-allowed;">未完成</button>');
+                    html += '<div style="background:' + bg + ';padding:10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">' +
+                            '<div><div style="color:#fff;font-weight:bold;">' + t.name + '</div><div style="color:#aaa;font-size:0.8rem;">' + t.desc + '</div><div style="color:#ffd700;font-size:0.75rem;margin-top:3px;">進度：' + progress + '</div></div>' + btn + '</div>';
+                }
+                tasksList.innerHTML = html;
+            } catch(e) { console.log('載入任務失敗:', e); }
+        }
+        
+        async function claimLogin() {
+            if (!myName) return;
+            const btn = document.getElementById('claimStreakBtn');
+            const msg = document.getElementById('streakMsg');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch('/api/roulette/claim-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.textContent = '✅ ' + data.message;
+                    msg.style.color = '#0f0';
+                    myBalance = data.newScore || myBalance;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                    showToast('✅ ' + data.message, 'success');
+                    setTimeout(loadTasks, 500);
+                } else {
+                    msg.textContent = data.message || '已領取';
+                    msg.style.color = '#ff6b6b';
+                    if (btn) btn.disabled = false;
+                }
+            } catch(e) {
+                if (msg) { msg.textContent = '連線失敗'; msg.style.color = '#ff6b6b'; }
+                if (btn) btn.disabled = false;
+                showToast('連線失敗', 'error');
+            }
+        }
+        
+        async function claimTask(taskId) {
+            if (!myName) return;
+            const btn = event && event.target ? event.target.closest('button') : null;
+            if (btn) { btn.disabled = true; }
+            let res;
+            try {
+                res = await fetch('/api/roulette/claim-task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, taskId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    myBalance = data.newScore || myBalance;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                    showToast('✅ 領取成功！+$' + (data.reward || 0), 'success');
+                    setTimeout(loadTasks, 500);
+                    // 更新按鈕為已領取狀態
+                    if (btn) {
+                        btn.textContent = '已領取 ✅';
+                        btn.style.background = '#1a472a';
+                        btn.style.color = '#0f0';
+                        btn.style.borderColor = '#0f0';
+                        btn.disabled = true;
+                    }
+                } else {
+                    showToast(data.message || '領取失敗', 'error');
+                    if (btn) {
+                        btn.textContent = '已領取';
+                        btn.style.background = '#555';
+                        btn.style.color = '#888';
+                        btn.disabled = true;
+                    }
+                }
+            } catch(e) {
+                console.log('❌ claimTask ERROR:', e.message, '| status:', res ? res.status : 'N/A', '| url:', res ? res.url : window.location.href);
+                showToast('連線失敗：' + (e.message || '未知錯誤'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; }
+            }
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.game-tab').forEach((t, i) => {
+                t.classList.remove('active');
+                if ((tab === 'game' && i === 0) || (tab === 'leaderboard' && i === 1) || (tab === 'history' && i === 2) || (tab === 'tasks' && i === 3)) t.classList.add('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tab === 'game') document.getElementById('gameTab').classList.add('active');
+            else if (tab === 'leaderboard') { document.getElementById('leaderboardTab').classList.add('active'); loadLeaderboard(); }
+            else if (tab === 'history') document.getElementById('historyTab').classList.add('active');
+            else if (tab === 'tasks') { document.getElementById('tasksTab').classList.add('active'); loadTasks(); }
+        }
+        
+        async function submitFeedback() {
+            const text = document.getElementById('feedbackText').value.trim();
+            const msg = document.getElementById('feedbackMsg');
+            if (!text) {
+                msg.textContent = '請輸入意見內容';
+                msg.style.color = '#ff6666';
+                return;
+            }
+            try {
+                const res = await fetch('/api/roulette/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, feedback: text })
+                });
+                let data;
+                try {
+                    data = await res.json();
+                } catch(e) {
+                    console.log('JSON parse error:', e);
+                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                    showToast('連線失敗', 'error');
+                    return;
+                }
+                if (data.success) {
+                    msg.textContent = '✅ 感謝您的反饋！';
+                    msg.style.color = '#00ff00';
+                    document.getElementById('feedbackText').value = '';
+                } else {
+                    msg.textContent = '發送失敗，請稍後再試';
+                    msg.style.color = '#ff6666';
+                }
+            } catch(e) {
+                msg.textContent = '發送失敗，請稍後再試';
+                msg.style.color = '#ff6666';
+            }
+        }
+        
+        async function loadHistoryFromDB() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/history/' + myName);
+                const data = await res.json();
+                historyBets = (data.history || []).map(row => ({
+                    result: row.result,
+                    color: row.color,
+                    win: row.win === 1,
+                    amount: row.amount
+                })).slice(0, 5); // Only keep 5 records for UI
+                updateHistoryUI();
+            } catch(e) {
+                console.log('載入歷史失敗:', e);
+            }
+        }
+        
+        function doLogout() {
+            if (pollInterval) clearInterval(pollInterval);
+            myName = '';
+            myBalance = 1000;
+            localStorage.removeItem('rouletteUsername');
+            localStorage.removeItem('rouletteBalance');
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('topBar').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'none';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+            showAuth('login');
+        }
+        
+        function leaveGame() {
+            // 顯示確認彈窗
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) {
+                modal.classList.add('show');
+            } else {
+                // 萬一 modal 不存在，直接登出
+                doLogout();
+            }
+        }
+        
+        function confirmLogout() {
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) modal.classList.remove('show');
+            doLogout();
+        }
+        
+        function cancelLogout() {
+            const modal = document.getElementById('logoutConfirmModal');
+            if (modal) modal.classList.remove('show');
+        }
+        
+        function setQuickAmount(amt) {
+            quickAmount = amt;
+            document.querySelectorAll('.quick-bet button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            // 清除自定義金額，讓快捷金額立即生效
+            const customInput = document.getElementById('customBetAmt');
+            if (customInput) customInput.value = '';
+        }
+        
+        function drawWheel() {
+            console.log('drawWheel called');
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) { console.log('Canvas not found!'); return; }
+            const ctx = canvas.getContext('2d');
+            const centerX = 150;
+            const centerY = 150;
+            const radius = 140;
+            const slotAngle = (2 * Math.PI) / 37;
+            
+            ctx.clearRect(0, 0, 300, 300);
+            
+            wheelNumbers.forEach((item, i) => {
+                const startAngle = i * slotAngle - Math.PI / 2;
+                const endAngle = startAngle + slotAngle;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = item.color === 'red' ? '#cc0000' : (item.color === 'black' ? '#1a1a1a' : (item.color === 'gold' ? '#ffd700' : '#009900'));
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                const textAngle = startAngle + slotAngle / 2;
+                const textRadius = radius * 0.85;
+                const textX = centerX + Math.cos(textAngle) * textRadius;
+                const textY = centerY + Math.sin(textAngle) * textRadius;
+                
+                ctx.save();
+                ctx.translate(textX, textY);
+                ctx.rotate(textAngle + Math.PI / 2);
+                ctx.fillStyle = 'white';
+                ctx.font = item.num === 0 ? 'bold 14px Arial' : 'bold 11px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const displayText = item.num === 0 ? '★' : item.num;
+                ctx.fillText(displayText, 0, 0);
+                ctx.restore();
+            });
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffd700';
+            ctx.fill();
+        }
+        
+        async function pollStatus() {
+            console.log('pollStatus called, phase:', gamePhase);
+            try {
+                console.log('Fetching /api/roulette/status...');
+                const res = await fetch('/api/roulette/status');
+                console.log('Response status:', res.status);
+                if (!res.ok) {
+                    console.log('Response not OK');
+                    return;
+                }
+                const data = await res.json();
+                console.log('Poll data:', data);
+                updateUI(data);
+                
+                // Update countdown display every poll
+                const cd = document.getElementById('betCountdown');
+                if (cd && data.remaining !== undefined) {
+                    cd.textContent = data.remaining + 's';
+                    // 防呆：下注時間的最後3秒，顯示警示
+                    if (data.remaining <= 3 && data.phase === 'betting') {
+                        cd.style.color = '#ff4444';
+                        cd.style.fontSize = '1.6rem';
+                    } else {
+                        cd.style.color = '#ffd700';
+                        cd.style.fontSize = '1.4rem';
+                    }
+                } else {
+                    // betCountdown not found, update resultDisplay directly
+                    const resultDisplay = document.getElementById('resultDisplay');
+                    if (resultDisplay && data.phase === 'betting') {
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
+                    }
+                }
+            } catch(e) {
+                console.log('Poll error:', e.message);
+            }
+        }
+        
+        function updateUI(data) {
+            // 先更新 gamePhase，避免在切換階段時錯誤清除 currentBets
+            const prevPhase = gamePhase;
+            gamePhase = data.phase;
+            // 新下注階段開始時，重置神秘下注標記
+            if (prevPhase !== 'betting' && data.phase === 'betting') {
+                mysteryBetThisRound = false;
+            }
+            
+            const colors = { red: '🔴 紅', black: '⚫ 黑', gold: '⭐ 神秘' };
+            const badge = document.getElementById('resultBadge') || null;
+            const wheel = document.getElementById('wheel') || null;
+            const resultDisplay = document.getElementById('resultDisplay') || null;
+            
+            if (!wheel || !resultDisplay) {
+                console.log('updateUI skipped: wheel or resultDisplay null');
+                return;
+            }
+            
+            wheel.classList.remove('spinning', 'spinning-anim');
+            wheel.style.animation = '';
+            switch(data.phase) {
+                case 'waiting':
+                    badge.style.display = 'none';
+                    disableBtns();
+                    if (!window.rouletteAnimating) {
+                        resultDisplay.className = 'result-display waiting';
+                        resultDisplay.textContent = '等待開始...';
+                    }
+                    break;
+                    
+                case 'betting':
+                    enableBtns();
+                    
+                    // 只有從非betting進入betting時，才清除上一局的狀態
+                    if (prevPhase !== 'betting') {
+                        clearSelected();
+                        currentBets = [];
+                        updateCurrentBetsUI();
+                        // 新回合開始時，重置 lastProcessedSpinId 以接收新的 spin 结果
+                        lastProcessedSpinId = 0;
+                    }
+                    badge.style.display = 'none';
+                    // 如果轉盤動畫還在進行中（結果即將顯示），不要覆蓋 resultDisplay
+                    if (!window.rouletteAnimating) {
+                        resultDisplay.className = 'result-display betting';
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
+                    }
+                    break;
+                    
+                case 'spinning':
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    disableBtns();
+                    clearSelected(); // 開始旋轉時清除選中狀態
+                    resultDisplay.className = 'result-display spinning';
+                    resultDisplay.textContent = '🎰 轉動中...';
+                    resultDisplay.style.display = 'block';
+                    playSound('spin'); // 播放開始旋轉音效
+                    
+                    // 開始轉盤減速動畫（由快到慢）
+                    // 更新神秘彩池顯示
+                if (data.mysteryPool !== undefined) {
+                    document.getElementById('poolAmount').textContent = data.mysteryPool;
+                    const poolDisplay = document.getElementById('mysteryPoolDisplay');
+                    if (poolDisplay) {
+                        // 彩池 > 0 就顯示，否則在betting時顯示(让大家知道有彩池)
+                        poolDisplay.style.display = (data.mysteryPool > 0 || data.phase !== 'waiting') ? 'block' : 'none';
+                    }
+                }
+                
+                if (data.ad && data.ad.url) window.currentAdUrl = data.ad.url;
+                    if (data.lastSpin) {
+                        const spinId = data.lastSpin.result + '-' + (data.lastSpin.time || 0);
+                        if (spinId !== lastProcessedSpinId) {
+                            // 顯示神秘中獎廣播（大家都能看到）
+                            if (data.lastWinner && data.lastWinner.type === 'mystery') {
+                                showBroadcast('🎁 ' + data.lastWinner.username + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！');
+                            }
+                            
+                            // 顯示大贏家廣播（赢>1000）
+                            if (data.bigWinner) {
+                                showBroadcast('🏆 ' + data.bigWinner.username + ' 大贏家！賺了 $' + data.bigWinner.amount + '！');
+                            }
+                            lastProcessedSpinId = spinId;
+                            rotateToResult(data.lastSpin.result, data.lastSpin);
+                        }
+                    }
+                    break;
+                    
+                case 'result':
+                    wheel.classList.remove('spinning', 'spinning-anim');
+                    wheel.style.animation = 'none';
+                    disableBtns();
+                    resultDisplay.style.display = 'block';
+                    break;
+                    
+                default:
+                    // For any other phase, don't clear currentBets
+                    break;
+            }
+            
+            gamePhase = data.phase;
+        }
+        
+        
+        function rotateToResult(result, lastSpin) {
+            const index = wheelNumbers.findIndex(n => n.num === result);
+            const slotAngle = 360 / 37;
+            const spins = 5 + Math.floor(Math.random() * 4); // 5-8圈
+            
+            // 最終位置：指針要停在每一格的正中央
+            const finalRotation = spins * 360 + (360 - (index + 0.5) * slotAngle);
+            console.log('Result:', result, 'index:', index, 'finalRotation:', finalRotation);
+            
+            const wheel = document.getElementById('wheel');
+            wheel.classList.remove('spinning', 'spinning-anim');
+            wheel.style.animation = 'none';
+            
+            // 重置到 0 度，從頭開始轉
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            void wheel.offsetWidth;
+            
+            // 物理動畫參數：使用 easeOut 曲線做到由快到慢
+            const totalDuration = 4500; // 動畫總時間 4.5 秒
+            const startTime = performance.now();
+            
+            let currentRotation = 0;
+            let done = false;
+            
+            wheel.style.willChange = 'transform';
+            window.rouletteAnimating = true;
+            
+            function animate() {
+                if (done) return;
+                
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
+                
+                // easeOut 曲線：一開始快，結尾慢
+                // 公式：1 - (1 - t)^2
+                const easeOut = 1 - Math.pow(1 - progress, 2);
+                
+                // 用 easeOut 計算總旋轉角度（積分）
+                // 因為速度是遞減的，角度 = initialV * (1 - (1-t)^2) * duration
+                currentRotation = easeOut * (finalRotation);
+                
+                wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
+                
+                // 動畫完成
+                if (progress >= 1) {
+                    done = true;
+                    wheel.style.willChange = 'auto';
+                    wheel.style.transform = 'rotate(' + finalRotation + 'deg)';
+                    
+                    setTimeout(() => {
+                        window.rouletteAnimating = false;
+                        const colors = { red: '🔴 紅', black: '⚫ 黑', gold: '⭐ 神秘' };
+                        const colorName = colors[lastSpin.color] || '';
+                        const display = document.getElementById('resultDisplay');
+                        const resultText = lastSpin.result === 0 ? '⭐ 神秘禮物！' : '🎯 結果: ' + lastSpin.result;
+                        if (display) {
+                            display.textContent = resultText + ' ' + colorName;
+                            display.className = 'result-display ' + (lastSpin.color === 'gold' ? 'red' : lastSpin.color);
+                            display.style.display = 'block';
+                        }
+                        // 如果中神秘彩池，顯示彈窗
+                        if (lastSpin.mystery && lastSpin.mysteryPool > 0) {
+                            showMysteryPopup(lastSpin.perPersonPool || 0, lastSpin.mysteryWinners || 1);
+                        }
+                        processResult(lastSpin);
+                    }, 100);
+                    return;
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        function processResult(lastSpin) {
+            console.log('===== processResult START =====');
+            
+            // Guard: if currentBets is empty, this is a duplicate call, skip
+            if (currentBets.length === 0) {
+                console.log('processResult called but currentBets is empty - SKIPPING (duplicate)');
+                return;
+            }
+            
+            console.log('currentBets:', JSON.stringify(currentBets));
+            console.log('lastSpin:', JSON.stringify(lastSpin));
+            
+            // Save bets before clearing
+            const betsToProcess = [...currentBets];
+            
+            // Clear currentBets NOW to prevent any chance of duplicate processing
+            currentBets = [];
+            updateCurrentBetsUI();
+            
+            let roundWin = 0;
+            let roundBet = 0;
+            
+            for (const bet of betsToProcess) {
+                roundBet += bet.amount;
+                let win = false;
+                console.log('Checking bet:', JSON.stringify(bet), 'vs result:', lastSpin.result, lastSpin.color);
+                
+                if (bet.type === 'color' && bet.color === lastSpin.color) win = true;
+                if (bet.type === 'odd_even') {
+                    if (bet.choice === 'odd' && lastSpin.result % 2 === 1 && lastSpin.result !== 0) win = true;
+                    if (bet.choice === 'even' && lastSpin.result % 2 === 0 && lastSpin.result !== 0) win = true;
+                }
+                if (bet.type === 'number' && bet.number === lastSpin.result) win = true;
+                
+                console.log('Bet win?', win);
+                if (win) {
+                    const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
+                    console.log('Prize calculated:', prize, '(bet.type:', bet.type, ', bet.amount:', bet.amount, ')');
+                    roundWin += prize;
+                }
+            }
+            
+            console.log('FINAL: roundBet:', roundBet, 'roundWin:', roundWin, 'myBalance before:', myBalance);
+            // 結算：只加贏的錢（輸的情況不再扣，因為下注時已扣過）
+            myBalance = myBalance + roundWin;
+            
+            // 神秘禮物 bonus + 彩池（只有下注0並且中的人才有）
+            let mysteryBonus = 0;
+            const wonMystery = betsToProcess.some(b => b.type === 'number' && b.number === 0);
+            if (wonMystery && lastSpin.mystery && lastSpin.mysteryPrize) {
+                const prizeMatch = lastSpin.mysteryPrize.match(/(\d+)/);
+                if (prizeMatch) {
+                    mysteryBonus = parseInt(prizeMatch[1]);
+                }
+                const poolWin = lastSpin.perPersonPool || 0;
+                myBalance += mysteryBonus + poolWin;
+                roundWin += mysteryBonus + poolWin;
+                // 通知伺服器有神秘中獎，廣播給所有人
+                if (mysteryBonus > 0) {
+                    fetch('/api/roulette/report-winner', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: myName, winAmount: mysteryBonus + poolWin, type: 'mystery' })
+                    }).catch(() => {});
+                }
+            }
+            
+            // 如果贏超過1000，通知伺服器廣播大贏家
+            if (roundWin >= 1000 && myName) {
+                fetch('/api/roulette/report-winner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, winAmount: roundWin, type: 'normal' })
+                }).catch(() => {});
+            }
+            
+            console.log('myBalance after:', myBalance);
+            localStorage.setItem('rouletteBalance', myBalance);
+            updateBalanceUI();
+            
+            // 顯示結算彈窗（玩家有下注才顯示）
+            if (roundBet > 0) {
+                const netWin = roundWin - roundBet;
+                // 播放贏或輸的音效
+                if (netWin > 0) {
+                    setTimeout(() => playSound('win'), 100);
+                } else if (netWin < 0) {
+                    setTimeout(() => playSound('lose'), 100);
+                }
+                // 神秘獎金顯示在結算彈窗
+            if (mysteryBonus > 0) {
+                setTimeout(() => showResultPopup(netWin + mysteryBonus, roundBet, mysteryBonus), 100);
+            } else {
+                setTimeout(() => showResultPopup(netWin, roundBet), 100);
+            }
+            }
+            
+            // 檢查餘額是否歸零
+            if (myBalance <= 0) {
+                setTimeout(() => {
+                    document.getElementById('brokeOverlay').classList.add('show');
+                }, 1500); // Show after result display
+            }
+            
+            // 更新資料庫余額
+            fetch('/api/roulette/update-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: myName, newScore: myBalance })
+            });
+            
+            // 顯示結果badge
+            const badge = document.getElementById('resultBadge');
+            if (roundWin > 0) {
+                badge.textContent = '🎯 ' + lastSpin.result + ' +' + roundWin;
+                badge.className = 'result-badge show win';
+            } else if (roundBet > 0) {
+                badge.textContent = '🎯 ' + lastSpin.result + ' -' + roundBet;
+                badge.className = 'result-badge show lose';
+            } else {
+                badge.textContent = '🎯 ' + lastSpin.result;
+                badge.className = 'result-badge show result';
+            }
+            
+            if (roundBet > 0) {
+                historyBets.unshift({
+                    result: lastSpin.result,
+                    color: lastSpin.color,
+                    win: roundWin > 0,
+                    amount: roundWin > 0 ? roundWin : -roundBet
+                });
+                
+                // Keep only latest 5 records for UI
+                if (historyBets.length > 5) historyBets = historyBets.slice(0, 5);
+                updateHistoryUI();
+                
+                // 保存到資料庫
+                fetch('/api/roulette/save-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: myName,
+                        result: lastSpin.result,
+                        color: lastSpin.color,
+                        win: roundWin > 0,
+                        amount: roundWin > 0 ? roundWin : -roundBet
+                    })
+                });
+            }
+        }
+        
+        function updateCurrentBetsUI() {
+            const list = document.getElementById('currentBetsList');
+            const totalEl = document.getElementById('betTotal');
+            const box = document.querySelector('.current-bets-box');
+            let total = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            totalEl.textContent = total;
+            
+            if (currentBets.length === 0) {
+                list.innerHTML = '<span class="no-bets">選擇上方按鈕下注</span>';
+                if (box) box.classList.remove('has-bets');
+                return;
+            }
+            
+            if (box) box.classList.add('has-bets');
+            
+            let html = '';
+            for (const bet of currentBets) {
+                html += '<div class="bet-row"><span>' + bet.info + '</span><span>' + bet.amount + '</span></div>';
+            }
+            html += '<div class="bet-row total"><span>總計</span><span style="color:#ffd700">' + total + '</span></div>';
+            list.innerHTML = html;
+        }
+        
+        function updateHistoryUI() {
+            const list = document.getElementById('historyBetsList');
+            if (historyBets.length === 0) {
+                list.innerHTML = '<span class="no-bets">尚無記錄</span>';
+                return;
+            }
+            
+            let html = '';
+            const colors = { red: '🔴', black: '⚫', gold: '⭐' };
+            
+            for (const record of historyBets) {
+                const colorEmoji = colors[record.color] || '⚪';
+                const amountText = record.amount > 0 ? '+' + record.amount : record.amount;
+                const rowClass = record.amount > 0 ? 'win' : 'lose';
+                
+                html += '<div class="history-row ' + rowClass + '">';
+                html += '<span class="result-num">' + record.result + ' ' + colorEmoji + '</span>';
+                html += '<span>' + amountText + '</span></div>';
+            }
+            list.innerHTML = html;
+        }
+        
+        function disableBtns() {
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('numberBetBtn').classList.add('disabled');
+        }
+        
+        function enableBtns() {
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('disabled'));
+            document.getElementById('numberBetBtn').classList.remove('disabled');
+            // 只在新回合開始時清除選擇（從result/spinning等到betting）
+            // 不要在betting中清除，否則用戶下注後馬上又消失
+            // 自動啟動背景音樂
+            if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
+        }
+        
+        function clearSelected() {
+            selectedBets = [];
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                b.classList.remove('selected', 'has-bet');
+                const amt = b.querySelector('.bet-amount');
+                if (amt) amt.textContent = '';
+            });
+        }
+        
+        function checkBalance() {
+            // 餘額不足最低下注（$10）就不能玩
+            if (myBalance < 10) {
+                document.getElementById('brokeOverlay').classList.add('show');
+                return false;
+            }
+            if (myBalance < 100) {
+                document.getElementById('balanceBox').classList.add('low');
+            }
+            return true;
+        }
+        
+        function updateBalanceUI() {
+            document.getElementById('balance').textContent = myBalance;
+            if (myBalance <= 0) {
+                document.getElementById('balanceBox').classList.add('low');
+            } else {
+                document.getElementById('balanceBox').classList.remove('low');
+            }
+        }
+        
+        function hideBrokeOverlay() {
+            document.getElementById('brokeOverlay').classList.remove('show');
+        }
+        
+        // 顯示結算彈窗
+        function showResultPopup(netWin, totalBet, mysteryBonus) {
+            const popup = document.getElementById('resultPopup');
+            const msg = document.getElementById('resultPopupMsg');
+            const btn = document.getElementById('resultPopupBtn');
+            
+            if (netWin > 0) {
+                msg.innerHTML = '🎉 恭喜！<br>贏了 <span style="color:#00ff00;font-size:1.4rem">+$' + netWin + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
+                msg.style.color = '#00ff00';
+                // 贏超過500分時顯示跑馬燈
+                if (netWin >= 500) {
+                    showWinnerMarquee(myName, netWin);
+                }
+            } else if (netWin < 0) {
+                msg.innerHTML = '😢 很遺憾<br>輸了 <span style="color:#ff4444;font-size:1.4rem">-$' + Math.abs(netWin) + '</span><br><small style="color:#aaa">本金 $' + totalBet + '</small>';
+                msg.style.color = '#ff6666';
+            } else {
+                msg.innerHTML = '➖ 平手<br><small style="color:#aaa">沒輸沒贏</small>';
+                msg.style.color = '#ffd700';
+            }
+            
+            popup.classList.add('show');
+            btn.onclick = () => popup.classList.remove('show');
+        }
+        
+        function showMysteryPopup(prize, poolAmount) {
+            const popup = document.getElementById('mysteryPopup');
+            if (!popup) return;
+            const msg = document.getElementById('mysteryPrizeText');
+            const poolText = poolAmount > 0 ? '<br>🎁 彩池獎金 +$' + poolAmount : '';
+            if (msg) msg.innerHTML = prize + poolText;
+            popup.classList.add('show');
+            // 播放神秘音效
+            setTimeout(() => playSound('win'), 200);
+            // 8秒後自動關閉
+            setTimeout(() => popup.classList.remove('show'), 8000);
+        }
+        
+        function closeMysteryPopup() {
+            const popup = document.getElementById('mysteryPopup');
+            if (popup) popup.classList.remove('show');
+        }
+        
+        function showWinnerMarquee(username, amount) {
+            const marquee = document.getElementById('winnerMarquee');
+            if (!marquee) return;
+            marquee.textContent = '🎉 ' + username + ' 在 T-LO大轉盤 贏了 $' + amount + '！恭喜！';
+            marquee.classList.remove('show');
+            void marquee.offsetWidth; // 強制重繪動畫
+            marquee.classList.add('show');
+            // 8秒後自動隱藏
+            setTimeout(() => marquee.classList.remove('show'), 8000);
+        }
+        
+        function showMyInviteCode() {
+            if (!myName) return;
+            let modal = document.getElementById('inviteModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'inviteModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:500;display:none;justify-content:center;align-items:center;backdrop-filter:blur(5px);';
+                modal.innerHTML = '<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:2px solid #ffd700;border-radius:20px;padding:30px 25px;max-width:280px;width:90%;color:white;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"></div>';
+                document.body.appendChild(modal);
+                modal.onclick = () => { modal.style.display = 'none'; };
+            }
+            modal.innerHTML = '<div style="text-align:center;">' +
+                '<h2 style="color:#ffd700;margin:0 0 10px 0;font-size:1.3rem;">邀請碼</h2>' +
+                '<div style="background:rgba(255,215,0,0.2);border:2px dashed #ffd700;border-radius:12px;padding:15px;margin:15px 0;">' +
+                '<span style="font-size:1.8rem;font-weight:bold;color:#ffd700;letter-spacing:3px;">' + myName + '</span></div>' +
+                '<p style="color:#aaa;font-size:0.85rem;margin:0 0 20px 0;">邀請朋友註冊，雙方都+200分！</p>' +
+                '<button onclick="document.getElementById(\x27inviteModal\x27).style.display=\x27none\x27" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;">知道了</button>' +
+                '</div>';
+            modal.style.display = 'flex';
+        }
+        
+        // 新手導引功能
+        function showGuide() {
+            const modal = document.getElementById('guideModal');
+            modal.classList.add('show');
+        }
+        
+        function hideGuide() {
+            document.getElementById('guideModal').classList.remove('show');
+            // 記住這個帳號看過了
+            localStorage.setItem('rouletteGuided_' + myName, 'true');
+        }
+        
+        function nextGuide(step) {
+            document.querySelectorAll('.guide-step').forEach((s, i) => {
+                s.style.display = (i + 1) === step ? 'block' : 'none';
+            });
+            const btn = document.getElementById('guideNextBtn');
+            if (step === 2) {
+                btn.textContent = '下一步';
+                btn.onclick = () => nextGuide(3);
+            } else if (step === 3) {
+                btn.textContent = '我知道了';
+                btn.onclick = hideGuide;
+            }
+        }
+        
+        function updateSelectedUI(btnClass, isSelected) {
+            // Find the button by its class and toggle selected state
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                if (isSelected && b.classList.contains(btnClass)) {
+                    b.classList.add('selected');
+                }
+            });
+        }
+        
+        // 防呆：防止快速連點（1秒內不能重複下注）
+        let lastBetTime = 0;
+        
+        let mysteryBetThisRound = false;
+        
+        async function placeMysteryBet() {
+            if (mysteryBetThisRound) {
+                alert('神秘已下注！');
+                return;
+            }
+            if (gamePhase !== 'betting') {
+                alert('現在不能下注！');
+                return;
+            }
+            mysteryBetThisRound = true;
+            await placeBet('number', 500, '0');
+        }
+        
+        async function placeBet(type, amount, choice) {
+            // 隱藏數字下注區（回歸初始狀態）
+            document.getElementById('numberBetArea').style.display = 'none';
+            
+            if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            
+            // 如果有自行輸入的金額，優先使用
+            // 下注後清除，讓用戶下次可以輸入新金額
+            const customAmtInput = document.getElementById('customBetAmt');
+            const customAmt = parseInt(customAmtInput && customAmtInput.value ? customAmtInput.value : 'NaN');
+            if (!isNaN(customAmt) && customAmt >= 10) {
+                amount = customAmt;
+                customAmtInput.value = ''; // 清除，讓下次重新輸入
+            }
+            
+            // 防呆：1秒內不能重複下注
+            const now = Date.now();
+            if (now - lastBetTime < 1000) {
+                showToast('請稍等一下再下注');
+                return;
+            }
+            lastBetTime = now;
+            
+            // 防呆：金額至少10
+            if (amount < 10) {
+                showToast('金額至少 $10');
+                return;
+            }
+            
+            // 神秘0只能下500
+            if (choice === '0') {
+                const hasMystery = currentBets.some(b => b.type === 'number' && b.number === 0);
+                if (hasMystery) {
+                    showToast('神秘每場只能下注一次');
+                    return;
+                }
+                if (amount !== 500) {
+                    showToast('神秘下注固定 $500');
+                    return;
+                }
+            }
+            
+            // 防呆：計算目前所有下注的總額
+            const totalBets = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            // 檢查：剩餘可用餘額 = myBalance - totalBets
+            const remaining = myBalance - totalBets;
+            if (remaining < amount) {
+                showToast('餘額不足！可用餘額 $' + remaining);
+                return;
+            }
+            
+            const bet = { type, amount, info: choice };
+            if (type === 'color') bet.color = choice;
+            if (type === 'odd_even') bet.choice = choice;
+            currentBets.push(bet);
+            
+            // Track selected button and update amount display
+            const btnClass = type === 'number' ? 'number-btn' : choice;
+            selectedBets.push(btnClass);
+            updateSelectedUI(btnClass, true);
+            
+            // Update button amount display
+            const totalForType = currentBets.filter(b => {
+                if (type === 'number') return b.type === 'number';
+                if (b.type === 'color') return b.color === choice;
+                if (b.type === 'odd_even') return b.choice === choice;
+                return false;
+            }).reduce((sum, b) => sum + b.amount, 0);
+            document.querySelectorAll('.bet-btn').forEach(b => {
+                if (b.classList.contains(btnClass)) {
+                    b.classList.add('has-bet');
+                    b.querySelector('.bet-amount').textContent = '已押 $' + totalForType;
+                }
+            });
+            
+            console.log('Bet placed:', JSON.stringify(bet), 'currentBets now:', JSON.stringify(currentBets));
+            updateCurrentBetsUI();
+            const choiceNames = { red: '紅', black: '黑', gold: '神秘', odd: '單', even: '雙' };
+            const choiceName = choiceNames[choice] || choice;
+            showToast('已下注 $' + amount + ' 押' + choiceName, 'success');
+                        playSound('bet');
+                        
+                        // 重置數字下注區
+                        document.getElementById('numberBetArea').style.display = 'none';
+                        document.getElementById('betNum').value = '';
+            
+            try {
+                const res = await fetch('/api/roulette/bet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, betType: type, amount, color: choice, choice })
+                });
+                const data = await res.json();
+                // 更新玩家餘額（使用伺服器回傳的最新分數）
+                if (data.newScore !== undefined) {
+                    myBalance = data.newScore;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                }
+                // 處理下注失敗（phase 改變導致）
+                if (data.success === false) {
+                    showToast(data.message || '下注失敗', 'error');
+                    // 如果 phase 已經不是 betting，移除剛才加入的 currentBets
+                    if (data.phase !== 'betting') {
+                        currentBets = currentBets.filter(b => b !== bet);
+                        updateSelectedUI(btnClass, false);
+                        updateCurrentBetsUI();
+                    }
+                    return;
+                }
+                
+                // 處理隨機獎勵
+                if (data.bonusTriggered && data.bonusAmount > 0) {
+                    myBalance += data.bonusAmount;
+                    document.getElementById('balance').textContent = myBalance;
+                    showBonusPopup('🎁 幸運降臨！', '+' + data.bonusAmount + ' 分');
+                    vibrateDevice([100, 50, 100, 50, 200]);
+                    playSound('win');
+                }
+                // 10% 機率觸發廣告
+                if (Math.random() < 0.1) {
+                    setTimeout(() => showAdPopup(), 500);
+                }
+            } catch(e) { console.log('下注失敗:', e); }
+        }
+        
+        // 選擇數字下注模式
+        function selectNumberBet() {
+            const numberBetArea = document.getElementById('numberBetArea');
+            const betNumInput = document.getElementById('betNum');
+            
+            // 顯示數字輸入區
+            numberBetArea.style.display = 'flex';
+            
+            // 啟用數字輸入框
+            betNumInput.disabled = false;
+            betNumInput.focus();
+            
+            // 標記選中狀態
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelector('.bet-btn.number-btn').classList.add('selected');
+        }
+        
+        async function placeNumberBet() {
+            console.log('placeNumberBet called');
+            // 取得玩家輸入的數字
+            const numInput = document.getElementById('betNum');
+            const num = parseInt(numInput.value);
+            console.log('numInput.value:', numInput.value, 'num:', num);
+            
+            // 取得自訂金額（如果有的話）；否則用 quickAmount
+            const customAmtInput = document.getElementById('customBetAmt');
+            const customAmt = parseInt(customAmtInput && customAmtInput.value ? customAmtInput.value : 'NaN');
+            const amt = (!isNaN(customAmt) && customAmt >= 10) ? customAmt : quickAmount;
+            
+            // 防呆：數字選擇提示
+            if (isNaN(num) || num < 0 || num > 36) { 
+                showToast('請輸入數字 0-36');
+                return; 
+            }
+            
+            // 防呆：金額提示
+            if (isNaN(amt) || amt < 10) { 
+                showToast('金額至少 $10');
+                return; 
+            }
+            
+            if (gamePhase !== 'betting') return;
+            if (!checkBalance()) return;
+            
+            // 防呆：1秒內不能重複下注
+            const now = Date.now();
+            if (now - lastBetTime < 1000) {
+                showToast('請稍等一下再下注');
+                return;
+            }
+            lastBetTime = now;
+            
+            // 防呆：計算目前所有下注的總額
+            const totalBets = currentBets.reduce((sum, b) => sum + b.amount, 0);
+            const remaining = myBalance - totalBets;
+            if (remaining < amt) {
+                showToast('餘額不足！可用餘額 $' + remaining);
+                return;
+            }
+            
+            // 防呆：單次下注不能超過餘額
+            if (amt > myBalance) {
+                showToast('下注金額不能超過餘額');
+                return;
+            }
+            
+            currentBets.push({ type: 'number', amount: amt, info: '#' + num, number: num });
+            updateCurrentBetsUI();
+            
+            // Mark the number-btn as selected and show amount
+            const numberBtn = document.querySelector('.bet-btn.number-btn');
+            if (numberBtn) {
+                numberBtn.classList.add('selected', 'has-bet');
+                numberBtn.querySelector('.bet-amount').textContent = '已押 $' + amt;
+            }
+            
+            showToast('已下注 $' + amt + ' 押 #' + num, 'success');
+                        playSound('bet');
+            
+            try {
+                const res = await fetch('/api/roulette/bet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num })
+                });
+                const data = await res.json();
+                // 更新玩家餘額（使用伺服器回傳的最新分數）
+                if (data.newScore !== undefined) {
+                    myBalance = data.newScore;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                }
+                // 處理下注失敗（phase 改變導致）
+                if (data.success === false) {
+                    showToast(data.message || '下注失敗', 'error');
+                    // 如果 phase 已經不是 betting，移除剛才加入的 currentBets
+                    if (data.phase !== 'betting') {
+                        currentBets = currentBets.filter(b => b !== bet);
+                        updateSelectedUI(btnClass, false);
+                        updateCurrentBetsUI();
+                    }
+                    return;
+                }
+                
+                // 處理隨機獎勵
+                if (data.bonusTriggered && data.bonusAmount > 0) {
+                    myBalance += data.bonusAmount;
+                    document.getElementById('balance').textContent = myBalance;
+                    showBonusPopup('🎁 幸運降臨！', '+' + data.bonusAmount + ' 分');
+                    vibrateDevice([100, 50, 100, 50, 200]);
+                    playSound('win');
+                }
+                // 10% 機率觸發廣告
+                if (Math.random() < 0.1) {
+                    setTimeout(() => showAdPopup(), 500);
+                }
+            } catch(e) {
+                    console.log('下注失敗:', e.message);
+                    // 502/網路錯誤時，自動重試一次
+                    setTimeout(() => {
+                        console.log('重試下注...');
+                        fetch('/api/roulette/bet', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: myName, betType: 'number', amount: amt, number: num })
+                        }).then(r => r.json()).then(data => {
+                            if (data.success) showToast('已下注 $' + amt + ' 押 #' + num, 'success');
+                        }).catch(() => showToast('下注失敗，請稍后重試'));
+                    }, 1500);
+                }
+        }
+        
+        let playerMenuOriginalContent = '';
+        
+        function showPlayerMenu() {
+            const modal = document.getElementById('playerMenuModal');
+            if (playerMenuOriginalContent) modal.querySelector('.modal').innerHTML = playerMenuOriginalContent;
+            modal.classList.add('show');
+        }
+        
+        async function loadPlayerLevel() {
+            if (!myName) return;
+            try {
+                const res = await fetch('/api/roulette/player-level/' + encodeURIComponent(myName));
+                const data = await res.json();
+                const nameEl = document.getElementById('playerNameDisplay');
+                if (nameEl && data.title) {
+                    const tierGradients = {
+                        '青銅': 'linear-gradient(135deg,#CD7F32,#E8955A)',
+                        '白銀': 'linear-gradient(135deg,#C0C0C0,#E8E8E8)',
+                        '黃金': 'linear-gradient(135deg,#FFD700,#FFA500)',
+                        '白金': 'linear-gradient(135deg,#E5E4E2,#B4C7DC)',
+                        '鑽石': 'linear-gradient(135deg,#B9F2FF,#00FFFF)'
+                    };
+                    const grad = tierGradients[data.tier] || tierGradients['青銅'];
+                    nameEl.innerHTML = `<span class="title-shine" style="background:${grad};padding:3px 12px;border-radius:12px;font-weight:bold;font-size:0.85rem;color:#fff;margin-right:8px;position:relative;overflow:hidden;">${data.title}</span><span style="color:#fff;">${myName}</span>`;
+                } else if (nameEl) {
+                    nameEl.textContent = myName;
+                }
+            } catch(e) { console.log('loadLevel failed:', e); }
+        }
+        
+        function closePlayerMenu() {
+            document.getElementById('playerMenuModal').classList.remove('show');
+        }
+        
+        async function showLoginReward() {
+            const modal = document.getElementById('playerMenuModal');
+            const inner = modal.querySelector('.modal');
+            if (!playerMenuOriginalContent) playerMenuOriginalContent = inner.innerHTML;
+            
+            // Load streak data from server
+            let streak = 0, stats = { betCount: 0, winsCount: 0, mysteryBets: 0 };
+            if (myName) {
+                try {
+                    const res = await fetch('/api/roulette/daily-tasks?username=' + encodeURIComponent(myName));
+                    const data = await res.json();
+                    if (data.success) { streak = data.streak; stats = data.stats; }
+                } catch(e) {}
+            }
+            
+            const rewards = [200, 300, 400, 500, 700, 1000, 2000];
+            const nextReward = rewards[Math.min(streak || 0, 7)] || 200;
+            const dayLabel = streak > 0 ? 'Day ' + streak : 'Day 0';
+            
+            // Build progress dots
+            let dotsHtml = '';
+            for (let i = 1; i <= 7; i++) {
+                const filled = i <= streak;
+                const isToday = i === streak + 1;
+                dotsHtml += `<div style="flex:1;height:8px;border-radius:4px;background:${filled ? '#ffd700' : (isToday ? '#555' : '#333')};margin:0 2px;"></div>`;
+            }
+            
+            // Build day labels
+            let daysHtml = '';
+            for (let i = 1; i <= 7; i++) {
+                const filled = i <= streak;
+                daysHtml += `<div style="flex:1;text-align:center;font-size:0.75rem;color:${filled ? '#ffd700' : '#666'};">Day${i}<br><b>$${rewards[i-1]}</b></div>`;
+            }
+            
+            inner.innerHTML = `
+                <div style="background:linear-gradient(135deg,#ff8c00,#ffd700);border-radius:20px;padding:25px;text-align:center;color:#000;max-width:380px;">
+                    <div style="font-size:1.3rem;font-weight:bold;margin-bottom:8px;">🔥 連續登入</div>
+                    <div style="font-size:3rem;font-weight:bold;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3);">${dayLabel}</div>
+                    <div style="font-size:1rem;opacity:0.9;">下一個獎勵：$${nextReward}</div>
+                    
+                    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:15px;margin-top:15px;">
+                        <div style="display:flex;gap:4px;margin-bottom:10px;">${dotsHtml}</div>
+                        <div style="display:flex;font-size:0.8rem;">${daysHtml}</div>
+                    </div>
+                    
+                    <button onclick="claimLoginFromMenu()" id="menuClaimStreakBtn" style="width:100%;padding:14px;background:#1a1a2e;border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#ffd700;margin-top:15px;">領取登入獎勵</button>
+                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.3);border-radius:12px;font-size:1rem;cursor:pointer;color:#000;margin-top:10px;opacity:0.85;">返回選單</button>
+                </div>
+            `;
+            modal.classList.add('show');
+            // Also widen the modal overlay
+            modal.style.alignItems = 'center';
+            inner.style.maxWidth = '420px';
+            inner.style.width = '95%';
+        }
+        
+        async function showLevelInfo() {
+            if (!myName) return;
+            const modal = document.getElementById('playerMenuModal');
+            const inner = modal.querySelector('.modal');
+            if (!playerMenuOriginalContent) playerMenuOriginalContent = inner.innerHTML;
+            
+            let levelData = { level: 1, tier: '青銅', title: '菜鳥', weeklyBet: 0 };
+            try {
+                const res = await fetch('/api/roulette/player-level/' + encodeURIComponent(myName));
+                levelData = await res.json();
+            } catch(e) {}
+            
+            const tiers = [
+                { name: '青銅', minLv: 1, maxLv: 10, minBet: 0, color: '#CD7F32' },
+                { name: '白銀', minLv: 11, maxLv: 20, minBet: 10000, color: '#C0C0C0' },
+                { name: '黃金', minLv: 21, maxLv: 30, minBet: 50000, color: '#FFD700' },
+                { name: '白金', minLv: 31, maxLv: 40, minBet: 200000, color: '#E5E4E2' },
+                { name: '鑽石', minLv: 41, maxLv: 50, minBet: 500000, color: '#B9F2FF' },
+            ];
+            
+            let tierBars = tiers.map(t => {
+                const active = levelData.level >= t.minLv;
+                const progress = active ? Math.min(100, (levelData.weeklyBet / t.minBet) * 100) : 0;
+                const pct = t.minBet === 0 ? 100 : Math.min(100, Math.round((levelData.weeklyBet / t.minBet) * 100));
+                return `<div style="margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+                        <span style="color:${t.color};font-weight:bold;">${t.name}</span>
+                        <span style="color:#888;">Lv.${t.minLv}-${t.maxLv}</span>
+                    </div>
+                    <div style="background:#333;border-radius:4px;height:8px;overflow:hidden;">
+                        <div style="width:${active ? Math.min(100,pct) : 0}%;height:100%;background:${t.color};transition:width 0.3s;"></div>
+                    </div>
+                    <div style="font-size:0.75rem;color:#666;text-align:right;">門檻 $${t.minBet.toLocaleString()}</div>
+                </div>`;
+            }).join('');
+            
+            inner.innerHTML = `
+                <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="font-size:1.2rem;color:#ffd700;">🏆 等級</div>
+                        <div style="font-size:2rem;font-weight:bold;color:${levelData.level >= 41 ? '#b9f2ff' : levelData.level >= 31 ? '#e5e4e2' : levelData.level >= 21 ? '#ffd700' : levelData.level >= 11 ? '#c0c0c0' : '#cd7f32'};">Lv.${levelData.level} ${levelData.tier}</div>
+                        <div style="font-size:1rem;color:#aaa;">稱號：${levelData.title}</div>
+                        <div style="font-size:0.9rem;color:#888;margin-top:5px;">本週下注：$${levelData.weeklyBet.toLocaleString()}</div>
+                    </div>
+                    <div style="border-top:1px solid #333;padding-top:15px;">
+                        ${tierBars}
+                    </div>
+                    <div style="font-size:0.8rem;color:#666;text-align:center;margin-top:15px;">每週一結算，階級隨下注金額提升</div>
+                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">返回選單</button>
+                </div>
+            `;
+            modal.classList.add('show');
+            modal.style.alignItems = 'center';
+            inner.style.maxWidth = '420px';
+            inner.style.width = '95%';
+        }
+        
+        async function claimLoginFromMenu() {
+            if (!myName) return;
+            const btn = document.getElementById('menuClaimStreakBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '處理中...'; }
+            try {
+                const res = await fetch('/api/roulette/claim-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (btn) { btn.textContent = '已領取 ✅'; btn.style.background = '#1a472a'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0'; }
+                    myBalance = data.newScore || myBalance;
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
+                    showToast('✅ ' + data.message, 'success');
+                } else {
+                    if (btn) { btn.textContent = data.message || '已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
+                    showToast(data.message || '已領取過', 'info');
+                }
+            } catch(e) {
+                console.log('claimLoginFromMenu error:', e);
+                if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; showToast('連線失敗，請稍後再試', 'error'); }
+            } finally {
+                if (btn && btn.textContent === '處理中...') { btn.textContent = '領取登入獎勵'; btn.disabled = false; }
+            }
+        }
+        
+        function showHelp() {
+            document.getElementById('helpModal').classList.add('show');
+            showHelpPage(1);
+        }
+        
+        function showHelpPage(page) {
+            document.getElementById('helpPage1').style.display = page === 1 ? 'block' : 'none';
+            document.getElementById('helpPage2').style.display = page === 2 ? 'block' : 'none';
+        }
+        
+        function hideHelp() {
+            document.getElementById('helpModal').classList.remove('show');
+        }
+        
+        // Toast 提示功能
+        function showToast(msg, type = 'error') {
+            let toast = document.getElementById('toastMsg');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toastMsg';
+                toast.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: ${type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)'};
+                    color: white; padding: 15px 25px; border-radius: 10px;
+                    font-size: 1rem; z-index: 9999; text-align: center;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-width: 80%;
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.background = type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)';
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+        
+        // 獎勵彈窗特效
+        function showBonusPopup(title, message) {
+            // 建立彩帶元素
+            createConfetti();
+            
+            let popup = document.getElementById('bonusPopup');
+            if (!popup) {
+                popup = document.createElement('div');
+                popup.id = 'bonusPopup';
+                popup.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: linear-gradient(135deg, #1a1a2e, #16213e);
+                    border: 3px solid #ffd700; border-radius: 20px;
+                    padding: 30px 40px; text-align: center; z-index: 10000;
+                    box-shadow: 0 0 50px rgba(255,215,0,0.5);
+                    display: none;
+                `;
+                document.body.appendChild(popup);
+            }
+            popup.innerHTML = '<div style="font-size:2rem;margin-bottom:10px;">🎁</div><div style="font-size:1.5rem;font-weight:bold;color:#ffd700;margin-bottom:10px;">' + title + '</div><div style="font-size:1.2rem;color:#00ff00;">' + message + '</div>';
+            popup.style.display = 'block';
+            popup.style.animation = 'bonusPopIn 0.5s ease-out';
+            
+            // 新增動畫
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes bonusPopIn {
+                    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                    50% { transform: translate(-50%, -50%) scale(1.2); }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                }
+                @keyframes confettiFall {
+                    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+                }
+            `;
+            if (!document.querySelector('style[data-id="bonusAnim"]')) {
+                style.setAttribute('data-id', 'bonusAnim');
+                document.head.appendChild(style);
+            }
+            
+            setTimeout(() => { popup.style.display = 'none'; }, 2500);
+        }
+        
+        // 廣告彈窗（LBR-STUDIO）
+        function showAdPopup() {
+            // Use ad from server response if available, otherwise fallback to first ad image
+            const fallbackImg = '/roulette/ad1.jpg';
+            const randomImg = window.currentAdUrl || fallbackImg;
+            let modal = document.getElementById('adModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'adModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:700;display:none;justify-content:center;align-items:center;';
+                modal.innerHTML = `
+                    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #ffd700;border-radius:20px;padding:20px;max-width:320px;width:90%;text-align:center;color:white;box-shadow:0 0 40px rgba(255,215,0,0.3);">
+                        <img src="" id="adModalImg" style="width:100%;max-width:250px;border-radius:12px;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.5);" />
+                        <div style="font-size:1.2rem;font-weight:bold;color:#ffd700;margin-bottom:12px;">主播問你要來嗎?</div>
+                        <div style="font-size:1.2rem;color:#fff;margin-bottom:15px;">ID：<strong style="color:#00c864;">7788ryay</strong></div>
+                        <button onclick="window.open('https://line.me/ti/p/@778ryayw','_blank')" style="padding:12px 25px;background:#00c864;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:white;">💬 聯繫LINE</button>
+                        <div onclick="document.getElementById('adModal').style.display='none'" style="margin-top:12px;color:#666;font-size:0.85rem;cursor:pointer;">稍後再說</div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('adModalImg').src = randomImg;
+            modal.style.display = 'flex';
+            playSound('win');
+        }
+        
+        // 活動公告彈窗
+        function showPromotionAnnounce() {
+            let modal = document.getElementById('promotionModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'promotionModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:600;display:none;justify-content:center;align-items:center;';
+                modal.innerHTML = `
+                    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #ffd700;border-radius:20px;padding:25px;max-width:320px;width:90%;text-align:center;color:white;box-shadow:0 0 40px rgba(255,215,0,0.4);">
+                        <div style="font-size:2rem;margin-bottom:10px;">🎉</div>
+                        <div style="font-size:1.3rem;font-weight:bold;color:#ffd700;margin-bottom:15px;">🎁 每日獎勵活動</div>
+                        <div style="font-size:0.95rem;color:#ddd;line-height:1.8;text-align:left;margin-bottom:15px;">
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                                <div style="color:#ffd700;margin-bottom:5px;">🎬 看片領 1000 金幣</div>
+                                <div>每天一次，請先看完影片</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
+                                <div>每天登入自動發放</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                                <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
+                                <div>最高可領 $2000</div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                                <div style="color:#ffd700;margin-bottom:5px;">💰 儲值 1:100</div>
+                                <div>1元台幣 = 100金幣</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:left;">
+                                <div style="color:#ffd700;margin-bottom:5px;">🎁 3% 隨機 bonus</div>
+                                <div>下注時 <b style="color:#00ff00;">+$200</b></div>
+                            </div>
+                        </div>
+                        <div style="font-size:0.85rem;color:#aaa;margin-bottom:15px;">將遊戲分數截圖傳至 LINE 兌換獎品</div>
+                        <div style="font-size:0.85rem;color:#00c864;margin-bottom:15px;">🥇 50,000分→襪子 🥈 100,000分→短袖 🥉 160,000分→帽子</div>
+                        <button onclick="closePromotionAndSave()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">我知道了！</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+        }
+        
+        function closePromotionAndSave() {
+            const modal = document.getElementById('promotionModal');
+            if (modal) modal.style.display = 'none';
+            if (myName) localStorage.setItem('rouletteAnnounce_' + myName, 'true');
+        }
+        
+        // 彩帶特效
+        function createConfetti() {
+            const colors = ['#ffd700', '#ff4444', '#00ff00', '#00aaff', '#ff00ff', '#ffa500'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed; top: -20px; left: ${Math.random() * 100}vw;
+                    width: ${Math.random() * 10 + 5}px; height: ${Math.random() * 10 + 5}px;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
+                    z-index: 9998; pointer-events: none;
+                `;
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+        
+        // 震動功能
+        function vibrateDevice(pattern) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(pattern);
+            }
+        }
+        
+        // 顯示排行榜（彈窗模式）
+        async function showLeaderboard() {
+            try {
+                const res = await fetch('/api/roulette/leaderboard');
+                const data = await res.json();
+                if (!data.success) {
+                    showToast('載入排行榜失敗', 'error');
+                    return;
+                }
+                
+                let html = '<div style="text-align:center;margin-bottom:15px;"><span style="font-size:1.5rem;">🏆</span><br><strong style="color:#ffd700;font-size:1.2rem;">排行榜 TOP 15</strong></div>';
+                html += '<div style="max-height:300px;overflow-y:auto;">';
+                data.leaderboard.forEach((player, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                    const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
+                    const tierGradients = {
+                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
+                    };
+                    const tierColor = tierGradients[player.tier] || '#888';
+                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
+                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
+                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                });
+                html += '</div>';
+                
+                let modal = document.getElementById('leaderboardModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'leaderboardModal';
+                    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:500;display:none;justify-content:center;align-items:center;';
+                    modal.innerHTML = '<div style="background:#1a1a2e;border:2px solid #ffd700;border-radius:15px;padding:20px;max-width:320px;width:90%;color:white;"></div>';
+                    modal.querySelector('div').innerHTML = html;
+                    modal.querySelector('div').onclick = (e) => { e.stopPropagation(); };
+                    modal.onclick = () => { modal.style.display = 'none'; };
+                    document.body.appendChild(modal);
+                }
+                modal.querySelector('div').innerHTML = html + '<button onclick="document.getElementById(\x27leaderboardModal\x27).style.display=\x27none\x27" style="margin-top:15px;width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">關閉</button>';
+                modal.style.display = 'flex';
+            } catch(e) {
+                showToast('載入排行榜失敗', 'error');
+            }
+        }
+        
+        // 顯示意見反饋彈窗
+        function showFeedback() {
+            let modal = document.getElementById('feedbackModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'feedbackModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:500;display:none;justify-content:center;align-items:center;backdrop-filter:blur(5px);';
+                modal.innerHTML = '<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:2px solid #ffd700;border-radius:20px;padding:30px 25px;max-width:300px;width:90%;color:white;box-shadow:0 10px 40px rgba(0,0,0,0.5);"></div>';
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = '<div style="text-align:center;">' +
+                '<h2 style="color:#ffd700;margin:0 0 8px 0;font-size:1.4rem;">💬 意見反饋</h2>' +
+                '<p style="color:#aaa;margin:0 0 20px 0;font-size:0.9rem;">遇到問題或有建議？告訴我們！</p>' +
+                '<input type="text" id="feedbackText" placeholder="請輸入您的意見..." style="width:100%;padding:14px;border:2px solid #ffd700;border-radius:12px;background:rgba(255,255,255,0.1);color:white;font-size:1rem;margin-bottom:15px;box-sizing:border-box;display:block;outline:none;">' +
+                '<button onclick="submitFeedback()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:12px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:1rem;display:block;">送出反饋</button>' +
+                '<div id="feedbackMsg" style="margin:12px 0;font-size:0.9rem;min-height:20px;"></div>' +
+                '<button onclick="document.getElementById(\x27feedbackModal\x27).style.display=\x27none\x27" style="width:100%;padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.3);border-radius:8px;cursor:pointer;color:#aaa;font-size:0.9rem;display:block;">關閉</button>' +
+                '</div>';
+            modal.style.display = 'flex';
+        }
+        
+        // 載入排行榜（Tab內用）
+        async function loadLeaderboard() {
+            const listEl = document.getElementById('leaderboardList');
+            if (!listEl) return;
+            listEl.innerHTML = '載入中...';
+            try {
+                const res = await fetch('/api/roulette/leaderboard');
+                const data = await res.json();
+                if (!data.success) { listEl.innerHTML = '載入失敗'; return; }
+                if (!data.leaderboard || data.leaderboard.length === 0) { listEl.innerHTML = '暫無資料'; return; }
+                let html = '<div style="max-height:250px;overflow-y:auto;">';
+                data.leaderboard.forEach((player, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                    const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
+                    const tierGradients = {
+                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
+                    };
+                    const tierColor = tierGradients[player.tier] || '#888';
+                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
+                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
+                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                });
+                html += '</div>';
+                listEl.innerHTML = html;
+            } catch(e) {
+                listEl.innerHTML = '載入失敗';
+            }
+        }
+    </script>
+    <script>
+        // 註冊 Service Worker (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/roulette/service-worker.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker 註冊成功:', registration.scope);
+                    }, function(err) {
+                        console.log('ServiceWorker 註冊失敗:', err);
+                    });
+            });
+        }
+            // 看片領金幣功能
+            let videoWatched = false;
+        
+        function openVideoPopup() {
+            if (!myName) { showToast('請先登入'); return; }
+            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
+            document.getElementById('videoPopup').classList.add('show');
+            document.getElementById('videoClaimSubmit').disabled = true;
+            document.getElementById('videoClaimSubmit').textContent = '請等待...';
+            videoWatched = false;
+            // 30秒後可領取
+            setTimeout(() => { 
+                videoWatched = true;
+                document.getElementById('videoClaimSubmit').disabled = false;
+                document.getElementById('videoClaimSubmit').textContent = '✅ 領取 1000 金幣';
+            }, 30000);
+        }
+        
+        function closeVideoPopup() {
+            document.getElementById('videoPopup').classList.remove('show');
+            document.getElementById('videoFrame').src = '';
+        }
+        
+        async function claimVideoReward() {
+            if (!myName) { showToast('請先登入'); return; }
+            if (!videoWatched) { showToast('請先看完影片'); return; }
+            try {
+                const resp = await fetch('/api/roulette/claim-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('獲得 ' + data.amount + ' 金幣！');
+                    document.getElementById('balance').textContent = data.newScore;
+                    closeVideoPopup();
+                } else {
+                    showToast(data.message || '領取失敗');
+                }
+            } catch(e) { showToast('領取失敗'); }
+        }
+        </script>
+        <!-- 看片彈窗 -->
+        <div class="video-popup" id="videoPopup">
+            <button class="close-btn" onclick="closeVideoPopup()">✕</button>
+            <h3 style="color: #ffd700; margin-bottom: 10px;">🎬 觀看影片領取1000金幣</h3>
+            <iframe id="videoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
+            <button class="claim-btn" id="videoClaimSubmit" onclick="claimVideoReward()" disabled>請等待...</button>
+        </div>
+    </body>
+</html>

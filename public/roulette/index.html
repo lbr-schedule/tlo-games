@@ -2324,9 +2324,9 @@
         
         // 廣告彈窗（LBR-STUDIO）
         function showAdPopup() {
-            // Use ad from server response if available, otherwise fallback to first ad image
-            const fallbackImg = '/roulette/ad1.jpg';
-            const randomImg = window.currentAdUrl || fallbackImg;
+            // Pick a random ad each time from the 5 local images
+            const adImages = ['/roulette/ad1.jpg', '/roulette/ad2.jpg', '/roulette/ad3.jpg', '/roulette/ad4.jpg', '/roulette/ad5.jpg'];
+            const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
             let modal = document.getElementById('adModal');
             if (!modal) {
                 modal = document.createElement('div');

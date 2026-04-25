@@ -178,11 +178,11 @@ let rouletteState = {
 
 // 輪盤廣告設定
 const ROULETTE_ADS = [
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
-    'https://placehold.co/600x800/16213e/ff8c00?text=LBR+HOME62%0A%E5%85%A8%E6%96%B0%E4%B8%8A%E6%96%B0',
-    'https://placehold.co/600x800/0f3460/ffd700?text=%E5%94%AE%E5%88%B0%E5%85%A8%E7%90%83%0A%E5%8D%B3%E5%88%B0%E5%8D%B3%E5%90%88',
-    'https://placehold.co/600x800/1a1a2e/ffffff?text=%E7%B4%8D%E5%85%A5%E5%AE%98%E9%9A%99%E5%8F%8A%E5%A5%BD%E5%8F%8A%E5%8F%8A',
-    'https://placehold.co/600x800/1a1a2e/ffd700?text=%E9%A0%90%E5%91%8A%E4%B8%8A%E6%96%B0%E5%88%B0%E8%B3%BC%E5%90%89%E5%88%A9'
+    '/roulette/ad1.jpg',
+    '/roulette/ad2.jpg',
+    '/roulette/ad3.jpg',
+    '/roulette/ad4.jpg',
+    '/roulette/ad5.jpg'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
