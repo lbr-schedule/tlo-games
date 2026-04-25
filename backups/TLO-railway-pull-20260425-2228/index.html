@@ -446,15 +446,7 @@
                 <p>🎰 轉盤停止後，結果自動顯示</p>
                 <p>💰 猜對獲得獎金，猜錯沒收本金</p>
                 <p style="margin-top:10px;">🔄 可以持續下注，累積獎金！</p>
-            </div>
-
-            <div class="guide-step" id="guideStep4" style="display:none;">
-                <h3>📌 第四步：了解你的階級</h3>
-                <p>🎖️ 每週下注金額會提升你的階級</p>
-                <p>青銅 → 白銀 → 黃金 → 白金 → 鑽石</p>
-                <p style="margin-top:10px;">💡 點擊選單 ☰ 查看「🎖️ 等級」了解詳情</p>
-                <p style="margin-top:10px;">📋 每日挑戰完成可獲得額外金幣</p>
-                <p style="margin-top:10px;">🔥 連續登入也有額外獎勵</p>
+                <p style="margin-top:10px;color:#aaa;">有任何問題，點擊右上角 ❓ 查看說明</p>
             </div>
             
             <button id="guideNextBtn" onclick="nextGuide(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一步</button>
@@ -1784,9 +1776,6 @@
                 btn.textContent = '下一步';
                 btn.onclick = () => nextGuide(3);
             } else if (step === 3) {
-                btn.textContent = '下一步';
-                btn.onclick = () => nextGuide(4);
-            } else if (step === 4) {
                 btn.textContent = '我知道了';
                 btn.onclick = hideGuide;
             }
