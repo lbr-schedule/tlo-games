@@ -101,7 +101,7 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
-            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1)`
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1, completed_tasks TEXT DEFAULT '[]')`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
         // 啟動時載入神秘彩池、廣告索引、贏家狀態
         loadMysteryPool();
@@ -923,10 +923,15 @@ app.post('/api/roulette/claim-task', async (req, res) => {
         if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
         await checkAndResetDailyTasks(username);
         const stats = localStats[username];
+        if (!stats.completed_tasks) stats.completed_tasks = [];
+        if (stats.completed_tasks.includes(taskId)) {
+            return res.json({ success: false, message: '已經領取過了', alreadyClaimed: true });
+        }
         const task = DAILY_TASKS.find(t => t.id === taskId);
         if (!task) return res.json({ success: false, message: '任務不存在' });
         if (!task.condition(stats)) return res.json({ success: false, message: '任務尚未完成' });
         if (localPlayers[username]) localPlayers[username].score += task.reward;
+        stats.completed_tasks.push(taskId);
         const newScore = localPlayers[username]?.score || 0;
         return res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
     }
@@ -935,13 +940,20 @@ app.post('/api/roulette/claim-task', async (req, res) => {
     
     try {
         const r = await rouletteDb.execute({
-            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today FROM roulette_player_stats WHERE username = ?',
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, completed_tasks FROM roulette_player_stats WHERE username = ?',
             args: [username]
         });
         
-        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0 };
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, completed_tasks: '[]' };
         if (r.rows && r.rows.length > 0) {
             playerStats = { ...playerStats, ...r.rows[0] };
+        }
+        
+        // Parse completed tasks
+        let completedTasks = [];
+        try { completedTasks = JSON.parse(playerStats.completed_tasks || '[]'); } catch(e) {}
+        if (completedTasks.includes(taskId)) {
+            return res.json({ success: false, message: '已經領取過了', alreadyClaimed: true });
         }
         
         const task = DAILY_TASKS.find(t => t.id === taskId);
@@ -953,6 +965,15 @@ app.post('/api/roulette/claim-task', async (req, res) => {
             await rouletteDb.execute({
                 sql: 'UPDATE players SET score = score + ? WHERE username = ?',
                 args: [task.reward, username]
+            });
+        }
+        
+        // 標記任務已完成
+        completedTasks.push(taskId);
+        if (rouletteDb) {
+            await rouletteDb.execute({
+                sql: 'UPDATE roulette_player_stats SET completed_tasks = ? WHERE username = ?',
+                args: [JSON.stringify(completedTasks), username]
             });
         }
         
