@@ -724,9 +724,15 @@
         document.addEventListener('click', () => {
             if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
                 startBgMusic();
-                bgMusicBlocked = false;
             }
-        }, { once: true });
+        }, { passive: true });
+        
+        // 也監聽 touchstart（手機用戶）
+        document.addEventListener('touchstart', () => {
+            if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
+                startBgMusic();
+            }
+        }, { passive: true });
         
         // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
         const wheelNumbers = [
