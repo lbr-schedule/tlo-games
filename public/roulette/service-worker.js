@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = 'tlo-roulette-' + CACHE_VERSION;
 const urlsToCache = [
   '/roulette/',
@@ -14,13 +14,18 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 取得快取內容 - 總是取得新版本
+// 取得快取內容 - index.html 不快取，永遠拿新版本
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  // index.html 永遠從網路拿，不 cache
+  if (url.pathname.endsWith('index.html')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   if (event.request.method !== 'GET') { event.respondWith(fetch(event.request)); return; }
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // 不快取非成功的回應
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
@@ -32,7 +37,6 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
-        // 網路失敗時回使用快取
         return caches.match(event.request);
       })
   );
