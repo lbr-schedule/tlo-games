@@ -952,65 +952,57 @@
             if (!myName) return;
             const btn = document.getElementById('claimStreakBtn');
             const msg = document.getElementById('streakMsg');
-            btn.disabled = true;
+            if (btn) btn.disabled = true;
             try {
                 const res = await fetch('/api/roulette/claim-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName })
                 });
-                let data;
-                try {
-                    data = await res.json();
-                } catch(e) {
-                    console.log('JSON parse error:', e);
-                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-                    showToast('連線失敗', 'error');
-                    return;
-                }
+                const data = await res.json();
                 if (data.success) {
                     msg.textContent = '✅ ' + data.message;
                     msg.style.color = '#0f0';
                     myBalance = data.newScore || myBalance;
                     updateBalanceDisplay();
+                    showToast('✅ ' + data.message, 'success');
                     setTimeout(loadTasks, 500);
                 } else {
-                    msg.textContent = data.message;
+                    msg.textContent = data.message || '已領取';
                     msg.style.color = '#ff6b6b';
-                    btn.disabled = false;
+                    if (btn) btn.disabled = false;
                 }
             } catch(e) {
-                msg.textContent = '連線失敗';
-                msg.style.color = '#ff6b6b';
-                btn.disabled = false;
+                if (msg) { msg.textContent = '連線失敗'; msg.style.color = '#ff6b6b'; }
+                if (btn) btn.disabled = false;
+                showToast('連線失敗', 'error');
             }
         }
         
         async function claimTask(taskId) {
             if (!myName) return;
+            const btn = event && event.target ? event.target.closest('button') : null;
+            if (btn) { btn.disabled = true; }
             try {
                 const res = await fetch('/api/roulette/claim-task', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName, taskId })
                 });
-                let data;
-                try {
-                    data = await res.json();
-                } catch(e) {
-                    console.log('JSON parse error:', e);
-                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-                    showToast('連線失敗', 'error');
-                    return;
-                }
+                const data = await res.json();
                 if (data.success) {
                     myBalance = data.newScore || myBalance;
                     updateBalanceDisplay();
+                    showToast('✅ 領取成功！+$' + (data.reward || 0), 'success');
                     setTimeout(loadTasks, 500);
                 } else {
-                    alert(data.message || '領取失敗');
+                    showToast(data.message || '領取失敗', 'error');
                 }
-            } catch(e) { alert('連線失敗'); }
+            } catch(e) {
+                showToast('連線失敗，請稍後再試', 'error');
+            } finally {
+                if (btn) { btn.disabled = false; }
+            }
         }
         
         function showTab(tab) {
