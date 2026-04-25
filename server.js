@@ -39,8 +39,43 @@ const LOCAL_TEST_MODE = !process.env.ROULETTE_DATABASE_URL;
 const localPlayers = {}; // { username: { password, score, invitedBy } }
 const localFeedback = []; // { username, feedback, time }
 const weeklyRewardConfig = { top1: 1000, top2: 800, top3: 500 }; // 每週前三名獎勵
+
+// 等級制度設定（一週結算）
+const LEVEL_THRESHOLDS = [
+    { level: 1, title: '菜鳥', tier: '青銅' },
+    { level: 11, title: '新手', tier: '白銀' },
+    { level: 21, title: '老手', tier: '黃金' },
+    { level: 31, title: '大師', tier: '白金' },
+    { level: 41, title: '傳說', tier: '鑽石' },
+];
+
+function calculateLevel(weeklyBet) {
+    // 等級門檻：1-10: 0, 11-20: 10000, 21-30: 50000, 31-40: 200000, 41-50: 500000
+    if (weeklyBet >= 500000) return Math.min(50, 41 + Math.floor((weeklyBet - 500000) / 25000));
+    if (weeklyBet >= 200000) return Math.min(40, 31 + Math.floor((weeklyBet - 200000) / 30000));
+    if (weeklyBet >= 50000) return Math.min(30, 21 + Math.floor((weeklyBet - 50000) / 15000));
+    if (weeklyBet >= 10000) return Math.min(20, 11 + Math.floor((weeklyBet - 10000) / 9000));
+    return Math.max(1, Math.min(10, 1 + Math.floor(weeklyBet / 2000)));
+}
+
+function getLevelInfo(weeklyBet) {
+    const level = calculateLevel(weeklyBet);
+    let tier = '青銅', title = '菜鳥';
+    for (const t of LEVEL_THRESHOLDS) {
+        if (level >= t.level) { tier = t.tier; title = t.title; }
+    }
+    return { level, tier, title };
+}
+
+function getWeekStartDate(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+}
 let lastWeeklyReset = new Date().toISOString().split('T')[0]; // 用於追蹤每週結算
 const localHistory = [];  // [{ username, result, color, win, amount }]
+const localStats = {};  // { username: { bet_count_today, wins_today, mystery_bets_today, last_task_reset, last_login_date, login_streak, streak_title, weekly_bet } }
 
 if (LOCAL_TEST_MODE) {
     console.log('⚠️ 本地測試模式：使用記憶體資料庫（所有資料重啟後消失）');
@@ -66,7 +101,7 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
-            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '')`
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1)`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
         // 啟動時載入神秘彩池、廣告索引、贏家狀態
         loadMysteryPool();
@@ -181,8 +216,16 @@ function getYesterdayStr() {
 }
 
 async function checkAndResetDailyTasks(username) {
-    if (!rouletteDb) return;
     const today = getTodayStr();
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        const stats = localStats[username];
+        if (stats.last_task_reset !== today) {
+            stats.bet_count_today = 0; stats.wins_today = 0; stats.mystery_bets_today = 0; stats.last_task_reset = today;
+        }
+        return;
+    }
+    if (!rouletteDb) return;
     try {
         const r = await rouletteDb.execute({
             sql: 'SELECT bet_count_today, last_task_reset FROM roulette_player_stats WHERE username = ?',
@@ -201,8 +244,18 @@ async function checkAndResetDailyTasks(username) {
 }
 
 async function processLoginStreak(username) {
-    if (!rouletteDb) return { streak: 0, bonus: 0, title: '' };
     const today = getTodayStr();
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        const stats = localStats[username];
+        if (stats.last_login_date === today) return { streak: stats.login_streak, bonus: 0, title: stats.streak_title, alreadyClaimed: true };
+        const newStreak = stats.last_login_date === getYesterdayStr() ? Math.min(stats.login_streak + 1, 7) : 1;
+        const bonus = STREAK_REWARDS[newStreak - 1] || 200;
+        const title = newStreak === 7 ? STREAK_TITLES[6] : '';
+        stats.last_login_date = today; stats.login_streak = newStreak; stats.streak_title = title;
+        return { streak: newStreak, bonus, title, alreadyClaimed: false };
+    }
+    if (!rouletteDb) return { streak: 0, bonus: 0, title: '' };
     try {
         const r = await rouletteDb.execute({
             sql: 'SELECT last_login_date, login_streak, streak_title FROM roulette_player_stats WHERE username = ?',
@@ -775,6 +828,13 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
     const { username } = req.query;
     if (!username) return res.json({ success: false, message: '缺少 username' });
     
+    if (LOCAL_TEST_MODE) {
+        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '' };
+        await checkAndResetDailyTasks(username);
+        const tasks = DAILY_TASKS.map(t => ({ ...t, completed: t.condition(stats) }));
+        return res.json({ success: true, tasks, streak: stats.login_streak, streakTitle: stats.streak_title, stats: { betCount: stats.bet_count_today, winsCount: stats.wins_today, mysteryBets: stats.mystery_bets_today } });
+    }
+    
     await checkAndResetDailyTasks(username);
     
     try {
@@ -788,7 +848,6 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
             playerStats = { ...playerStats, ...r.rows[0] };
         }
         
-        // 計算任務進度
         const tasks = DAILY_TASKS.map(t => ({
             ...t,
             completed: t.condition(playerStats)
@@ -814,6 +873,16 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
 app.post('/api/roulette/claim-login', async (req, res) => {
     const { username } = req.body;
     if (!username) return res.json({ success: false, message: '缺少 username' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        await checkAndResetDailyTasks(username);
+        const result = await processLoginStreak(username);
+        if (result.alreadyClaimed) return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
+        if (result.bonus > 0 && localPlayers[username]) localPlayers[username].score += result.bonus;
+        const newScore = localPlayers[username]?.score || 0;
+        return res.json({ success: true, message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`, streak: result.streak, bonus: result.bonus, title: result.title, newScore });
+    }
     
     await checkAndResetDailyTasks(username);
     const result = await processLoginStreak(username);
@@ -849,6 +918,18 @@ app.post('/api/roulette/claim-login', async (req, res) => {
 app.post('/api/roulette/claim-task', async (req, res) => {
     const { username, taskId } = req.body;
     if (!username || !taskId) return res.json({ success: false, message: '缺少資料' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        await checkAndResetDailyTasks(username);
+        const stats = localStats[username];
+        const task = DAILY_TASKS.find(t => t.id === taskId);
+        if (!task) return res.json({ success: false, message: '任務不存在' });
+        if (!task.condition(stats)) return res.json({ success: false, message: '任務尚未完成' });
+        if (localPlayers[username]) localPlayers[username].score += task.reward;
+        const newScore = localPlayers[username]?.score || 0;
+        return res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
+    }
     
     await checkAndResetDailyTasks(username);
     
@@ -960,14 +1041,30 @@ app.post('/api/roulette/bet', async (req, res) => {
     // 更新每日任務計數
     await checkAndResetDailyTasks(username);
     const isMystery = (betType === 'number' && choice === 0);
-    if (rouletteDbAvailable) {
+    
+    // 每週結算：檢查是否需要重置
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const isMonday = dayOfWeek === 1;
+    
+    if (LOCAL_TEST_MODE) {
+        // LOCAL_TEST_MODE: 更新記憶體中的 weekly_bet 和 任務計數
+        if (!localPlayers[username]) localPlayers[username] = { weekly_bet: 0 };
+        localPlayers[username].weekly_bet = (localPlayers[username].weekly_bet || 0) + amount;
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        localStats[username].bet_count_today = (localStats[username].bet_count_today || 0) + 1;
+        if (isMystery) localStats[username].mystery_bets_today = (localStats[username].mystery_bets_today || 0) + 1;
+    } else if (rouletteDbAvailable) {
         rouletteDb.execute({
-            sql: 'UPDATE roulette_player_stats SET bet_count_today = bet_count_today + 1' + (isMystery ? ', mystery_bets_today = mystery_bets_today + 1' : '') + ' WHERE username = ?',
-            args: [username]
-        }).catch(e => console.log('更新每日任務計數失敗:', e.message));
+            sql: 'UPDATE roulette_player_stats SET bet_count_today = bet_count_today + 1' + (isMystery ? ', mystery_bets_today = mystery_bets_today + 1' : '') + ', weekly_bet = weekly_bet + ? WHERE username = ?',
+            args: [amount, username]
+        }).catch(e => console.log('更新下注失敗:', e.message));
     }
     
-    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool, newScore: newPlayerScore });
+    // 計算等級（每週結算）
+    const level = calculateLevel(amount); // 仮：每筆下注都算 level up
+    
+    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool, newScore: newPlayerScore, level });
 
 // 看片領金幣
 app.post('/api/roulette/claim-video', async (req, res) => {
@@ -1174,7 +1271,7 @@ app.post('/api/roulette/login', async (req, res) => {
             
             // 只在 lastLogin 有值且不是今天時才發放（或是空值也表示從未領過，直接發放）
             if (!lastLogin || lastLogin !== today) {
-                dailyBonus = 1000;
+                dailyBonus = 500;
                 console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
                 try {
                     await rouletteDb.execute({
@@ -1202,9 +1299,13 @@ app.post('/api/roulette/login', async (req, res) => {
 // 輪盤遊戲 - 排行榜
 app.get('/api/roulette/leaderboard', async (req, res) => {
     if (LOCAL_TEST_MODE) {
-        // 本地模式：取 localPlayers 前10名
+        // 本地模式：取 localPlayers 前10名（含稱號）
         const sorted = Object.entries(localPlayers)
-            .map(([username, data]) => ({ username, score: data.score || 0 }))
+            .map(([username, data]) => {
+                const weeklyBet = data.weekly_bet || 0;
+                const levelInfo = getLevelInfo(weeklyBet);
+                return { username, score: data.score || 0, ...levelInfo };
+            })
             .sort((a, b) => b.score - a.score)
             .slice(0, 10);
         return res.json({ success: true, leaderboard: sorted });
@@ -1214,10 +1315,16 @@ app.get('/api/roulette/leaderboard', async (req, res) => {
     
     try {
         const result = await rouletteDb.execute({
-            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 15`
+            sql: `SELECT p.username, p.score, s.weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username ORDER BY p.score DESC LIMIT 15`
+        });
+        // 加入稱號
+        const leaderboard = (result.rows || []).map(r => {
+            const weeklyBet = r.weekly_bet || 0;
+            const levelInfo = getLevelInfo(weeklyBet);
+            return { username: r.username, score: r.score, ...levelInfo };
         });
         console.log('排行榜查詢成功, count:', result.rows?.length || 0);
-        res.json({ success: true, leaderboard: result.rows || [] });
+        res.json({ success: true, leaderboard });
     } catch(e) {
         console.log('排行榜查詢失敗:', e.message);
         res.json({ success: false, message: '查詢失敗' });
@@ -1797,6 +1904,72 @@ app.get('/api/roulette/player/:username', async (req, res) => {
         }
     } catch(e) {
         res.json({ player: null });
+    }
+});
+
+// 管理員：直接執行 SQL（用於資料庫欄位新增）
+app.post('/api/roulette/admin/exec-sql', async (req, res) => {
+    const { sql } = req.body;
+    if (!sql) return res.json({ success: false, message: '請提供 SQL' });
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({ sql });
+        res.json({ success: true, result });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 玩家階級資料
+app.post('/api/roulette/admin/set-weekly-bet', async (req, res) => {
+    const { username, weeklyBet } = req.body;
+    if (!username || weeklyBet === undefined) return res.json({ success: false, message: '請提供 username 和 weeklyBet' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localPlayers[username]) localPlayers[username] = {};
+        localPlayers[username].weekly_bet = weeklyBet;
+        const levelInfo = getLevelInfo(weeklyBet);
+        return res.json({ success: true, username, weeklyBet, ...levelInfo });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        await rouletteDb.execute({
+            sql: 'UPDATE roulette_player_stats SET weekly_bet = ? WHERE username = ?',
+            args: [weeklyBet, username]
+        });
+        const levelInfo = getLevelInfo(weeklyBet);
+        res.json({ success: true, username, weeklyBet, ...levelInfo });
+    } catch(e) {
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+app.get('/api/roulette/player-level/:username', async (req, res) => {
+    const username = req.params.username;
+    
+    // LOCAL_TEST_MODE: 使用記憶體資料
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        const weeklyBet = localPlayers[username]?.weekly_bet || 0;
+        const levelInfo = getLevelInfo(weeklyBet);
+        return res.json({ weeklyBet, ...levelInfo });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ level: 1, tier: '青銅', title: '菜鳥', weeklyBet: 0 });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT weekly_bet, level FROM roulette_player_stats WHERE username = ?`,
+            args: [username]
+        });
+        if (result.rows && result.rows.length > 0) {
+            const weeklyBet = result.rows[0].weekly_bet || 0;
+            const levelInfo = getLevelInfo(weeklyBet);
+            res.json({ weeklyBet, ...levelInfo });
+        } else {
+            res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
+        }
+    } catch(e) {
+        res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
     }
 });
 
