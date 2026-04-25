@@ -983,8 +983,9 @@
             if (!myName) return;
             const btn = event && event.target ? event.target.closest('button') : null;
             if (btn) { btn.disabled = true; }
+            let res;
             try {
-                const res = await fetch('/api/roulette/claim-task', {
+                res = await fetch('/api/roulette/claim-task', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName, taskId })
@@ -999,7 +1000,7 @@
                     showToast(data.message || '領取失敗', 'error');
                 }
             } catch(e) {
-                console.log('❌ claimTask ERROR:', e.message, '| status:', res ? res.status : 'no-response', '| url:', res ? res.url : 'unknown');
+                console.log('❌ claimTask ERROR:', e.message, '| status:', res ? res.status : 'N/A', '| url:', res ? res.url : window.location.href);
                 showToast('連線失敗：' + (e.message || '未知錯誤'), 'error');
             } finally {
                 if (btn) { btn.disabled = false; }
