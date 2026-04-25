@@ -959,7 +959,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName })
                 });
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch(e) {
+                    console.log('JSON parse error:', e);
+                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                    showToast('連線失敗', 'error');
+                    return;
+                }
                 if (data.success) {
                     msg.textContent = '✅ ' + data.message;
                     msg.style.color = '#0f0';
@@ -986,7 +994,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName, taskId })
                 });
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch(e) {
+                    console.log('JSON parse error:', e);
+                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                    showToast('連線失敗', 'error');
+                    return;
+                }
                 if (data.success) {
                     myBalance = data.newScore || myBalance;
                     updateBalanceDisplay();
@@ -1025,7 +1041,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName, feedback: text })
                 });
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch(e) {
+                    console.log('JSON parse error:', e);
+                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                    showToast('連線失敗', 'error');
+                    return;
+                }
                 if (data.success) {
                     msg.textContent = '✅ 感謝您的反饋！';
                     msg.style.color = '#00ff00';
@@ -2136,7 +2160,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName })
                 });
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch(e) {
+                    console.log('JSON parse error:', e);
+                    if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                    showToast('連線失敗', 'error');
+                    return;
+                }
                 if (data.success) {
                     if (btn) { btn.textContent = '已領取 ✅'; btn.style.background = '#1a472a'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0'; }
                     myBalance = data.newScore || myBalance;
@@ -2147,7 +2179,8 @@
                     showToast(data.message || '已領取過', 'info');
                 }
             } catch(e) {
-                if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
+                console.log('claimLoginFromMenu error:', e);
+                if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; showToast('連線失敗，請稍後再試', 'error'); }
             } finally {
                 if (btn && btn.textContent === '處理中...') { btn.textContent = '領取登入獎勵'; btn.disabled = false; }
             }
