@@ -64,11 +64,9 @@
             touch-action: pan-y;
         }
         
-        h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
-        #playerNameDisplay { display: flex; align-items: center; height: 100%; }
-        #balanceBox { display: flex; align-items: center; height: 100%; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38.78px; box-sizing: border-box; }
         .balance { font-size: 0.95rem; }
         .balance span { color: #ffd700; font-weight: bold; }
         .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
@@ -130,7 +128,7 @@
         .result-display.black { background: rgba(50,50,50,0.8); border: 2px solid #888; font-size: 1.1rem; }
         .result-display.green { background: rgba(0,120,0,0.7); border: 2px solid #00ff00; font-size: 1.1rem; }
         
-        .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 2px 4px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 2px; border: 1px solid rgba(255,255,255,0.25); width: 30px; height: 26px; box-sizing: border-box; }
+        .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 3px; border: 1px solid rgba(255,255,255,0.25); width: 40px; height: 30px; box-sizing: border-box; }
         .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -185,12 +183,6 @@
         .bets-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 8px; border-radius: 12px; margin: 6px 0; transition: all 0.3s ease; flex-shrink: 0; }
         .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
-        .title-shine { position: relative; overflow: hidden; display: inline-block; }
-        .title-shine::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent); animation: title-shine-slide 1.5s linear infinite; }
-        @keyframes title-shine-slide {
-            0% { left: -50%; }
-            100% { left: 150%; }
-        }
         .current-bets-box h4 { color: #00ff88; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; }
         @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
         .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; width: 316px; height: 180px; overflow-y: auto; flex-shrink: 0; box-sizing: border-box; }
@@ -274,11 +266,15 @@
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         🎁 <span id="broadcastText"></span>
     </div>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:10px;"><button onclick="leaveGame()" class="header-btn">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn">🔊</span><span class="help-toggle" onclick="showFeedback()">💬</span><span class="help-toggle" onclick="showHelp()">❓</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
-            <span id="playerNameDisplay"></span><span id="balanceBox">💰 <span id="balance">1000</span></span>
+            <div class="balance" id="balanceBox">💰 餘額: <span id="balance">1000</span></div>
+            <button class="video-claim-btn" id="videoClaimBtn" onclick="openVideoPopup()" style="padding:5px 10px;font-size:0.75rem;">🎬 看片</button>
+            <div>
+                <button onclick="showMyInviteCode()" style="background:rgba(255,215,0,0.2);border:1px solid #ffd700;border-radius:8px;padding:4px 8px;font-size:0.75rem;color:#ffd700;cursor:pointer;">邀請</button>
+            </div>
         </div>
         
 <!-- 登入/註冊區塊 -->
@@ -391,6 +387,16 @@
                 <div style="padding:10px;">
                     <h4 style="color:#ffd700;margin-bottom:12px;text-align:center;">📋 每日任務</h4>
                     
+                    <!-- 連續登入 -->
+                    <div id="streakInfo" style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:12px;border-radius:10px;margin-bottom:12px;text-align:center;">
+                        <div style="color:#ffd700;font-size:1.1rem;font-weight:bold;">🔥 連續登入</div>
+                        <div id="streakDay" style="color:#fff;font-size:2rem;margin:5px 0;">Day ?</div>
+                        <div id="streakReward" style="color:#aaa;font-size:0.85rem;">下一個獎勵：$200</div>
+                        <div id="streakTitle" style="color:#ff6b00;font-size:0.9rem;margin-top:5px;"></div>
+                        <button id="claimStreakBtn" onclick="claimLogin()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:8px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.9rem;margin-top:10px;">領取登入獎勵</button>
+                        <div id="streakMsg" style="color:#0f0;font-size:0.85rem;margin-top:5px;"></div>
+                    </div>
+                    
                     <!-- 任務列表 -->
                     <div id="tasksList" style="text-align:left;">載入中...</div>
                 </div>
@@ -479,12 +485,11 @@
                 <p>或自行輸入金額下注</p>
                 
                 <h3>🔧 工具按鈕</h3>
-                <p>☰ 玩家專區 - 整合所有玩家功能（反饋/說明/影片/邀請/登入）</p>
                 <p>🚪 離開遊戲 - 退出並返回登入畫面</p>
                 <p>🔊 / 🔇 靜音 - 開關背景音樂與音效</p>
+                <p>💬 反饋 - 提供建議或問題回報</p>
                 <p>🏆 排行榜 - 查看 TOP 15 玩家積分</p>
                 <p>📜 歷史 - 查看近期下注與結算紀錄</p>
-                <p>📋 任務 - 每日挑戰與獎勵領取</p>
                 
                 <button onclick="showHelpPage(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一頁 →</button>
             </div>
@@ -492,7 +497,7 @@
             <div id="helpPage2" style="display:none;">
                 <h3>🎯 下注類型</h3>
                 <div class="bet-demo">
-                    <span class="red">🔴 紅色</span> - 2倍獎金（18個數字）
+                    <span class="red">🔴 紅色</span> - 2倍獎金（19個數字）
                 </div>
                 <div class="bet-demo">
                     <span class="black">⚫ 黑色</span> - 2倍獎金（18個數字）
@@ -519,39 +524,6 @@
         </div>
     </div>
 
-    <!-- 玩家專區選單 -->
-    <div class="modal-overlay" id="playerMenuModal">
-        <div class="modal" style="max-width:320px;">
-            <h2>🎯 玩家專區</h2>
-            
-            <button onclick="showFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                📝 提供反饋
-            </button>
-            
-            <button onclick="showHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                ❓ 遊戲說明
-            </button>
-            
-            <button onclick="openVideoPopup();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🎬 看影片領獎勵
-            </button>
-            
-            <button onclick="showMyInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                👥 邀請碼
-            </button>
-            
-            <button onclick="showLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🔥 連續登入
-            </button>
-            
-            <button onclick="showLevelInfo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🎖️ 等級
-            </button>
-            
-            <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>
-        </div>
-    </div>
-
     <script>
         console.log('Roulette script starting...');
         
@@ -563,7 +535,6 @@
         let bgMusicTimer = null;
         let soundEnabled = true;
         let bgmAudio = null;
-        let bgMusicBlocked = false;
         
         function initAudio() {
             if (audioCtx) return;
@@ -589,7 +560,6 @@
             if (!soundEnabled) {
                 bgMusicPlaying = false;
                 if (bgMusicTimer) clearTimeout(bgMusicTimer);
-                if (bgmAudio) { bgmAudio.pause(); }
             } else if (myName) {
                 // 重新啟動背景音樂
                 bgMusicPlaying = false;
@@ -675,32 +645,64 @@
         // 背景音樂（簡單的 Ambient 循環）
         function startBgMusic() {
             if (!soundEnabled) return;
-            // Use HTML Audio which has simpler autoplay rules
-            if (!bgmAudio) {
-                bgmAudio = new Audio();
-                bgmAudio.src = 'bg-music.mp3';
-                bgmAudio.loop = true;
-                bgmAudio.volume = 0.4;
-            }
-            const playPromise = bgmAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    bgMusicPlaying = true;
-                    bgMusicBlocked = false;
-                }).catch(e => {
-                    console.log('BGM autoplay blocked, waiting for interaction');
-                    bgMusicBlocked = true;
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            bgMusicPlaying = true;
+            
+            const playNote = (freq, startTime, duration, gainVal = 0.04, type = 'square') => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.value = gainVal;
+                gain.gain.setValueAtTime(gainVal, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration - 0.01);
+                osc.connect(gain);
+                gain.connect(bgMusicGain);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+            
+            const scheduleMusic = () => {
+                if (!bgMusicPlaying || !soundEnabled) {
                     bgMusicPlaying = false;
+                    return;
+                }
+                const now = audioCtx.currentTime;
+                
+                const melody = [
+                    392.00, 440.00, 523.25, 587.33,
+                    659.26, 587.33, 523.25, 440.00,
+                    392.00, 523.25, 659.26, 523.25,
+                    587.33, 523.25, 440.00, 392.00,
+                ];
+                const noteDur = 0.2;
+                
+                const chords = [
+                    [261.63, 329.63, 392.00],
+                    [261.63, 329.63, 392.00],
+                    [196.00, 246.94, 293.66],
+                    [196.00, 246.94, 293.66],
+                ];
+                
+                melody.forEach((freq, i) => {
+                    playNote(freq, now + i * noteDur, noteDur * 0.9, 0.05, 'square');
+                    const chordIdx = Math.floor(i / 4) % chords.length;
+                    chords[chordIdx].forEach((cf) => {
+                        playNote(cf, now + i * noteDur, noteDur * 0.7, 0.025, 'triangle');
+                    });
                 });
-            }
+                
+                bgMusicTimer = setTimeout(scheduleMusic, noteDur * melody.length * 1000);
+            };
+            
+            scheduleMusic();
         }
         
         function stopBgMusic() {
-            if (bgmAudio) {
-                bgmAudio.pause();
-                bgmAudio.currentTime = 0;
-            }
             bgMusicPlaying = false;
+            if (bgMusicTimer) clearTimeout(bgMusicTimer);
         }
         
         // 點擊音效（使用者互動時）
@@ -719,13 +721,9 @@
             osc.stop(audioCtx.currentTime + 0.03);
         }
         
-        // 背景音樂在登入後啟動（見 login success 和 session restore）
-        // 如果 audio 被瀏覽器封鎖，等使用者互動後再播
+        // 使用者第一次互動後啟動背景音樂
         document.addEventListener('click', () => {
-            if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
-                startBgMusic();
-                bgMusicBlocked = false;
-            }
+            if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
         }, { once: true });
         
         // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
@@ -781,9 +779,6 @@
             document.getElementById('topBar').style.display = 'flex';
             document.getElementById('resultDisplay').style.display = 'block';
             document.getElementById('gameSection').style.display = 'block';
-            const nameEl2 = document.getElementById('playerNameDisplay');
-            if (nameEl2) nameEl2.textContent = savedUsername || '';
-            loadPlayerLevel();
             drawWheel();
             updateCurrentBetsUI();
             loadHistoryFromDB();
@@ -836,8 +831,6 @@
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('topBar').style.display = 'flex';
-                    const nameEl = document.getElementById('playerNameDisplay');
-                    if (nameEl) nameEl.textContent = username || '';
                     document.getElementById('resultDisplay').style.display = 'block';
                     document.getElementById('gameSection').style.display = 'block';
                     console.log('Calling drawWheel...');
@@ -870,9 +863,6 @@
                     if (!localStorage.getItem(guideKey)) {
                         setTimeout(() => showGuide(), 1000);
                     }
-                    
-                    // 載入玩家階級稱號
-                    loadPlayerLevel();
                 } else {
                     msg.textContent = data.message;
                     msg.className = 'auth-msg';
@@ -927,6 +917,23 @@
                 const data = await res.json();
                 if (!data.success) return;
                 
+                // 顯示連續登入
+                const streakEl = document.getElementById('streakDay');
+                const rewardEl = document.getElementById('streakReward');
+                const titleEl = document.getElementById('streakTitle');
+                const claimBtn = document.getElementById('claimStreakBtn');
+                const streakMsg = document.getElementById('streakMsg');
+                
+                streakEl.textContent = 'Day ' + (data.streak || 0);
+                const rewards = [200, 300, 400, 500, 700, 1000, 2000];
+                const nextReward = rewards[Math.min(data.streak || 0, 7)] || 200;
+                rewardEl.textContent = '今日獎勵：$' + nextReward;
+                titleEl.textContent = data.streakTitle ? '🏆 ' + data.streakTitle : '';
+                claimBtn.style.display = 'block';
+                claimBtn.disabled = false;
+                streakMsg.textContent = '';
+                
+                // 顯示任務列表
                 const tasksList = document.getElementById('tasksList');
                 let html = '';
                 const tasks = data.tasks || [];
@@ -1979,180 +1986,6 @@
                 }
         }
         
-        let playerMenuOriginalContent = '';
-        
-        function showPlayerMenu() {
-            const modal = document.getElementById('playerMenuModal');
-            if (playerMenuOriginalContent) modal.querySelector('.modal').innerHTML = playerMenuOriginalContent;
-            modal.classList.add('show');
-        }
-        
-        async function loadPlayerLevel() {
-            if (!myName) return;
-            try {
-                const res = await fetch('/api/roulette/player-level/' + encodeURIComponent(myName));
-                const data = await res.json();
-                const nameEl = document.getElementById('playerNameDisplay');
-                if (nameEl && data.title) {
-                    const tierGradients = {
-                        '青銅': 'linear-gradient(135deg,#CD7F32,#E8955A)',
-                        '白銀': 'linear-gradient(135deg,#C0C0C0,#E8E8E8)',
-                        '黃金': 'linear-gradient(135deg,#FFD700,#FFA500)',
-                        '白金': 'linear-gradient(135deg,#E5E4E2,#B4C7DC)',
-                        '鑽石': 'linear-gradient(135deg,#B9F2FF,#00FFFF)'
-                    };
-                    const grad = tierGradients[data.tier] || tierGradients['青銅'];
-                    nameEl.innerHTML = `<span class="title-shine" style="background:${grad};padding:3px 12px;border-radius:12px;font-weight:bold;font-size:0.85rem;color:#fff;margin-right:8px;position:relative;overflow:hidden;">${data.title}</span><span style="color:#fff;">${myName}</span>`;
-                } else if (nameEl) {
-                    nameEl.textContent = myName;
-                }
-            } catch(e) { console.log('loadLevel failed:', e); }
-        }
-        
-        function closePlayerMenu() {
-            document.getElementById('playerMenuModal').classList.remove('show');
-        }
-        
-        async function showLoginReward() {
-            const modal = document.getElementById('playerMenuModal');
-            const inner = modal.querySelector('.modal');
-            if (!playerMenuOriginalContent) playerMenuOriginalContent = inner.innerHTML;
-            
-            // Load streak data from server
-            let streak = 0, stats = { betCount: 0, winsCount: 0, mysteryBets: 0 };
-            if (myName) {
-                try {
-                    const res = await fetch('/api/roulette/daily-tasks?username=' + encodeURIComponent(myName));
-                    const data = await res.json();
-                    if (data.success) { streak = data.streak; stats = data.stats; }
-                } catch(e) {}
-            }
-            
-            const rewards = [200, 300, 400, 500, 700, 1000, 2000];
-            const nextReward = rewards[Math.min(streak || 0, 7)] || 200;
-            const dayLabel = streak > 0 ? 'Day ' + streak : 'Day 0';
-            
-            // Build progress dots
-            let dotsHtml = '';
-            for (let i = 1; i <= 7; i++) {
-                const filled = i <= streak;
-                const isToday = i === streak + 1;
-                dotsHtml += `<div style="flex:1;height:8px;border-radius:4px;background:${filled ? '#ffd700' : (isToday ? '#555' : '#333')};margin:0 2px;"></div>`;
-            }
-            
-            // Build day labels
-            let daysHtml = '';
-            for (let i = 1; i <= 7; i++) {
-                const filled = i <= streak;
-                daysHtml += `<div style="flex:1;text-align:center;font-size:0.75rem;color:${filled ? '#ffd700' : '#666'};">Day${i}<br><b>$${rewards[i-1]}</b></div>`;
-            }
-            
-            inner.innerHTML = `
-                <div style="background:linear-gradient(135deg,#ff8c00,#ffd700);border-radius:20px;padding:25px;text-align:center;color:#000;max-width:380px;">
-                    <div style="font-size:1.3rem;font-weight:bold;margin-bottom:8px;">🔥 連續登入</div>
-                    <div style="font-size:3rem;font-weight:bold;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3);">${dayLabel}</div>
-                    <div style="font-size:1rem;opacity:0.9;">下一個獎勵：$${nextReward}</div>
-                    
-                    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:15px;margin-top:15px;">
-                        <div style="display:flex;gap:4px;margin-bottom:10px;">${dotsHtml}</div>
-                        <div style="display:flex;font-size:0.8rem;">${daysHtml}</div>
-                    </div>
-                    
-                    <button onclick="claimLoginFromMenu()" id="menuClaimStreakBtn" style="width:100%;padding:14px;background:#1a1a2e;border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#ffd700;margin-top:15px;">領取登入獎勵</button>
-                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.3);border-radius:12px;font-size:1rem;cursor:pointer;color:#000;margin-top:10px;opacity:0.85;">返回選單</button>
-                </div>
-            `;
-            modal.classList.add('show');
-            // Also widen the modal overlay
-            modal.style.alignItems = 'center';
-            inner.style.maxWidth = '420px';
-            inner.style.width = '95%';
-        }
-        
-        async function showLevelInfo() {
-            if (!myName) return;
-            const modal = document.getElementById('playerMenuModal');
-            const inner = modal.querySelector('.modal');
-            if (!playerMenuOriginalContent) playerMenuOriginalContent = inner.innerHTML;
-            
-            let levelData = { level: 1, tier: '青銅', title: '菜鳥', weeklyBet: 0 };
-            try {
-                const res = await fetch('/api/roulette/player-level/' + encodeURIComponent(myName));
-                levelData = await res.json();
-            } catch(e) {}
-            
-            const tiers = [
-                { name: '青銅', minLv: 1, maxLv: 10, minBet: 0, color: '#CD7F32' },
-                { name: '白銀', minLv: 11, maxLv: 20, minBet: 10000, color: '#C0C0C0' },
-                { name: '黃金', minLv: 21, maxLv: 30, minBet: 50000, color: '#FFD700' },
-                { name: '白金', minLv: 31, maxLv: 40, minBet: 200000, color: '#E5E4E2' },
-                { name: '鑽石', minLv: 41, maxLv: 50, minBet: 500000, color: '#B9F2FF' },
-            ];
-            
-            let tierBars = tiers.map(t => {
-                const active = levelData.level >= t.minLv;
-                const progress = active ? Math.min(100, (levelData.weeklyBet / t.minBet) * 100) : 0;
-                const pct = t.minBet === 0 ? 100 : Math.min(100, Math.round((levelData.weeklyBet / t.minBet) * 100));
-                return `<div style="margin-bottom:10px;">
-                    <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
-                        <span style="color:${t.color};font-weight:bold;">${t.name}</span>
-                        <span style="color:#888;">Lv.${t.minLv}-${t.maxLv}</span>
-                    </div>
-                    <div style="background:#333;border-radius:4px;height:8px;overflow:hidden;">
-                        <div style="width:${active ? Math.min(100,pct) : 0}%;height:100%;background:${t.color};transition:width 0.3s;"></div>
-                    </div>
-                    <div style="font-size:0.75rem;color:#666;text-align:right;">門檻 $${t.minBet.toLocaleString()}</div>
-                </div>`;
-            }).join('');
-            
-            inner.innerHTML = `
-                <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:1.2rem;color:#ffd700;">🏆 等級</div>
-                        <div style="font-size:2rem;font-weight:bold;color:${levelData.level >= 41 ? '#b9f2ff' : levelData.level >= 31 ? '#e5e4e2' : levelData.level >= 21 ? '#ffd700' : levelData.level >= 11 ? '#c0c0c0' : '#cd7f32'};">Lv.${levelData.level} ${levelData.tier}</div>
-                        <div style="font-size:1rem;color:#aaa;">稱號：${levelData.title}</div>
-                        <div style="font-size:0.9rem;color:#888;margin-top:5px;">本週下注：$${levelData.weeklyBet.toLocaleString()}</div>
-                    </div>
-                    <div style="border-top:1px solid #333;padding-top:15px;">
-                        ${tierBars}
-                    </div>
-                    <div style="font-size:0.8rem;color:#666;text-align:center;margin-top:15px;">每週一結算，階級隨下注金額提升</div>
-                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">返回選單</button>
-                </div>
-            `;
-            modal.classList.add('show');
-            modal.style.alignItems = 'center';
-            inner.style.maxWidth = '420px';
-            inner.style.width = '95%';
-        }
-        
-        async function claimLoginFromMenu() {
-            if (!myName) return;
-            const btn = document.getElementById('menuClaimStreakBtn');
-            if (btn) { btn.disabled = true; btn.textContent = '處理中...'; }
-            try {
-                const res = await fetch('/api/roulette/claim-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: myName })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    if (btn) { btn.textContent = '已領取 ✅'; btn.style.background = '#1a472a'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0'; }
-                    myBalance = data.newScore || myBalance;
-                    updateBalanceDisplay();
-                    showToast('✅ ' + data.message, 'success');
-                } else {
-                    if (btn) { btn.textContent = data.message || '已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
-                    showToast(data.message || '已領取過', 'info');
-                }
-            } catch(e) {
-                if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-            } finally {
-                if (btn && btn.textContent === '處理中...') { btn.textContent = '領取登入獎勵'; btn.disabled = false; }
-            }
-        }
-        
         function showHelp() {
             document.getElementById('helpModal').classList.add('show');
             showHelpPage(1);
@@ -2275,12 +2108,12 @@
                                 <div>每天一次，請先看完影片</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 1000 金幣</div>
                                 <div>每天登入自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
-                                <div>最高可領 $2000</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">🎁 每下注10次送 $10</div>
+                                <div>系統計數，自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
                                 <div style="color:#ffd700;margin-bottom:5px;">💎 金幣回收</div>
@@ -2350,13 +2183,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 
@@ -2413,13 +2241,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 listEl.innerHTML = html;

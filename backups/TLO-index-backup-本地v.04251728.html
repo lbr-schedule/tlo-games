@@ -2143,13 +2143,10 @@
                     updateBalanceDisplay();
                     showToast('✅ ' + data.message, 'success');
                 } else {
-                    if (btn) { btn.textContent = data.message || '已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
-                    showToast(data.message || '已領取過', 'info');
+                    if (btn) { btn.textContent = data.message || '今天已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
                 }
             } catch(e) {
                 if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-            } finally {
-                if (btn && btn.textContent === '處理中...') { btn.textContent = '領取登入獎勵'; btn.disabled = false; }
             }
         }
         
@@ -2275,12 +2272,12 @@
                                 <div>每天一次，請先看完影片</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 1000 金幣</div>
                                 <div>每天登入自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
-                                <div>最高可領 $2000</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">🎁 每下注10次送 $10</div>
+                                <div>系統計數，自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
                                 <div style="color:#ffd700;margin-bottom:5px;">💎 金幣回收</div>
@@ -2350,13 +2347,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 
@@ -2413,13 +2405,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 listEl.innerHTML = html;

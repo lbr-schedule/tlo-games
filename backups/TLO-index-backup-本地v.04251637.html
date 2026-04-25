@@ -66,9 +66,7 @@
         
         h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
-        #playerNameDisplay { display: flex; align-items: center; height: 100%; }
-        #balanceBox { display: flex; align-items: center; height: 100%; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38.78px; box-sizing: border-box; }
         .balance { font-size: 0.95rem; }
         .balance span { color: #ffd700; font-weight: bold; }
         .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
@@ -545,7 +543,7 @@
             </button>
             
             <button onclick="showLevelInfo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🎖️ 等級
+                📊 階級制度
             </button>
             
             <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>
@@ -563,7 +561,6 @@
         let bgMusicTimer = null;
         let soundEnabled = true;
         let bgmAudio = null;
-        let bgMusicBlocked = false;
         
         function initAudio() {
             if (audioCtx) return;
@@ -675,24 +672,14 @@
         // 背景音樂（簡單的 Ambient 循環）
         function startBgMusic() {
             if (!soundEnabled) return;
-            // Use HTML Audio which has simpler autoplay rules
             if (!bgmAudio) {
-                bgmAudio = new Audio();
-                bgmAudio.src = 'bg-music.mp3';
+                bgmAudio = new Audio('bg-music.mp3');
                 bgmAudio.loop = true;
                 bgmAudio.volume = 0.4;
+                bgmAudio.load();
             }
-            const playPromise = bgmAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    bgMusicPlaying = true;
-                    bgMusicBlocked = false;
-                }).catch(e => {
-                    console.log('BGM autoplay blocked, waiting for interaction');
-                    bgMusicBlocked = true;
-                    bgMusicPlaying = false;
-                });
-            }
+            bgmAudio.play().catch(e => console.log('BGM play failed:', e));
+            bgMusicPlaying = true;
         }
         
         function stopBgMusic() {
@@ -719,13 +706,9 @@
             osc.stop(audioCtx.currentTime + 0.03);
         }
         
-        // 背景音樂在登入後啟動（見 login success 和 session restore）
-        // 如果 audio 被瀏覽器封鎖，等使用者互動後再播
+        // 使用者第一次互動後啟動背景音樂
         document.addEventListener('click', () => {
-            if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
-                startBgMusic();
-                bgMusicBlocked = false;
-            }
+            if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
         }, { once: true });
         
         // 輪盤數字（真實輪盤排列）- 必須在最前面宣告
@@ -783,7 +766,6 @@
             document.getElementById('gameSection').style.display = 'block';
             const nameEl2 = document.getElementById('playerNameDisplay');
             if (nameEl2) nameEl2.textContent = savedUsername || '';
-            loadPlayerLevel();
             drawWheel();
             updateCurrentBetsUI();
             loadHistoryFromDB();
@@ -870,9 +852,6 @@
                     if (!localStorage.getItem(guideKey)) {
                         setTimeout(() => showGuide(), 1000);
                     }
-                    
-                    // 載入玩家階級稱號
-                    loadPlayerLevel();
                 } else {
                     msg.textContent = data.message;
                     msg.className = 'auth-msg';
@@ -1985,6 +1964,7 @@
             const modal = document.getElementById('playerMenuModal');
             if (playerMenuOriginalContent) modal.querySelector('.modal').innerHTML = playerMenuOriginalContent;
             modal.classList.add('show');
+            loadPlayerLevel();
         }
         
         async function loadPlayerLevel() {
@@ -1995,11 +1975,11 @@
                 const nameEl = document.getElementById('playerNameDisplay');
                 if (nameEl && data.title) {
                     const tierGradients = {
-                        '青銅': 'linear-gradient(135deg,#CD7F32,#E8955A)',
-                        '白銀': 'linear-gradient(135deg,#C0C0C0,#E8E8E8)',
-                        '黃金': 'linear-gradient(135deg,#FFD700,#FFA500)',
-                        '白金': 'linear-gradient(135deg,#E5E4E2,#B4C7DC)',
-                        '鑽石': 'linear-gradient(135deg,#B9F2FF,#00FFFF)'
+                        '青銅': 'linear-gradient(135deg,#cd7f32,#daa520)',
+                        '白銀': 'linear-gradient(135deg,#c0c0c0,#e8e8e8)',
+                        '黃金': 'linear-gradient(135deg,#ffd700,#ffaa00)',
+                        '白金': 'linear-gradient(135deg,#e5e4e2,#b4c7dc)',
+                        '鑽石': 'linear-gradient(135deg,#b9f2ff,#7dd6f7)'
                     };
                     const grad = tierGradients[data.tier] || tierGradients['青銅'];
                     nameEl.innerHTML = `<span class="title-shine" style="background:${grad};padding:3px 12px;border-radius:12px;font-weight:bold;font-size:0.85rem;color:#fff;margin-right:8px;position:relative;overflow:hidden;">${data.title}</span><span style="color:#fff;">${myName}</span>`;
@@ -2082,11 +2062,11 @@
             } catch(e) {}
             
             const tiers = [
-                { name: '青銅', minLv: 1, maxLv: 10, minBet: 0, color: '#CD7F32' },
-                { name: '白銀', minLv: 11, maxLv: 20, minBet: 10000, color: '#C0C0C0' },
-                { name: '黃金', minLv: 21, maxLv: 30, minBet: 50000, color: '#FFD700' },
-                { name: '白金', minLv: 31, maxLv: 40, minBet: 200000, color: '#E5E4E2' },
-                { name: '鑽石', minLv: 41, maxLv: 50, minBet: 500000, color: '#B9F2FF' },
+                { name: '青銅', minLv: 1, maxLv: 10, minBet: 0, color: '#cd7f32' },
+                { name: '白銀', minLv: 11, maxLv: 20, minBet: 10000, color: '#c0c0c0' },
+                { name: '黃金', minLv: 21, maxLv: 30, minBet: 50000, color: '#ffd700' },
+                { name: '白金', minLv: 31, maxLv: 40, minBet: 200000, color: '#e5e4e2' },
+                { name: '鑽石', minLv: 41, maxLv: 50, minBet: 500000, color: '#b9f2ff' },
             ];
             
             let tierBars = tiers.map(t => {
@@ -2108,7 +2088,7 @@
             inner.innerHTML = `
                 <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">
                     <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:1.2rem;color:#ffd700;">🏆 等級</div>
+                        <div style="font-size:1.2rem;color:#ffd700;">📊 階級制度</div>
                         <div style="font-size:2rem;font-weight:bold;color:${levelData.level >= 41 ? '#b9f2ff' : levelData.level >= 31 ? '#e5e4e2' : levelData.level >= 21 ? '#ffd700' : levelData.level >= 11 ? '#c0c0c0' : '#cd7f32'};">Lv.${levelData.level} ${levelData.tier}</div>
                         <div style="font-size:1rem;color:#aaa;">稱號：${levelData.title}</div>
                         <div style="font-size:0.9rem;color:#888;margin-top:5px;">本週下注：$${levelData.weeklyBet.toLocaleString()}</div>
@@ -2143,13 +2123,10 @@
                     updateBalanceDisplay();
                     showToast('✅ ' + data.message, 'success');
                 } else {
-                    if (btn) { btn.textContent = data.message || '已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
-                    showToast(data.message || '已領取過', 'info');
+                    if (btn) { btn.textContent = data.message || '今天已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
                 }
             } catch(e) {
                 if (btn) { btn.textContent = '連線失敗'; btn.disabled = false; }
-            } finally {
-                if (btn && btn.textContent === '處理中...') { btn.textContent = '領取登入獎勵'; btn.disabled = false; }
             }
         }
         
@@ -2275,12 +2252,12 @@
                                 <div>每天一次，請先看完影片</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 1000 金幣</div>
                                 <div>每天登入自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
-                                <div>最高可領 $2000</div>
+                                <div style="color:#ffd700;margin-bottom:5px;">🎁 每下注10次送 $10</div>
+                                <div>系統計數，自動發放</div>
                             </div>
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
                                 <div style="color:#ffd700;margin-bottom:5px;">💎 金幣回收</div>
@@ -2350,13 +2327,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 
@@ -2413,13 +2385,8 @@
                 data.leaderboard.forEach((player, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
                     const color = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                    const tierGradients = {
-                        '青銅': '#CD7F32', '白銀': '#C0C0C0', '黃金': '#FFD700', '白金': '#E5E4E2', '鑽石': '#B9F2FF'
-                    };
-                    const tierColor = tierGradients[player.tier] || '#888';
-                    const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
-                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';">';
+                    html += '<span>' + medal + ' ' + player.username + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 listEl.innerHTML = html;
