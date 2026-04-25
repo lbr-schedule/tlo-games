@@ -829,14 +829,9 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
     if (!username) return res.json({ success: false, message: '缺少 username' });
     
     if (LOCAL_TEST_MODE) {
-        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: [] };
+        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '' };
         await checkAndResetDailyTasks(username);
-        if (!stats.completed_tasks) stats.completed_tasks = [];
-        const tasks = DAILY_TASKS.map(t => {
-            const conditionMet = t.condition(stats);
-            const alreadyClaimed = (stats.completed_tasks || []).includes(t.id);
-            return { ...t, completed: conditionMet, alreadyClaimed };
-        });
+        const tasks = DAILY_TASKS.map(t => ({ ...t, completed: t.condition(stats) }));
         return res.json({ success: true, tasks, streak: stats.login_streak, streakTitle: stats.streak_title, stats: { betCount: stats.bet_count_today, winsCount: stats.wins_today, mysteryBets: stats.mystery_bets_today } });
     }
     
@@ -844,26 +839,19 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
     
     try {
         const r = await rouletteDb.execute({
-            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, login_streak, streak_title, last_login_date, completed_tasks FROM roulette_player_stats WHERE username = ?',
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, login_streak, streak_title, last_login_date FROM roulette_player_stats WHERE username = ?',
             args: [username]
         });
         
-        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: '[]' };
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '' };
         if (r.rows && r.rows.length > 0) {
             playerStats = { ...playerStats, ...r.rows[0] };
         }
         
-        // Parse completed tasks
-        let completedTasks = [];
-        try { completedTasks = JSON.parse(playerStats.completed_tasks || '[]'); } catch(e) {}
-        
-        const tasks = DAILY_TASKS.map(t => {
-            const conditionMet = t.condition(playerStats);
-            const alreadyClaimed = completedTasks.includes(t.id);
-            // completed=true only if condition met AND not yet claimed
-            // alreadyClaimed is always included so frontend knows which tasks were claimed
-            return { ...t, completed: conditionMet, alreadyClaimed };
-        });
+        const tasks = DAILY_TASKS.map(t => ({
+            ...t,
+            completed: t.condition(playerStats)
+        }));
         
         res.json({
             success: true,

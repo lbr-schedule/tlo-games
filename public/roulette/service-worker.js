@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = 'tlo-roulette-' + CACHE_VERSION;
 const urlsToCache = [
   '/roulette/',
@@ -14,11 +14,11 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 取得快取內容 - index.html 不快取，永遠拿新版本
+// 取得快取內容 - index.html 和 /roulette/ 路徑都不快取，永遠拿新版本
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  // index.html 永遠從網路拿，不 cache
-  if (url.pathname.endsWith('index.html')) {
+  // index.html 和 /roulette/ 永遠從網路拿，不 cache
+  if (url.pathname.endsWith('index.html') || url.pathname === '/roulette/' || url.pathname.endsWith('/roulette')) {
     event.respondWith(fetch(event.request));
     return;
   }
