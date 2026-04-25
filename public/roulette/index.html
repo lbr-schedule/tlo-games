@@ -964,7 +964,8 @@
                     msg.textContent = '✅ ' + data.message;
                     msg.style.color = '#0f0';
                     myBalance = data.newScore || myBalance;
-                    updateBalanceDisplay();
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
                     showToast('✅ ' + data.message, 'success');
                     setTimeout(loadTasks, 500);
                 } else {
@@ -993,7 +994,8 @@
                 const data = await res.json();
                 if (data.success) {
                     myBalance = data.newScore || myBalance;
-                    updateBalanceDisplay();
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
                     showToast('✅ 領取成功！+$' + (data.reward || 0), 'success');
                     setTimeout(loadTasks, 500);
                 } else {
@@ -2182,7 +2184,8 @@
                 if (data.success) {
                     if (btn) { btn.textContent = '已領取 ✅'; btn.style.background = '#1a472a'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0'; }
                     myBalance = data.newScore || myBalance;
-                    updateBalanceDisplay();
+                    localStorage.setItem('rouletteBalance', myBalance);
+                    document.getElementById('balance').textContent = myBalance;
                     showToast('✅ ' + data.message, 'success');
                 } else {
                     if (btn) { btn.textContent = data.message || '已領取'; btn.style.background = '#555'; btn.style.color = '#888'; }
