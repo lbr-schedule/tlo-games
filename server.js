@@ -1040,7 +1040,7 @@ app.post('/api/roulette/bet', async (req, res) => {
     
     // 更新每日任務計數
     await checkAndResetDailyTasks(username);
-    const isMystery = (betType === 'number' && choice === 0);
+    const isMystery = (betType === 'number' && choice === '0');
     
     // 每週結算：檢查是否需要重置
     const now = new Date();
