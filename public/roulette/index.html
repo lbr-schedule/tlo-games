@@ -973,11 +973,11 @@
                                     t.id === 'bet_100' ? stats.betCount + '/100' :
                                     t.id === 'win_5' ? stats.winsCount + '/5' :
                                     t.id === 'mystery_1' ? stats.mysteryBets + '/1' : '';
-                    const bg = (t.completed && !t.alreadyClaimed) ? 'linear-gradient(135deg,#1a472a,#2d5a3d)' : (t.alreadyClaimed ? 'linear-gradient(135deg,#2d5a3d,#1a472a)' : 'linear-gradient(135deg,#1a1a2e,#16213e)');
+                    const bg = t.completed ? (t.alreadyClaimed ? 'linear-gradient(135deg,#2d5a3d,#1a472a)' : 'linear-gradient(135deg,#1a472a,#2d5a3d)') : 'linear-gradient(135deg,#1a1a2e,#16213e)';
                     const btn = (t.completed && !t.alreadyClaimed) ? 
-                        '<button onclick="claimTask(\'' + t.id + '\')" style="padding:6px 12px;background:#ffd700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.8rem;">領取 $' + t.reward + '</button>' :
-                        (t.alreadyClaimed ? 
-                            '<button disabled style="padding:6px 12px;background:#1a472a;border:none;border-radius:6px;color:#0f0;font-size:0.8rem;cursor:not-allowed;">已領取 ✅</button>' :
+                                            '<button onclick="claimTask(\'' + t.id + '\')" style="padding:6px 12px;background:#ffd700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#1a1a2e;font-size:0.8rem;">領取 $' + t.reward + '</button>' :
+                                            (t.completed && t.alreadyClaimed ? 
+                                                '<button disabled style="padding:6px 12px;background:#1a472a;border:none;border-radius:6px;color:#0f0;font-size:0.8rem;cursor:not-allowed;">已領取 ✅</button>' :
                             '<button disabled style="padding:6px 12px;background:#555;border:none;border-radius:6px;color:#888;font-size:0.8rem;cursor:not-allowed;">未完成</button>');
                     html += '<div style="background:' + bg + ';padding:10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">' +
                             '<div><div style="color:#fff;font-weight:bold;">' + t.name + '</div><div style="color:#aaa;font-size:0.8rem;">' + t.desc + '</div><div style="color:#ffd700;font-size:0.75rem;margin-top:3px;">進度：' + progress + '</div></div>' + btn + '</div>';
@@ -2565,11 +2565,18 @@
             if (!myName) { showToast('請先登入'); return; }
             if (!videoWatched) { showToast('請先看完影片'); return; }
             try {
-                const resp = await fetch('/api/roulette/claim-video', {
+                let resp = await fetch('/api/roulette/claim-video', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName })
                 });
+                if (resp.status === 404) {
+                    resp = await fetch('/api/roulette/video-bonus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: myName })
+                    });
+                }
                 const data = await resp.json();
                 if (data.success) {
                     showToast('獲得 ' + data.amount + ' 金幣！');

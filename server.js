@@ -182,7 +182,8 @@ const ROULETTE_ADS = [
     '/roulette/ad2.jpg',
     '/roulette/ad3.jpg',
     '/roulette/ad4.jpg',
-    '/roulette/ad5.jpg'
+    '/roulette/ad5.jpg',
+    '/roulette/ad6.jpg'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;
@@ -743,6 +744,24 @@ app.post('/api/roulette/ping', (req, res) => {
 });
 
 // 版本確認
+app.post('/api/roulette/video-bonus', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    const today = new Date().toISOString().split('T')[0];
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
+    try {
+        const check = await rouletteDb.execute({ sql: `SELECT lastVideoClaim FROM players WHERE username = ?`, args: [username] });
+        if (check.rows && check.rows.length > 0) {
+            const last = check.rows[0].lastVideoClaim || '';
+            if (last === today) return res.json({ success: false, message: '今天已領過了，明天再來！' });
+        }
+        await rouletteDb.execute({ sql: `UPDATE players SET score = score + 1000, lastVideoClaim = ? WHERE username = ?`, args: [today, username] });
+        const scoreResult = await rouletteDb.execute({ sql: `SELECT score FROM players WHERE username = ?`, args: [username] });
+        const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
+        res.json({ success: true, amount: 1000, newScore });
+    } catch(e) { res.json({ success: false, message: '領取失敗，請稍後再試' }); }
+});
+
 app.get('/api/version', (req, res) => {
     res.json({ 
         version: 'v4.0-ACTUAL',
@@ -829,12 +848,13 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
     if (!username) return res.json({ success: false, message: '缺少 username' });
     
     if (LOCAL_TEST_MODE) {
-        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: [] };
+        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: {} };
         await checkAndResetDailyTasks(username);
-        if (!stats.completed_tasks) stats.completed_tasks = [];
+        const today = new Date().toISOString().split('T')[0];
+        const todayClaims = (stats.completed_tasks && stats.completed_tasks[today]) ? stats.completed_tasks[today] : [];
         const tasks = DAILY_TASKS.map(t => {
             const conditionMet = t.condition(stats);
-            const alreadyClaimed = (stats.completed_tasks || []).includes(t.id);
+            const alreadyClaimed = todayClaims.includes(t.id);
             return { ...t, completed: conditionMet, alreadyClaimed };
         });
         return res.json({ success: true, tasks, streak: stats.login_streak, streakTitle: stats.streak_title, stats: { betCount: stats.bet_count_today, winsCount: stats.wins_today, mysteryBets: stats.mystery_bets_today } });
@@ -853,15 +873,15 @@ app.get('/api/roulette/daily-tasks', async (req, res) => {
             playerStats = { ...playerStats, ...r.rows[0] };
         }
         
-        // Parse completed tasks
-        let completedTasks = [];
-        try { completedTasks = JSON.parse(playerStats.completed_tasks || '[]'); } catch(e) {}
+        // Parse completed tasks (date-keyed object)
+        let completedTasks = {};
+        try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
+        const today = new Date().toISOString().split('T')[0];
+        const todayClaims = completedTasks[today] || [];
         
         const tasks = DAILY_TASKS.map(t => {
             const conditionMet = t.condition(playerStats);
-            const alreadyClaimed = completedTasks.includes(t.id);
-            // completed=true only if condition met AND not yet claimed
-            // alreadyClaimed is always included so frontend knows which tasks were claimed
+            const alreadyClaimed = todayClaims.includes(t.id);
             return { ...t, completed: conditionMet, alreadyClaimed };
         });
         
@@ -935,15 +955,18 @@ app.post('/api/roulette/claim-task', async (req, res) => {
         if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
         await checkAndResetDailyTasks(username);
         const stats = localStats[username];
-        if (!stats.completed_tasks) stats.completed_tasks = [];
-        if (stats.completed_tasks.includes(taskId)) {
-            return res.json({ success: false, message: '已經領取過了', alreadyClaimed: true });
+        const today = new Date().toISOString().split('T')[0];
+        if (!stats.completed_tasks) stats.completed_tasks = {};
+        const todayClaims = stats.completed_tasks[today] || [];
+        if (todayClaims.includes(taskId)) {
+            return res.json({ success: false, message: '今天已領取過了', alreadyClaimed: true });
         }
         const task = DAILY_TASKS.find(t => t.id === taskId);
         if (!task) return res.json({ success: false, message: '任務不存在' });
         if (!task.condition(stats)) return res.json({ success: false, message: '任務尚未完成' });
         if (localPlayers[username]) localPlayers[username].score += task.reward;
-        stats.completed_tasks.push(taskId);
+        if (!stats.completed_tasks[today]) stats.completed_tasks[today] = [];
+        stats.completed_tasks[today].push(taskId);
         const newScore = localPlayers[username]?.score || 0;
         return res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
     }
@@ -962,10 +985,12 @@ app.post('/api/roulette/claim-task', async (req, res) => {
         }
         
         // Parse completed tasks
-        let completedTasks = [];
-        try { completedTasks = JSON.parse(playerStats.completed_tasks || '[]'); } catch(e) {}
-        if (completedTasks.includes(taskId)) {
-            return res.json({ success: false, message: '已經領取過了', alreadyClaimed: true });
+        const today = new Date().toISOString().split('T')[0];
+        let completedTasks = {};
+        try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
+        const todayClaims = completedTasks[today] || [];
+        if (todayClaims.includes(taskId)) {
+            return res.json({ success: false, message: '今天已領取過了', alreadyClaimed: true });
         }
         
         const task = DAILY_TASKS.find(t => t.id === taskId);
@@ -981,11 +1006,12 @@ app.post('/api/roulette/claim-task', async (req, res) => {
         }
         
         // 標記任務已完成
-        completedTasks.push(taskId);
+        const newTodayClaims = [...todayClaims, taskId];
+            const newCompleted = { ...completedTasks, [today]: newTodayClaims };
         if (rouletteDb) {
             await rouletteDb.execute({
                 sql: 'UPDATE roulette_player_stats SET completed_tasks = ? WHERE username = ?',
-                args: [JSON.stringify(completedTasks), username]
+                args: [JSON.stringify(newCompleted), username]
             });
         }
         
