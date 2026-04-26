@@ -1787,13 +1787,22 @@ app.get('/api/roulette/admin/feedback', async (req, res) => {
     }
 });
 
-// 輪盤遊戲 - 清理過多歷史（每用戶最多100筆）
+// 輪盤遊戲 - 清理過多歷史（最多保留1000筆）
 async function cleanupOldHistory() {
     if (!rouletteDbAvailable) return;
     try {
-        await rouletteDb.execute({
-            sql: `DELETE FROM roulette_history WHERE id NOT IN (SELECT id FROM roulette_history WHERE username, id IN (SELECT username, MAX(id) FROM roulette_history GROUP BY username) UNION SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY username ORDER BY id DESC) as rn FROM roulette_history) WHERE rn <= 100)`
+        // 取得1000筆之後的ID並刪除
+        const result = await rouletteDb.execute({
+            sql: `SELECT id FROM roulette_history ORDER BY id DESC LIMIT 1 OFFSET 1000`
         });
+        if (result.rows && result.rows.length > 0) {
+            const cutoffId = result.rows[0].id;
+            await rouletteDb.execute({
+                sql: `DELETE FROM roulette_history WHERE id < ?`,
+                args: [cutoffId]
+            });
+            console.log('清理了舊歷史記錄');
+        }
     } catch(e) {
         console.log('清理歷史失敗:', e.message);
     }
