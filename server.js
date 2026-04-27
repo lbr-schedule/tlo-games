@@ -748,7 +748,7 @@ function getRouletteColor(num) {
     return reds.includes(num) ? 'red' : 'black';
 }
 
-function spinWheel() {
+async function spinWheel() {
     rouletteState.phase = 'spinning';
     
     const allNumbers = [
@@ -779,16 +779,45 @@ function spinWheel() {
         mysteryPool: wasMystery ? poolBeforeResult : 0
     };
     
-    // 神秘中獎：分發彩池（async，不阻擋轉盤）
+    // 神秘中獎：立即計算並分發（同步，客戶端poll時能看到完整資料）
     if (wasMystery && poolBeforeResult > 0 && rouletteState.currentRoundId) {
-        (async () => {
-            const poolPerPerson = await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
-            rouletteState.lastSpin.perPersonPool = poolPerPerson;
-            rouletteState.lastSpin.mysteryWinners = (await rouletteDb.execute({ sql: `SELECT COUNT(*) as cnt FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`, args: [rouletteState.currentRoundId] })).rows?.[0]?.cnt || 0;
-            rouletteState.mysteryPool = 0;
-            await saveMysteryPool();
-            rouletteState.currentRoundId = null;
-        })();
+        try {
+            // 同步查詢贏家（等待結果，讓子彈有機會飛）
+            const r = await rouletteDb.execute({
+                sql: `SELECT username FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`,
+                args: [rouletteState.currentRoundId]
+            });
+            const winners = r.rows || [];
+            const winnersCount = winners.length;
+            const perPersonPool = winnersCount > 0 ? Math.floor(poolBeforeResult / winnersCount) : 0;
+            const winnerNames = winners.map(w => w.username).join(', ');
+
+            // 立即設定（客戶端poll時就能看到）
+            rouletteState.lastWinner = {
+                username: winnersCount > 1 ? (winnersCount + '位玩家') : winnerNames,
+                amount: perPersonPool,
+                type: 'mystery',
+                winnersCount,
+                winnersList: winnerNames,
+                poolAmount: poolBeforeResult
+            };
+            rouletteState.lastSpin.perPersonPool = perPersonPool;
+            rouletteState.lastSpin.mysteryWinners = winnersCount;
+            await saveWinnerState();
+
+            console.log('神秘彩池結算: ' + winnersCount + '人各得 $' + perPersonPool);
+
+            // 分發獎金（背景執行，不阻擋）
+            (async () => {
+                try { await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult); }
+                catch(e) { console.log('分發失敗:', e.message); }
+                rouletteState.mysteryPool = 0;
+                try { await saveMysteryPool(); } catch(e) {}
+                rouletteState.currentRoundId = null;
+            })();
+        } catch(e) {
+            console.log('神秘彩池處理失敗:', e.message);
+        }
     } else if (!wasMystery) {
         // 非神秘局更換 roundId
         rouletteState.currentRoundId = null;
@@ -802,7 +831,7 @@ function spinWheel() {
     setTimeout(() => {
         rouletteState.phase = 'result';
         // 結果顯示3.5秒後進入下注時間
-        rouletteState.spinTimer = setTimeout(startBetting, 3500);
+        rouletteState.spinTimer = setTimeout(spinWheel, 3500);
     }, 5000);
 }
 
