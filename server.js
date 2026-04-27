@@ -174,7 +174,16 @@ async function distributeMysteryPool(roundId, poolAmount) {
             sql: `UPDATE roulette_mystery_bets SET winners = ?, distributed = 1 WHERE round_id = ?`,
             args: [winners.length, roundId]
         });
-        rouletteState.lastWinner = { username: winners[0].username, amount: poolPerPerson, type: 'mystery' };
+        // 儲存所有中獎者資訊供廣播使用
+        const winnerUsernames = winners.map(w => w.username).join(', ');
+        rouletteState.lastWinner = { 
+            username: winners[0].username, 
+            amount: poolPerPerson, 
+            type: 'mystery',
+            winnersCount: winners.length,
+            winnersList: winnerUsernames,
+            poolAmount: poolAmount
+        };
         await saveWinnerState();
         return poolPerPerson;
     } catch(e) { console.log('分發彩池失敗:', e.message); return 0; }
@@ -1618,7 +1627,7 @@ app.post('/api/roulette/report-winner', async (req, res) => {
     if (!username || winAmount === undefined) return res.json({ success: false });
     
     if (type === 'mystery') {
-        rouletteState.lastWinner = { username, amount: winAmount, type: 'mystery' };
+        rouletteState.lastWinner = { username, amount: winAmount, type: 'mystery', winnersCount: 1, winnersList: username };
         console.log('🎁 神秘中獎廣播:', username, 'win', winAmount);
     }
     if (winAmount >= 1000) {

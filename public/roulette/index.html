@@ -1740,7 +1740,12 @@ function closeProfileModal(){
                         if (spinId !== lastProcessedSpinId) {
                             // 顯示神秘中獎廣播（大家都能看到）
                             if (data.lastWinner && data.lastWinner.type === 'mystery') {
-                                showBroadcast('🎁 ' + data.lastWinner.username + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！');
+                                const wc = data.lastWinner.winnersCount || 1;
+                                const wlist = data.lastWinner.winnersList || data.lastWinner.username;
+                                const msg = wc > 1
+                                    ? '🎁 神秘彩池中獎！' + wc + '位玩家各贏 $' + data.lastWinner.amount + '！'
+                                    : '🎁 ' + wlist + ' 神秘中獎！贏了 $' + data.lastWinner.amount + '！';
+                                showBroadcast(msg);
                             }
                             
                             // 顯示大贏家廣播（赢>1000）
