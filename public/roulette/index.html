@@ -1240,6 +1240,10 @@ function closeProfileModal(){
                     pollStatus();
                     console.log('Setting up poll interval');
                     pollInterval = setInterval(pollStatus, 1000);
+
+                    // 啟動背景音樂（使用者已經看到遊戲，有操作意圖）
+                    initAudio();
+                    if (soundEnabled) startBgMusic();
                     
                     // 每日登入獎勵提示
                     if (data.player.dailyBonus > 0) {
@@ -1251,6 +1255,10 @@ function closeProfileModal(){
                     
                     // 登入後顯示活動公告（每次都顯示）
                     setTimeout(() => showPromotionAnnounce(), 1500);
+
+                    // 啟動背景音樂
+                    initAudio();
+                    if (soundEnabled) startBgMusic();
                     
                     // 第一次登入顯示新手導引（如果這個帳號還沒看過）
                     const guideKey = 'rouletteGuided_' + username;
@@ -2988,25 +2996,29 @@ document.addEventListener('click', function(e){
             console.log('🎬 playIntroVideo called');
             var popup = document.getElementById('introPopup');
             var video = document.getElementById('introVideo');
+            var playBtn = document.getElementById('introPlayBtn');
             if (!popup || !video) return;
 
             popup.classList.add('show');
-            // Show tap-to-start prompt on video
-            video.style.display = 'block';
+            // Show play button - user taps to start with sound
+            if (playBtn) playBtn.style.display = 'flex';
         }
 
-        // iOS requires tap directly on video element to enable sound
-        function introVideoTap(video) {
-            console.log('introVideo tapped - enabling sound');
+        function playIntroWithSound() {
+            var video = document.getElementById('introVideo');
+            var playBtn = document.getElementById('introPlayBtn');
+            if (playBtn) playBtn.style.display = 'none';
+            if (!video) return;
             video.muted = false;
             video.play().catch(function(e) {
                 console.log('Intro video play error:', e);
             });
-            video.onclick = null; // Remove handler after first tap
         }
         function skipIntro() {
             var video = document.getElementById('introVideo');
+            var playBtn = document.getElementById('introPlayBtn');
             if (video) video.pause();
+            if (playBtn) playBtn.style.display = 'none';
             var popup = document.getElementById('introPopup');
             if (popup) popup.classList.remove('show');
         }
