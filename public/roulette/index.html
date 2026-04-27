@@ -96,6 +96,13 @@
         .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
         .video-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 400; flex-direction: column; }
         .video-popup.show { display: flex; }
+        /* 片頭 Intro */
+        .intro-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; justify-content: center; align-items: center; z-index: 500; flex-direction: column; }
+        .intro-popup.show { display: flex; }
+        .intro-popup video { width: 100%; height: 100%; object-fit: cover; }
+        .intro-popup .skip-btn { position: absolute; bottom: 30px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 10px 20px; border-radius: 25px; font-size: 0.9rem; cursor: pointer; }
+        .intro-popup .skip-btn:hover { background: rgba(255,255,255,0.3); }
+
         .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
         .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
@@ -105,6 +112,13 @@
         .video-claim-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
         
         .video-popup.show { display: flex; }
+        /* 片頭 Intro */
+        .intro-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; justify-content: center; align-items: center; z-index: 500; flex-direction: column; }
+        .intro-popup.show { display: flex; }
+        .intro-popup video { width: 100%; height: 100%; object-fit: cover; }
+        .intro-popup .skip-btn { position: absolute; bottom: 30px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 10px 20px; border-radius: 25px; font-size: 0.9rem; cursor: pointer; }
+        .intro-popup .skip-btn:hover { background: rgba(255,255,255,0.3); }
+
         .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
         .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
@@ -113,6 +127,13 @@
         .video-btn:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
         
         .video-popup.show { display: flex; }
+        /* 片頭 Intro */
+        .intro-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; justify-content: center; align-items: center; z-index: 500; flex-direction: column; }
+        .intro-popup.show { display: flex; }
+        .intro-popup video { width: 100%; height: 100%; object-fit: cover; }
+        .intro-popup .skip-btn { position: absolute; bottom: 30px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 10px 20px; border-radius: 25px; font-size: 0.9rem; cursor: pointer; }
+        .intro-popup .skip-btn:hover { background: rgba(255,255,255,0.3); }
+
         .video-popup iframe { width: 90%; max-width: 400px; height: 225px; border-radius: 10px; }
         .video-popup .claim-btn { background: #ffd700; color: #000; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .video-popup .claim-btn:disabled { background: #888; color: #ccc; cursor: not-allowed; }
@@ -452,7 +473,7 @@
                 <h3>📌 第四步：了解你的階級</h3>
                 <p>🎖️ 每週下注金額會提升你的階級</p>
                 <p>青銅 → 白銀 → 黃金 → 白金 → 鑽石</p>
-                <p style="margin-top:10px;">💡 點擊選單 ☰ 查看「🎖️ 等級」了解詳情</p>
+                <p style="margin-top:10px;">💡 點擊頂部稱號即可查看等級詳情</p>
                 <p style="margin-top:10px;">📋 每日挑戰完成可獲得額外金幣</p>
                 <p style="margin-top:10px;">🔥 連續登入也有額外獎勵</p>
             </div>
@@ -527,35 +548,96 @@
         </div>
     </div>
 
+
+    <!-- 個人資料 Modal -->
+    <div class="modal-overlay" id="profileModal" style="display:none;z-index:1002;" onclick="closeProfileModal()">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+            <h3 style="color:#ffd700;margin:0 0 16px;">👤 個人資料</h3>
+            <div id="profileContent" style="color:#fff;"></div>
+            <button onclick="closeProfileModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:16px;">關閉</button>
+        </div>
+    </div>
+
+    <!-- 標籤選擇 Modal -->
+    <div class="modal-overlay" id="tagModal" style="display:none;z-index:1003;">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;">
+            <h3 id="tagModalTitle" style="color:#ffd700;margin:0 0 16px;">選擇標籤</h3>
+            <div id="tagModalContent" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px;"></div>
+            <button id="tagConfirmBtn" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;">確認</button>
+        </div>
+    </div>
+
+    <!-- 性別選擇 Modal -->
+    <div class="modal-overlay" id="genderModal" style="display:none;z-index:1003;" onclick="closeGenderModal()">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:300px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+            <h3 style="color:#ffd700;margin:0 0 16px;">選擇性別</h3>
+            <div id="genderOptions" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+                <button onclick="selectGender(this,'男')" style="padding:12px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;cursor:pointer;font-size:1rem;">男</button>
+                <button onclick="selectGender(this,'女')" style="padding:12px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;cursor:pointer;font-size:1rem;">女</button>
+                <button onclick="selectGender(this,'其他')" style="padding:12px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;cursor:pointer;font-size:1rem;">其他</button>
+            </div>
+            <button onclick="confirmGender()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;margin-bottom:8px;">確認</button>
+            <button onclick="closeGenderModal()" style="width:100%;padding:10px;background:#222;color:#aaa;border:none;border-radius:8px;cursor:pointer;">取消</button>
+        </div>
+    </div>
+
+    <!-- 生日設定 Modal -->
+    <div class="modal-overlay" id="birthdayModal" style="display:none;z-index:1003;" onclick="closeBirthdayModal()">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:300px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+            <h3 style="color:#ffd700;margin:0 0 16px;">設定生日</h3>
+            <input type="date" id="birthdayInput" style="width:100%;padding:12px;border-radius:8px;background:#222;color:#fff;border:1px solid #444;box-sizing:border-box;margin-bottom:16px;" />
+            <button onclick="submitBirthday()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:bold;margin-bottom:8px;">確認</button>
+            <button onclick="closeBirthdayModal()" style="width:100%;padding:10px;background:#222;color:#aaa;border:none;border-radius:8px;cursor:pointer;">取消</button>
+        </div>
+    </div>
+
+    <!-- 頭像選擇 Modal -->
+    <div class="modal-overlay" id="avatarModal" style="display:none;z-index:1003;" onclick="closeAvatarModal()">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+            <h3 style="color:#ffd700;margin:0 0 16px;">選擇頭像</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar1.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar1.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar2.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar2.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar3.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar3.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar4.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar4.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar5.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar5.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <div onclick="selectAvatar(this)" data-av="/roulette/avatar6.jpg" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px solid transparent;"><img src="/roulette/avatar6.jpg" style="width:100%;height:100%;object-fit:cover;" /></div>
+                <button id="customAvatarSlotBtn" type="button" style="cursor:pointer;border-radius:50%;aspect-ratio:1;overflow:hidden;border:3px dashed #555;background:#222;color:#888;font-size:24px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:0;">+</button>
+            </div>
+            <input type="file" id="customAvatarInput" accept="image/*" style="display:none;" />
+            <button onclick="closeAvatarModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;">關閉</button>
+        </div>
+    </div>
+
     <!-- 玩家專區選單 -->
     <div class="modal-overlay" id="playerMenuModal">
         <div class="modal" style="max-width:320px;">
             <h2>🎯 玩家專區</h2>
             
-            <button onclick="showFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                📝 提供反饋
+            <button onclick="showProfile();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                👤 個人資料
             </button>
-            
-            <button onclick="showHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                ❓ 遊戲說明
-            </button>
-            
-            <button onclick="openVideoPopup();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🎬 看影片領獎勵
-            </button>
-            
+
             <button onclick="showMyInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                👥 邀請碼
+                🎟️ 邀請碼
             </button>
-            
+
             <button onclick="showLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
                 🔥 連續登入
             </button>
-            
-            <button onclick="showLevelInfo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                🎖️ 等級
+
+            <button onclick="openVideoPopup();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                🎬 看影片領獎勵
             </button>
-            
+
+            <button onclick="showHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                ❓ 遊戲說明
+            </button>
+
+            <button onclick="showFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
+                📝 提供反饋
+            </button>
+
             <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>
         </div>
     </div>
@@ -735,6 +817,206 @@
             osc.stop(audioCtx.currentTime + 0.03);
         }
         
+
+
+// ================================================================
+// 個人資料系統
+// ================================================================
+const TIER_NAMES = {bronze:'青銅',silver:'白銀',gold:'黃金',platinum:'白金',diamond:'鑽石'};
+const TIER_COLORS = {bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',platinum:'#e5e4e2',diamond:'#b9f2ff'};
+const PERSONALITY_TAGS = ['冒險家','幽默派','創意派','冷靜派','外向派'];
+const INTEREST_TAGS = ['遊戲狂','影視迷','運動愛好者','音樂控','旅行家'];
+const BADGE_TAGS = ['謎之存在','貓奴','狗奴','夜貓子','科幻迷','二次元'];
+
+var selectedAvatar = '/roulette/avatar1.jpg';
+
+function openAvatarModal(){document.getElementById('avatarModal').style.display='flex';updateAvatarSelection();}
+function closeAvatarModal(){document.getElementById('avatarModal').style.display='none';}
+function updateAvatarSelection(){
+    var av = selectedAvatar;
+    document.querySelectorAll('#avatarModal [data-av]').forEach(function(el){
+        el.style.borderColor = (el.dataset.av === av) ? '#ffd700' : 'transparent';
+    });
+}
+function selectAvatar(el){
+    selectedAvatar = el.dataset.av;
+    updateAvatarSelection();
+    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,avatar_url:selectedAvatar})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeAvatarModal();loadProfile();}}).catch(function(e){console.error(e);});
+}
+function setupAvatarUpload(){
+    var slot=document.getElementById('customAvatarSlotBtn');
+    var fileInput=document.getElementById('customAvatarInput');
+    if(!slot||!fileInput)return;
+    slot.onclick=function(){fileInput.value=null;fileInput.click();};
+    fileInput.onchange=function(){
+        if(!this.files||!this.files[0])return;
+        var reader=new FileReader();
+        reader.onload=function(e){
+            var dataUrl=e.target.result;
+            var slot2=document.getElementById('customAvatarSlotBtn');
+            if(slot2)slot2.innerHTML="<img src='"+dataUrl+"' style='width:100%;height:100%;object-fit:cover;border-radius:50%;' />";
+            fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,avatar_url:dataUrl})}).then(function(r){return r.json();}).then(function(d){
+                if(d.success){setTimeout(function(){closeAvatarModal();loadProfile();},800);}
+            }).catch(function(){});
+        };
+        reader.readAsDataURL(this.files[0]);
+    };
+}
+window.addEventListener('load',setupAvatarUpload);
+
+function openBirthdayModal(){document.getElementById('birthdayModal').style.display='flex';}
+function closeBirthdayModal(){document.getElementById('birthdayModal').style.display='none';}
+async function submitBirthday(){
+    var v=document.getElementById('birthdayInput').value;
+    if(!v)return;
+    try{
+        var r=await fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,birthday:v})});
+        var d=await r.json();
+        if(d.success){closeBirthdayModal();loadProfile();}
+    }catch(e){console.error(e);}
+}
+
+function openGenderModal(){document.getElementById('genderModal').style.display='flex';}
+function closeGenderModal(){document.getElementById('genderModal').style.display='none';}
+function selectGender(btn,g){
+    window._selectedGender=g;
+    var btns=document.querySelectorAll('#genderOptions button');
+    btns.forEach(function(b){b.style.background='#333';b.style.color='#fff';b.style.borderColor='#555';});
+    btn.style.background='#00b894';btn.style.color='#fff';btn.style.borderColor='#00b894';
+}
+function confirmGender(){
+    var g=window._selectedGender;
+    if(!g)return;
+    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,gender:g})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeGenderModal();loadProfile();}}).catch(function(e){console.error(e);});
+}
+
+function openTagModal(type){
+    var pd=window._profileData;
+    if(!pd)return;
+    var p=pd.profile;
+    var tags=[];var title='';var currentVal='';
+    if(type==='personality'){tags=PERSONALITY_TAGS;title='選擇個性';currentVal=p.personality_tag||'';}
+    else if(type==='interest'){tags=INTEREST_TAGS;title='選擇興趣';currentVal=p.interest_tag||'';}
+    else{tags=BADGE_TAGS;title='選擇身份徽章';currentVal=p.badge_tag||'';}
+    window._currentTagType=type;
+    var selected=currentVal?currentVal.split(','):[];
+    window._selectedTags=selected.slice();
+    document.getElementById('tagModalTitle').textContent=title;
+    var cont=document.getElementById('tagModalContent');
+    cont.innerHTML='';
+    tags.forEach(function(t){
+        var btn=document.createElement('button');
+        btn.textContent=t;
+        btn.setAttribute('data-tag',t);
+        var isSelected=selected.indexOf(t)>=0;
+        btn.style.cssText='padding:8px 16px;border-radius:20px;font-size:0.9rem;cursor:pointer;background:'+(isSelected?'#00b894':'#333')+';color:'+(isSelected?'#fff':'#aaa')+';border:1px solid '+(isSelected?'#00b894':'#555')+';';
+        btn.onclick=function(){toggleTag(t);};
+        cont.appendChild(btn);
+    });
+    var confirmBtn=document.getElementById('tagConfirmBtn');
+    confirmBtn.onclick=function(){
+        var field=window._currentTagType+'_tag';
+        var sel=window._selectedTags||[];
+        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeTagModal();loadProfile();}}).catch(function(e){console.error(e);});
+    };
+    document.getElementById('tagModal').style.display='flex';
+}
+function closeTagModal(){document.getElementById('tagModal').style.display='none';}
+
+window.toggleTag=function(tag){
+    var sel=window._selectedTags||[];
+    var idx=sel.indexOf(tag);
+    var btns=document.querySelectorAll('#tagModalContent button');
+    btns.forEach(function(b){
+        if(b.getAttribute('data-tag')===tag){
+            if(idx>=0){sel.splice(idx,1);b.style.background='#333';b.style.color='#aaa';b.style.borderColor='#555';}
+            else{sel.push(tag);b.style.background='#00b894';b.style.color='#fff';b.style.borderColor='#00b894';}
+        }
+    });
+    window._selectedTags=sel;
+};
+
+async function showOtherPlayer(username){
+    var modal=document.getElementById('playerMenuModal');
+    var inner=modal.querySelector('.modal');
+    if(!playerMenuOriginalContent)playerMenuOriginalContent=inner.innerHTML;
+    inner.innerHTML='<h2 style="color:#ffd700;text-align:center;">👤 '+username+'</h2><div id="otherPlayerContent" style="color:#fff;padding:10px;">載入中...</div><button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>';
+    modal.classList.add('show');
+    try{
+        var res=await fetch('/api/roulette/profile/'+encodeURIComponent(username));
+        var d=await res.json();
+        var cont=document.getElementById('otherPlayerContent');
+        if(!d.success){cont.innerHTML='<p style="color:#ff6b6b;">載入失敗</p>';return;}
+        var p=d.profile;
+        var tc=TIER_COLORS[d.tier]||'#ffd700';
+        var tn=TIER_NAMES[d.tier]||d.tier;
+        var av=p.avatar_url||'/roulette/avatar1.jpg';
+        var h="<div style='text-align:center;margin:10px 0;'><img src='"+av+"' style='width:80px;height:80px;border-radius:50%;border:3px solid "+tc+";object-fit:cover;' /></div>";
+        h+="<div style='font-size:1.1rem;font-weight:bold;color:#fff;margin-top:8px;'>"+p.username+"</div>";
+        h+="<div style='color:"+tc+";font-size:0.85rem;margin-bottom:12px;'>"+tn+" · "+d.title+"</div>";
+        if(p.gender)h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>性別</div><div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.gender+"</div></div>";
+        if(p.personality_tag)h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>個性</div><div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.personality_tag+"</div></div>";
+        if(p.interest_tag)h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>興趣</div><div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.interest_tag+"</div></div>";
+        if(p.badge_tag)h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>身份徽章</div><div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.badge_tag+"</div></div>";
+        if(!p.gender&&!p.personality_tag&&!p.interest_tag&&!p.badge_tag)h+="<div style='color:#888;font-size:0.85rem;margin-top:16px;'>此玩家尚未填寫個人資料</div>";
+        cont.innerHTML=h;
+    }catch(e){document.getElementById('otherPlayerContent').innerHTML='<p style="color:#ff6b6b;">載入失敗</p>';}
+}
+window.showOtherPlayer=showOtherPlayer;
+
+async function showProfile(){
+    var modal=document.getElementById('playerMenuModal');
+    var inner=modal.querySelector('.modal');
+    if(!playerMenuOriginalContent)playerMenuOriginalContent=inner.innerHTML;
+    inner.innerHTML='<h2 style="color:#ffd700;text-align:center;">👤 個人資料</h2><div id="profileContent" style="color:#fff;padding:10px;">載入中...</div><button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>';
+    modal.classList.add('show');
+    await loadProfile();
+}
+
+async function loadProfile(){
+    var cont=document.getElementById('profileContent');
+    if(!cont){return;}
+    cont.innerHTML='<div style="padding:20px;color:#ffd700;">載入中...</div>';
+    if(!myName){cont.innerHTML="<p style='color:#ff6b6b;'>請先登入</p>";return;}
+    try{
+        var r=await fetch('/api/roulette/profile/'+encodeURIComponent(myName));
+        var d=await r.json();
+        if(!d.success){cont.innerHTML="<p style='color:#ff6b6b;'>"+d.message+"</p>";return;}
+        renderProfile(d);
+    }catch(e){cont.innerHTML="<p style='color:#ff6b6b;'>載入失敗</p>";}
+}
+
+function renderProfile(d){
+    var cont=document.getElementById('profileContent');
+    if(!cont)return;
+    var p=d.profile;
+    var tc=TIER_COLORS[d.tier]||'#ffd700';
+    var tn=TIER_NAMES[d.tier]||d.tier;
+    var av=p.avatar_url||'/roulette/avatar1.jpg';
+    window._profileData=d;
+    var h="<div style='position:relative;display:inline-block;margin:10px auto;cursor:pointer;' data-profile-action='open-avatar'><img src='"+av+"' style='width:80px;height:80px;border-radius:50%;border:3px solid "+tc+";object-fit:cover;' /><div style='position:absolute;bottom:-4px;right:-4px;background:"+tc+";color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;'>Lv."+d.level+"</div><div style='position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;'>✏️</div></div>";
+    h+="<div style='font-size:1.1rem;font-weight:bold;color:#fff;margin-top:8px;'>"+p.username+"</div>";
+    h+="<div style='color:"+tc+";font-size:0.85rem;margin-bottom:12px;'>"+tn+" · "+d.title+"</div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>生日</div>";
+    if(p.birthday){h+="<div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.birthday+"</div>";}
+    else{h+="<div data-profile-action='open-birthday' style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;cursor:pointer;font-size:0.9rem;'>點擊設定</div>";}
+    h+="</div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>性別</div>";
+    if(p.gender){h+="<div style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;'>"+p.gender+"</div>";}
+    else{h+="<div data-profile-action='open-gender' style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;cursor:pointer;font-size:0.9rem;'>點擊設定</div>";}
+    h+="</div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>個性</div><div data-profile-action='tag-personality' style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.personality_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.personality_tag?p.personality_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>興趣</div><div data-profile-action='tag-interest' style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.interest_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.interest_tag?p.interest_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>身份徽章</div><div data-profile-action='tag-badge' style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.badge_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.badge_tag?p.badge_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
+    cont.innerHTML=h;
+}
+
+function closeProfileModal(){
+    document.getElementById('profileModal').style.display='none';
+    closePlayerMenu();
+}
+
+// Click on other player in leaderboard - add to leaderboard HTML generation
         // 背景音樂在登入後啟動（見 login success 和 session restore）
         // 如果 audio 被瀏覽器封鎖，等使用者互動後再播
         document.addEventListener('click', () => {
@@ -2101,7 +2383,7 @@
                         '鑽石': 'linear-gradient(135deg,#B9F2FF,#00FFFF)'
                     };
                     const grad = tierGradients[data.tier] || tierGradients['青銅'];
-                    nameEl.innerHTML = `<span class="title-shine" style="background:${grad};padding:3px 12px;border-radius:12px;font-weight:bold;font-size:0.85rem;color:#fff;margin-right:8px;position:relative;overflow:hidden;">${data.title}</span><span style="color:#fff;">${myName}</span>`;
+                    nameEl.innerHTML = `<span class="title-shine" onclick="showLevelInfo()" style="background:${grad};padding:3px 12px;border-radius:12px;font-weight:bold;font-size:0.85rem;color:#fff;margin-right:8px;position:relative;overflow:hidden;cursor:pointer;">${data.title}</span><span style="color:#fff;">${myName}</span>`;
                 } else if (nameEl) {
                     nameEl.textContent = myName;
                 }
@@ -2207,7 +2489,7 @@
             inner.innerHTML = `
                 <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">
                     <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:1.2rem;color:#ffd700;">🏆 等級</div>
+                        <div style="font-size:1.2rem;color:#ffd700;">🎖️ 等級</div>
                         <div style="font-size:2rem;font-weight:bold;color:${levelData.level >= 41 ? '#b9f2ff' : levelData.level >= 31 ? '#e5e4e2' : levelData.level >= 21 ? '#ffd700' : levelData.level >= 11 ? '#c0c0c0' : '#cd7f32'};">Lv.${levelData.level} ${levelData.tier}</div>
                         <div style="font-size:1rem;color:#aaa;">稱號：${levelData.title}</div>
                         <div style="font-size:0.9rem;color:#888;margin-top:5px;">本週下注：$${levelData.weeklyBet.toLocaleString()}</div>
@@ -2454,7 +2736,7 @@
                     const tierColor = tierGradients[player.tier] || '#888';
                     const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
                     html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<span onclick="showOtherPlayer(\'' + player.username + '\')" style="cursor:pointer;">' + medal + ' ' + player.username + titleBadge + '</span></span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 
@@ -2517,7 +2799,7 @@
                     const tierColor = tierGradients[player.tier] || '#888';
                     const titleBadge = player.title ? `<span style="background:linear-gradient(135deg,${tierColor},${tierColor}88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">${player.title}</span>` : '';
                     html += '<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #333;color:' + color + ';align-items:center;">';
-                    html += '<span>' + medal + ' ' + player.username + titleBadge + '</span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
+                    html += '<span onclick="showOtherPlayer(\'' + player.username + '\')" style="cursor:pointer;">' + medal + ' ' + player.username + titleBadge + '</span></span><span style="font-weight:bold;">' + player.score.toLocaleString() + '</span></div>';
                 });
                 html += '</div>';
                 listEl.innerHTML = html;
@@ -2525,7 +2807,37 @@
                 listEl.innerHTML = '載入失敗';
             }
         }
-    </script>
+    
+// Event delegation for profile modals
+document.addEventListener('click', function(e){
+    var target = e.target || e.srcElement;
+    // Tag modal buttons
+    if(target.classList && target.classList.contains('tag-opt')){
+        var tag = target.getAttribute('data-tag');
+        if(tag) toggleTag(tag);
+        return;
+    }
+    // Tag modal confirm
+    if(target.id === 'tagConfirmBtn'){
+        var field = window._currentTagType + '_tag';
+        var sel = window._selectedTags || [];
+        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeTagModal();loadProfile();}}).catch(function(e){console.error(e);});
+        return;
+    }
+    // Profile action handlers
+    var action = target.closest('[data-profile-action]');
+    if(action){
+        var act = action.getAttribute('data-profile-action');
+        if(act === 'tag-personality') openTagModal('personality');
+        else if(act === 'tag-interest') openTagModal('interest');
+        else if(act === 'tag-badge') openTagModal('badge');
+        else if(act === 'open-birthday') openBirthdayModal();
+        else if(act === 'open-gender') openGenderModal();
+        else if(act === 'open-avatar') openAvatarModal();
+        return;
+    }
+});
+</script>
     <script>
         // 註冊 Service Worker (PWA)
         if ('serviceWorker' in navigator) {
@@ -2587,6 +2899,33 @@
                 }
             } catch(e) { showToast('領取失敗'); }
         }
+
+        // ========== 片頭 Intro ==========
+        function playIntroVideo() {
+            if (localStorage.getItem('rouletteIntroPlayed')) return;
+            localStorage.setItem('rouletteIntroPlayed', '1');
+            var popup = document.getElementById('introPopup');
+            var video = document.getElementById('introVideo');
+            if (!popup || !video) return;
+            popup.classList.add('show');
+            video.play().catch(function(e){ console.log('Intro video error:', e); });
+        }
+        function skipIntro() {
+            var video = document.getElementById('introVideo');
+            if (video) video.pause();
+            var popup = document.getElementById('introPopup');
+            if (popup) popup.classList.remove('show');
+        }
+        // Listen for video ended to auto-close
+        document.addEventListener('DOMContentLoaded', function() {
+            var video = document.getElementById('introVideo');
+            if (video) {
+                video.addEventListener('ended', function() {
+                    var popup = document.getElementById('introPopup');
+                    if (popup) popup.classList.remove('show');
+                });
+            }
+        });
         </script>
         <!-- 看片彈窗 -->
         <div class="video-popup" id="videoPopup">
@@ -2595,6 +2934,14 @@
             <iframe id="videoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
             <button class="claim-btn" id="videoClaimSubmit" onclick="claimVideoReward()" disabled>請等待...</button>
+        </div>
+
+        <!-- 片頭動畫彈窗 -->
+        <div class="intro-popup" id="introPopup">
+            <video id="introVideo" autoplay playsinline>
+                <source src="/roulette/video/intro.mp4" type="video/mp4">
+            </video>
+            <button class="skip-btn" onclick="skipIntro()">跳過 ✕</button>
         </div>
     </body>
 </html>
