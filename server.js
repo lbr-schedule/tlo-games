@@ -831,7 +831,7 @@ async function spinWheel() {
     setTimeout(() => {
         rouletteState.phase = 'result';
         // 結果顯示3.5秒後進入下注時間
-        rouletteState.spinTimer = setTimeout(spinWheel, 3500);
+        rouletteState.spinTimer = setTimeout(startBetting, 3500);
     }, 5000);
 }
 
