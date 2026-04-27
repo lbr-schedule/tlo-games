@@ -3096,10 +3096,10 @@ document.addEventListener('click', function(e){
 
         <!-- INTRO OVERLAY - shows immediately on load -->
         <div id="introOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:600;display:flex;justify-content:center;align-items:center;flex-direction:column;">
-            <video id="introVideoStatic" autoplay playsinline style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="introEnableSound()">
+            <video id="introVideoStatic" autoplay playsinline style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="introEnableSound();unlockVideoAudio();">
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
-            <div id="introTapHint" onclick="introEnableSound()" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(255,215,0,0.9);color:#1a1a2e;padding:12px 24px;border-radius:20px;font-weight:bold;cursor:pointer;z-index:10;">
+            <div id="introTapHint" onclick="introEnableSound();unlockVideoAudio();" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(255,215,0,0.9);color:#1a1a2e;padding:12px 24px;border-radius:20px;font-weight:bold;cursor:pointer;z-index:10;">
                 ▶️ 點擊開啟聲音
             </div>
             <button onclick="skipIntroOverlay()" style="position:absolute;bottom:30px;right:20px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;">跳過 ✕</button>

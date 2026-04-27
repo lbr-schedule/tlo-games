@@ -1981,33 +1981,26 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
     if (!username) return res.json({ success: false, message: '缺少帳號' });
     
     try {
-        let player = null;
+        let player = null, weeklyBet = 0;
         if (rouletteDb && rouletteDbAvailable) {
+            // Single JOIN query instead of two separate queries
             const r = await rouletteDb.execute({
-                sql: 'SELECT username, score, realname, phone, email, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag FROM players WHERE username = ?',
+                sql: `SELECT p.username, p.score, p.realname, p.phone, p.email, p.avatar_url, p.birthday, p.gender, p.personality_tag, p.interest_tag, p.badge_tag, COALESCE(s.weekly_bet, 0) as weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username WHERE p.username = ?`,
                 args: [username]
             });
-            if (r.rows && r.rows[0]) player = r.rows[0];
-        }
-        
-        // Player only from DB (no in-memory fallback)
-        
-        if (!player) return res.json({ success: false, message: '玩家不存在' });
-        
-        let level = 1, tier = '新手', title = '菜鳥', weeklyBet = 0;
-        if (rouletteDb && rouletteDbAvailable) {
-            const s = await rouletteDb.execute({
-                sql: 'SELECT level, weekly_bet FROM roulette_player_stats WHERE username = ?',
-                args: [username]
-            });
-            if (s.rows && s.rows[0]) {
-                weeklyBet = s.rows[0].weekly_bet || 0;
-                const info = getLevelInfo(weeklyBet);
-                level = info.level;
-                tier = info.tier;
-                title = info.title;
+            if (r.rows && r.rows[0]) {
+                player = r.rows[0];
+                weeklyBet = player.weekly_bet || 0;
             }
         }
+
+        if (!player) return res.json({ success: false, message: '玩家不存在' });
+
+        let level = 1, tier = '新手', title = '菜鳥';
+        const info = getLevelInfo(weeklyBet);
+        level = info.level;
+        tier = info.tier;
+        title = info.title;
         
         res.json({
             success: true,
