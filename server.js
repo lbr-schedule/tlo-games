@@ -779,15 +779,40 @@ function spinWheel() {
         mysteryPool: wasMystery ? poolBeforeResult : 0
     };
     
-    // 神秘中獎：分發彩池（async，不阻擋轉盤）
+    // 神秘中獎：立即設定 lastWinner（同步，客戶端馬上能看到公告）
     if (wasMystery && poolBeforeResult > 0 && rouletteState.currentRoundId) {
+        // 先查贏家數
+        let winnersCount = 1;
+        try {
+            const wc = await rouletteDb.execute({
+                sql: `SELECT COUNT(*) as cnt FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`,
+                args: [rouletteState.currentRoundId]
+            });
+            winnersCount = wc.rows?.[0]?.cnt || 1;
+        } catch(e) { console.log('查贏家數失敗:', e.message); }
+        
+        // 立即設定 lastWinner 和 perPersonPool（客戶端poll時就能看到）
+        const winnerNames = winnersCount > 1 ? (winnersCount + '位玩家') : '神秘中獎者';
+        rouletteState.lastWinner = { 
+            username: winnerNames,
+            amount: perPersonPool,
+            type: 'mystery',
+            winnersCount,
+            winnersList: winnerNames,
+            poolAmount: poolBeforeResult
+        };
+        rouletteState.lastSpin.perPersonPool = perPersonPool;
+        rouletteState.lastSpin.mysteryWinners = winnersCount;
+        saveWinnerState();
+        
+        // async 分發彩池（不阻擋轉盤）
         (async () => {
-            const poolPerPerson = await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
-            rouletteState.lastSpin.perPersonPool = poolPerPerson;
-            rouletteState.lastSpin.mysteryWinners = (await rouletteDb.execute({ sql: `SELECT COUNT(*) as cnt FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`, args: [rouletteState.currentRoundId] })).rows?.[0]?.cnt || 0;
+            try { await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult); }
+            catch(e) { console.log('分發失敗:', e.message); }
             rouletteState.mysteryPool = 0;
-            await saveMysteryPool();
+            try { await saveMysteryPool(); } catch(e) {}
             rouletteState.currentRoundId = null;
+            console.log('神秘彩池分發完成: 每人 $' + perPersonPool);
         })();
     } else if (!wasMystery) {
         // 非神秘局更換 roundId
