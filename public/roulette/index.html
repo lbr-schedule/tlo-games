@@ -937,7 +937,19 @@ function selectGender(btn,g){
 function confirmGender(){
     var g=window._selectedGender;
     if(!g)return;
-    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,gender:g})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeGenderModal();if(window._profileData&&window._profileData.profile){window._profileData.profile.gender=g;var el=document.querySelector('[data-profile-action=\'open-gender\']');if(el){el.textContent=g;el.style.color='#ffd700';}}};}).catch(function(e){console.error(e);});
+    var btns=document.querySelectorAll('#genderModal button');
+    btns.forEach(function(b){b.disabled=true;b.textContent='儲存中...';});
+    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,gender:g})}).then(function(r){return r.json();}).then(function(d){
+        if(d.success){
+            closeGenderModal();
+            if(window._profileData&&window._profileData.profile){
+                window._profileData.profile.gender=g;
+                var el=document.querySelector('[data-profile-action=\'open-gender\']');
+                if(el){el.textContent=g;el.style.color='#ffd700';}
+            }
+        }
+        btns.forEach(function(b){b.disabled=false;b.textContent=b.dataset.originalText||b.textContent;});
+    }).catch(function(e){console.error(e);btns.forEach(function(b){b.disabled=false;});});
 }
 
 function openTagModal(type){
@@ -967,6 +979,9 @@ function openTagModal(type){
     confirmBtn.onclick=function(){
         var field=window._currentTagType+'_tag';
         var sel=window._selectedTags||[];
+        var confirmBtn=document.getElementById('tagConfirmBtn');
+        var originalText=confirmBtn?confirmBtn.textContent:'';
+        if(confirmBtn){confirmBtn.textContent='儲存中...';confirmBtn.disabled=true;}
         fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){
             if(d.success){
                 closeTagModal();
@@ -976,7 +991,8 @@ function openTagModal(type){
                     if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
                 }
             }
-        }).catch(function(e){console.error(e);});
+            if(confirmBtn){confirmBtn.textContent=originalText;confirmBtn.disabled=false;}
+        }).catch(function(e){console.error(e);if(confirmBtn){confirmBtn.textContent=originalText;confirmBtn.disabled=false;}});
     };
     document.getElementById('tagModal').style.display='flex';
 }
@@ -2901,6 +2917,9 @@ document.addEventListener('click', function(e){
     if(target.id === 'tagConfirmBtn'){
         var field = window._currentTagType + '_tag';
         var sel = window._selectedTags || [];
+        var confirmBtn=document.getElementById('tagConfirmBtn');
+        var originalText=confirmBtn?confirmBtn.textContent:'';
+        if(confirmBtn){confirmBtn.textContent='儲存中...';confirmBtn.disabled=true;}
         fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){
             if(d.success){
                 closeTagModal();
@@ -2910,7 +2929,8 @@ document.addEventListener('click', function(e){
                     if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
                 }
             }
-        }).catch(function(e){console.error(e);});
+            if(confirmBtn){confirmBtn.textContent=originalText;confirmBtn.disabled=false;}
+        }).catch(function(e){console.error(e);if(confirmBtn){confirmBtn.textContent=originalText;confirmBtn.disabled=false;}});
         return;
     }
     // Profile action handlers
