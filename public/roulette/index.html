@@ -977,13 +977,17 @@ async function loadProfile(){
     var cont=document.getElementById('profileContent');
     if(!cont){return;}
     cont.innerHTML='<div style="padding:20px;color:#ffd700;">載入中...</div>';
+    console.log('loadProfile called, myName:', myName);
     if(!myName){cont.innerHTML="<p style='color:#ff6b6b;'>請先登入</p>";return;}
     try{
+        console.log('Fetching profile for:', myName);
         var r=await fetch('/api/roulette/profile/'+encodeURIComponent(myName));
+        console.log('Profile fetch status:', r.status);
         var d=await r.json();
+        console.log('Profile response:', d);
         if(!d.success){cont.innerHTML="<p style='color:#ff6b6b;'>"+d.message+"</p>";return;}
         renderProfile(d);
-    }catch(e){cont.innerHTML="<p style='color:#ff6b6b;'>載入失敗</p>";}
+    }catch(e){console.error('Profile load error:', e);cont.innerHTML="<p style='color:#ff6b6b;'>載入失敗: "+e.message+"</p>";}
 }
 
 function renderProfile(d){
@@ -2440,7 +2444,7 @@ function closeProfileModal(){
                     </div>
                     
                     <button onclick="claimLoginFromMenu()" id="menuClaimStreakBtn" style="width:100%;padding:14px;background:#1a1a2e;border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#ffd700;margin-top:15px;">領取登入獎勵</button>
-                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.3);border-radius:12px;font-size:1rem;cursor:pointer;color:#000;margin-top:10px;opacity:0.85;">返回選單</button>
+                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.3);border-radius:12px;font-size:1rem;cursor:pointer;color:#000;margin-top:10px;opacity:0.85;">關閉</button>
                 </div>
             `;
             modal.classList.add('show');
@@ -2498,7 +2502,7 @@ function closeProfileModal(){
                         ${tierBars}
                     </div>
                     <div style="font-size:0.8rem;color:#666;text-align:center;margin-top:15px;">每週一結算，階級隨下注金額提升</div>
-                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">返回選單</button>
+                    <button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">關閉</button>
                 </div>
             `;
             modal.classList.add('show');
