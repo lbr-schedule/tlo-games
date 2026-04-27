@@ -621,7 +621,7 @@ async function handleDiceMessage(ws, msg) {
 }
 
 // JSON 解析
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
 // 客戶端每1秒輪詢一次 /dice/poll
