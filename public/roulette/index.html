@@ -987,7 +987,7 @@ function openTagModal(type){
                 closeTagModal();
                 if(window._profileData&&window._profileData.profile){
                     window._profileData.profile[field]=sel.join(',');
-                    var el=document.querySelector('[data-profile-action=\'tag-'+type+'\']');
+                    var el=document.querySelector('[data-profile-action=\'tag-'+window._currentTagType+'\']');
                     if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
                 }
             }
@@ -2931,7 +2931,7 @@ document.addEventListener('click', function(e){
                 closeTagModal();
                 if(window._profileData&&window._profileData.profile){
                     window._profileData.profile[field]=sel.join(',');
-                    var el=document.querySelector('[data-profile-action=\'tag-'+type+'\']');
+                    var el=document.querySelector('[data-profile-action=\'tag-'+window._currentTagType+'\']');
                     if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
                 }
             }
