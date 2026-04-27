@@ -2988,19 +2988,37 @@ document.addEventListener('click', function(e){
             console.log('🎬 playIntroVideo called');
             var popup = document.getElementById('introPopup');
             var video = document.getElementById('introVideo');
+            var tapOverlay = document.getElementById('introTapOverlay');
             if (!popup || !video) return;
+
+            // Show intro first
             popup.classList.add('show');
 
-            // Play with sound (user gesture is present)
-            video.muted = false;
-            video.play().catch(function(e) {
-                console.log('Intro video play error:', e);
-            });
+            // Show tap-to-start overlay (browser requires user gesture for audio)
+            if (tapOverlay) {
+                tapOverlay.style.display = 'flex';
+                tapOverlay.onclick = function() {
+                    tapOverlay.style.display = 'none';
+                    video.muted = false;
+                    video.play().catch(function(e) {
+                        console.log('Intro video play error:', e);
+                    });
+                    tapOverlay.onclick = null;
+                };
+            } else {
+                // No tap overlay, just try to play
+                video.muted = false;
+                video.play().catch(function(e) {
+                    console.log('Intro video play error:', e);
+                });
+            }
         }
         function skipIntro() {
             var video = document.getElementById('introVideo');
             if (video) video.pause();
             var popup = document.getElementById('introPopup');
+            var tapOverlay = document.getElementById('introTapOverlay');
+            if (tapOverlay) tapOverlay.style.display = 'none';
             if (popup) popup.classList.remove('show');
         }
         // Listen for video ended to auto-close
@@ -3025,7 +3043,13 @@ document.addEventListener('click', function(e){
 
         <!-- 片頭動畫彈窗 -->
         <div class="intro-popup" id="introPopup">
-            <video id="introVideo" autoplay playsinline>
+            <div id="introTapOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);z-index:10;cursor:pointer;">
+                <div style="text-align:center;color:#fff;">
+                    <div style="font-size:3rem;">▶️</div>
+                    <div style="font-size:1.2rem;margin-top:10px;">點擊播放</div>
+                </div>
+            </div>
+            <video id="introVideo" playsinline>
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
             <button class="skip-btn" onclick="skipIntro()">跳過 ✕</button>
