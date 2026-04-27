@@ -965,11 +965,10 @@ async function showOtherPlayer(username){
 window.showOtherPlayer=showOtherPlayer;
 
 async function showProfile(){
-    var modal=document.getElementById('playerMenuModal');
-    var inner=modal.querySelector('.modal');
-    if(!playerMenuOriginalContent)playerMenuOriginalContent=inner.innerHTML;
-    inner.innerHTML='<h2 style="color:#ffd700;text-align:center;">👤 個人資料</h2><div id="profileContent" style="color:#fff;padding:10px;">載入中...</div><button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">關閉</button>';
-    modal.classList.add('show');
+    alert('showProfile called! myName='+myName);
+    closePlayerMenu();
+    var modal=document.getElementById('profileModal');
+    modal.style.display='flex';
     await loadProfile();
 }
 
@@ -1017,7 +1016,6 @@ function renderProfile(d){
 
 function closeProfileModal(){
     document.getElementById('profileModal').style.display='none';
-    closePlayerMenu();
 }
 
 // Click on other player in leaderboard - add to leaderboard HTML generation
