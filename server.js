@@ -156,7 +156,12 @@ async function distributeMysteryPool(roundId, poolAmount) {
             args: [roundId]
         });
         const winners = result.rows || [];
+        // 無人中獎時也寫入記錄，方便後續判斷是否該歸零彩池
         if (winners.length === 0) {
+            await rouletteDb.execute({
+                sql: `INSERT OR REPLACE INTO roulette_mystery_bets (round_id, result_number, pool_amount, winners, distributed) VALUES (?, ?, ?, 0, 0)`,
+                args: [roundId, 0, poolAmount]
+            });
             console.log('神秘彩池無人中獎，不分發');
             return 0;
         }
@@ -809,10 +814,21 @@ async function spinWheel() {
 
             // 分發獎金（背景執行，不阻擋）
             (async () => {
-                try { await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult); }
-                catch(e) { console.log('分發失敗:', e.message); }
-                rouletteState.mysteryPool = 0;
-                try { await saveMysteryPool(); } catch(e) {}
+                try {
+                    await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
+                    // 只有有人中獎才歸零彩池，否則彩池繼續累積
+                    const distResult = await rouletteDb.execute({
+                        sql: `SELECT distributed FROM roulette_mystery_bets WHERE round_id = ?`,
+                        args: [rouletteState.currentRoundId]
+                    });
+                    const distributed = distResult.rows?.[0]?.distributed;
+                    if (distributed === 1) {
+                        rouletteState.mysteryPool = 0;
+                        try { await saveMysteryPool(); } catch(e) {}
+                    } else {
+                        console.log('神秘彩池無人中獎，彩池累積至 $' + rouletteState.mysteryPool);
+                    }
+                } catch(e) { console.log('分發失敗:', e.message); }
                 rouletteState.currentRoundId = null;
             })();
         } catch(e) {
