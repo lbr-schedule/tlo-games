@@ -2770,43 +2770,80 @@ function closeProfileModal(){
                 modal.innerHTML = `
                     <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #ffd700;border-radius:20px;padding:25px;max-width:320px;width:90%;text-align:center;color:white;box-shadow:0 0 40px rgba(255,215,0,0.4);">
                         <div style="font-size:2rem;margin-bottom:10px;">🎉</div>
-                        <div style="font-size:1.3rem;font-weight:bold;color:#ffd700;margin-bottom:15px;">🎁 每日獎勵活動</div>
-                        <div style="font-size:0.95rem;color:#ddd;line-height:1.8;text-align:left;margin-bottom:15px;">
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🎬 看片領 1000 金幣</div>
-                                <div>每天一次，請先看完影片</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
-                                <div>每天登入自動發放</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
-                                <div>最高可領 $2000</div>
-                            </div>
-
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">💰 儲值 1:100</div>
-                                <div>1元台幣 = 100金幣</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">🎁 3% 隨機 bonus</div>
-                                <div>下注時 <b style="color:#00ff00;">+$200</b></div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:left;">
-                                <div style="color:#ffd700;margin-bottom:5px;">👤 個人資料系統</div>
-                                <div>頭像、性別、生日、標籤（個性/興趣/徽章）</div>
-                            </div>
+                        <div id="promoPageTitle" style="font-size:1.3rem;font-weight:bold;color:#ffd700;margin-bottom:15px;">📢 最新資訊</div>
+                        <div id="promoContent" style="font-size:0.95rem;color:#ddd;line-height:1.8;text-align:left;margin-bottom:15px;max-height:300px;overflow-y:auto;">
                         </div>
-                        <div style="font-size:0.85rem;color:#aaa;margin-bottom:15px;">將遊戲分數截圖傳至 LINE 兌換獎品</div>
-                        <div style="font-size:0.85rem;color:#00c864;margin-bottom:15px;">🥇 50,000分→襪子 🥈 100,000分→短袖 🥉 160,000分→帽子</div>
+                        <div id="promoPageBtns" style="display:flex;gap:10px;margin-bottom:10px;">
+                            <button id="promoBtn1" onclick="showPromoPage(1)" style="flex:1;padding:10px;background:#ffd700;border:none;border-radius:12px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">📢 最新</button>
+                            <button id="promoBtn2" onclick="showPromoPage(2)" style="flex:1;padding:10px;background:#333;border:none;border-radius:12px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#fff;">🎁 獎勵</button>
+                        </div>
                         <button onclick="closePromotionAndSave()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">我知道了！</button>
                     </div>
                 `;
                 document.body.appendChild(modal);
             }
+            window._promoPage = 1;
+            showPromoContent(1);
             modal.style.display = 'flex';
         }
+        
+        function showPromoContent(page) {
+            const content = document.getElementById('promoContent');
+            const title = document.getElementById('promoPageTitle');
+            const btn1 = document.getElementById('promoBtn1');
+            const btn2 = document.getElementById('promoBtn2');
+            if (!content) return;
+            if (page === 1) {
+                title.textContent = '📢 最新資訊';
+                content.innerHTML = `
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">👤 個人資料系統</div>
+                        <div>頭像、性別、生日、標籤（個性/興趣/徽章）</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">🔊 BGM 背景音樂</div>
+                        <div>登入後自動播放，點擊🔇可關閉</div>
+                    </div>
+                `;
+                btn1.style.background = '#ffd700';
+                btn1.style.color = '#1a1a2e';
+                btn2.style.background = '#333';
+                btn2.style.color = '#fff';
+            } else {
+                title.textContent = '🎁 每日獎勵活動';
+                content.innerHTML = `
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">🎬 看片領 1000 金幣</div>
+                        <div>每天一次，請先看完影片</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">💰 每日登入 500 金幣</div>
+                        <div>每天登入自動發放</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">🔥 連續登入額外獎勵</div>
+                        <div>最高可領 $2000</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">💰 儲值 1:100</div>
+                        <div>1元台幣 = 100金幣</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;margin-bottom:10px;text-align:left;">
+                        <div style="color:#ffd700;margin-bottom:5px;">🎁 3% 隨機 bonus</div>
+                        <div>下注時 <b style="color:#00ff00;">+$200</b></div>
+                    </div>
+                    <div style="font-size:0.8rem;color:#aaa;margin:10px 0 5px;">將遊戲分數截圖傳至 LINE 兌換獎品</div>
+                    <div style="font-size:0.8rem;color:#00c864;">🥇 50,000分→襪子 🥈 100,000分→短袖 🥉 160,000分→帽子</div>
+                `;
+                btn1.style.background = '#333';
+                btn1.style.color = '#fff';
+                btn2.style.background = '#ffd700';
+                btn2.style.color = '#1a1a2e';
+            }
+            window._promoPage = page;
+        }
+        
+        function showPromoPage(page) { showPromoContent(page); }
         
         function closePromotionAndSave() {
             const modal = document.getElementById('promotionModal');
