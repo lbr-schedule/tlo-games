@@ -1008,17 +1008,22 @@ async function showProfile(){
     closePlayerMenu();
     var modal=document.getElementById('profileModal');
     modal.style.display='flex';
-    await loadProfile();
+    // Show cached data immediately if available
+    if(window._profileData && window._profileData.profile && window._profileData.profile.username === myName){
+        renderProfile(window._profileData);
+    }
+    // Always refresh in background
+    loadProfile(true); // silent refresh, no skeleton
 }
 
-async function loadProfile(){
+async function loadProfile(silent){
     var cont=document.getElementById('profileContent');
     if(!cont){return;}
-    // Show skeleton immediately while loading
-    if(!window._profileData){
+    // Show skeleton only on first load and only if no cache
+    if(!window._profileData && !silent){
         cont.innerHTML='<div style="padding:20px;color:#ffd700;text-align:center;">⚙️ 載入中...</div>';
     }
-    console.log('loadProfile called, myName:', myName);
+    if(!silent) console.log('loadProfile called, myName:', myName);
     if(!myName){cont.innerHTML="<p style='color:#ff6b6b;'>請先登入</p>";return;}
     try{
         console.log('Fetching profile for:', myName);
