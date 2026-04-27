@@ -1994,13 +1994,19 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
         
         if (!player) return res.json({ success: false, message: '玩家不存在' });
         
-        let level = 1, tier = '新手';
+        let level = 1, tier = '新手', title = '菜鳥', weeklyBet = 0;
         if (rouletteDb && rouletteDbAvailable) {
             const s = await rouletteDb.execute({
-                sql: 'SELECT level FROM roulette_player_stats WHERE username = ?',
+                sql: 'SELECT level, weekly_bet FROM roulette_player_stats WHERE username = ?',
                 args: [username]
             });
-            if (s.rows && s.rows[0]) level = s.rows[0].level || 1;
+            if (s.rows && s.rows[0]) {
+                weeklyBet = s.rows[0].weekly_bet || 0;
+                const info = getLevelInfo(weeklyBet);
+                level = info.level;
+                tier = info.tier;
+                title = info.title;
+            }
         }
         
         res.json({

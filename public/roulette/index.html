@@ -841,7 +841,16 @@ function updateAvatarSelection(){
 function selectAvatar(el){
     selectedAvatar = el.dataset.av;
     updateAvatarSelection();
-    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,avatar_url:selectedAvatar})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeAvatarModal();loadProfile();}}).catch(function(e){console.error(e);});
+    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,avatar_url:selectedAvatar})}).then(function(r){return r.json();}).then(function(d){
+                if(d.success){
+                    closeAvatarModal();
+                    if(window._profileData&&window._profileData.profile){
+                        window._profileData.profile.avatar_url=selectedAvatar;
+                        var av=document.querySelector('[data-profile-action=\'open-avatar\'] img');
+                        if(av)av.src=selectedAvatar;
+                    }
+                }
+            }).catch(function(e){console.error(e);});
 }
 function setupAvatarUpload(){
     var slot=document.getElementById('customAvatarSlotBtn');
@@ -856,7 +865,16 @@ function setupAvatarUpload(){
             var slot2=document.getElementById('customAvatarSlotBtn');
             if(slot2)slot2.innerHTML="<img src='"+dataUrl+"' style='width:100%;height:100%;object-fit:cover;border-radius:50%;' />";
             fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,avatar_url:dataUrl})}).then(function(r){return r.json();}).then(function(d){
-                if(d.success){setTimeout(function(){closeAvatarModal();loadProfile();},800);}
+                if(d.success){
+                setTimeout(function(){
+                    closeAvatarModal();
+                    if(window._profileData&&window._profileData.profile){
+                        window._profileData.profile.avatar_url=dataUrl;
+                        var av=document.querySelector('[data-profile-action=\'open-avatar\'] img');
+                        if(av)av.src=dataUrl;
+                    }
+                },800);
+            }
             }).catch(function(){});
         };
         reader.readAsDataURL(this.files[0]);
@@ -900,7 +918,7 @@ function selectGender(btn,g){
 function confirmGender(){
     var g=window._selectedGender;
     if(!g)return;
-    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,gender:g})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeGenderModal();loadProfile();}}).catch(function(e){console.error(e);});
+    fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,gender:g})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeGenderModal();if(window._profileData&&window._profileData.profile){window._profileData.profile.gender=g;var el=document.querySelector('[data-profile-action=\'open-gender\']');if(el){el.textContent=g;el.style.color='#ffd700';}}};}).catch(function(e){console.error(e);});
 }
 
 function openTagModal(type){
@@ -930,7 +948,16 @@ function openTagModal(type){
     confirmBtn.onclick=function(){
         var field=window._currentTagType+'_tag';
         var sel=window._selectedTags||[];
-        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeTagModal();loadProfile();}}).catch(function(e){console.error(e);});
+        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){
+            if(d.success){
+                closeTagModal();
+                if(window._profileData&&window._profileData.profile){
+                    window._profileData.profile[field]=sel.join(',');
+                    var el=document.querySelector('[data-profile-action=\'tag-'+type+'\']');
+                    if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
+                }
+            }
+        }).catch(function(e){console.error(e);});
     };
     document.getElementById('tagModal').style.display='flex';
 }
@@ -2835,7 +2862,16 @@ document.addEventListener('click', function(e){
     if(target.id === 'tagConfirmBtn'){
         var field = window._currentTagType + '_tag';
         var sel = window._selectedTags || [];
-        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){if(d.success){closeTagModal();loadProfile();}}).catch(function(e){console.error(e);});
+        fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,[field]:sel.join(',')})}).then(function(r){return r.json();}).then(function(d){
+            if(d.success){
+                closeTagModal();
+                if(window._profileData&&window._profileData.profile){
+                    window._profileData.profile[field]=sel.join(',');
+                    var el=document.querySelector('[data-profile-action=\'tag-'+type+'\']');
+                    if(el){el.textContent=sel.join(',')||'點擊選擇';el.style.color=sel.length?'#ffd700':'#888';}
+                }
+            }
+        }).catch(function(e){console.error(e);});
         return;
     }
     // Profile action handlers
