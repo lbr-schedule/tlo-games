@@ -688,6 +688,15 @@
             }
         }
         
+        // Unlock video audio on first user interaction
+        function unlockVideoAudio(){
+            try{
+                if(window.audioCtx && window.audioCtx.state==='suspended'){
+                    window.audioCtx.resume();
+                }
+            }catch(e){console.log('Video audio unlock error:',e);}
+        }
+
         // 全服公告廣播
         function showBroadcast(message) {
             const el = document.getElementById('mysteryBroadcast');
