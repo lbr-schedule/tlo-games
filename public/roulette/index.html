@@ -772,22 +772,22 @@
         // 背景音樂（簡單的 Ambient 循環）
         function startBgMusic() {
             if (!soundEnabled) return;
-            // Use HTML Audio which has simpler autoplay rules
             if (!bgmAudio) {
                 bgmAudio = new Audio();
-                bgmAudio.src = 'bg-music.mp3';
+                bgmAudio.src = '/roulette/bg-music.mp3';
                 bgmAudio.loop = true;
                 bgmAudio.volume = 0.4;
             }
+            // Unmute in case it was muted before
+            bgmAudio.muted = false;
             const playPromise = bgmAudio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     bgMusicPlaying = true;
                     bgMusicBlocked = false;
                 }).catch(e => {
-                    console.log('BGM autoplay blocked, waiting for interaction');
+                    console.log('BGM autoplay blocked:', e.message);
                     bgMusicBlocked = true;
-                    bgMusicPlaying = false;
                 });
             }
         }
@@ -1090,6 +1090,8 @@ function closeProfileModal(){
         // 背景音樂在登入後啟動（見 login success 和 session restore）
         // 如果 audio 被瀏覽器封鎖，等使用者互動後再播
         document.addEventListener('click', () => {
+            // Initialize audio context on first interaction (required by browsers)
+            if (!audioCtx) initAudio();
             if (bgMusicBlocked && soundEnabled && !bgMusicPlaying) {
                 startBgMusic();
             }
@@ -2981,7 +2983,7 @@ document.addEventListener('click', function(e){
 
         // ========== 片頭 Intro ==========
         function playIntroVideo() {
-            localStorage.removeItem('rouletteIntroPlayed');
+            if (localStorage.getItem('rouletteIntroPlayed')) return;
             localStorage.setItem('rouletteIntroPlayed', '1');
             console.log('🎬 playIntroVideo called');
             var popup = document.getElementById('introPopup');
@@ -2989,26 +2991,11 @@ document.addEventListener('click', function(e){
             if (!popup || !video) return;
             popup.classList.add('show');
 
-            // Try to play with sound
-            var playPromise = video.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(function(e) {
-                    console.log('Autoplay blocked, trying with sound unlock:', e);
-                    // Autoplay was blocked - try to unlock sound via user interaction
-                    var unlockSound = function() {
-                        video.muted = false;
-                        video.play().then(function() {
-                            console.log('Intro video playing with sound');
-                        }).catch(function(err) {
-                            console.log('Still cannot play:', err);
-                        });
-                        document.removeEventListener('click', unlockSound);
-                        document.removeEventListener('touchstart', unlockSound);
-                    };
-                    document.addEventListener('click', unlockSound, { once: true });
-                    document.addEventListener('touchstart', unlockSound, { once: true });
-                });
-            }
+            // Play with sound (user gesture is present)
+            video.muted = false;
+            video.play().catch(function(e) {
+                console.log('Intro video play error:', e);
+            });
         }
         function skipIntro() {
             var video = document.getElementById('introVideo');
