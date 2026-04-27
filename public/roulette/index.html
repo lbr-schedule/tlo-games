@@ -1832,7 +1832,10 @@ function closeProfileModal(){
                         }
                         // 如果中神秘彩池，顯示彈窗
                         if (lastSpin.mystery && lastSpin.mysteryPool > 0) {
-                            showMysteryPopup(lastSpin.perPersonPool || 0, lastSpin.mysteryWinners || 1);
+                            // perPersonPool comes from server after distribution
+                            const perPerson = lastSpin.perPersonPool || 0;
+                            const winners = lastSpin.mysteryWinners || 1;
+                            showMysteryPopup(perPerson, winners);
                         }
                         processResult(lastSpin);
                     }, 100);
@@ -1894,20 +1897,17 @@ function closeProfileModal(){
             // 神秘禮物 bonus + 彩池（只有下注0並且中的人才有）
             let mysteryBonus = 0;
             const wonMystery = betsToProcess.some(b => b.type === 'number' && b.number === 0);
-            if (wonMystery && lastSpin.mystery && lastSpin.mysteryPrize) {
-                const prizeMatch = lastSpin.mysteryPrize.match(/(\d+)/);
-                if (prizeMatch) {
-                    mysteryBonus = parseInt(prizeMatch[1]);
-                }
+            if (wonMystery && lastSpin.mystery && lastSpin.perPersonPool) {
                 const poolWin = lastSpin.perPersonPool || 0;
-                myBalance += mysteryBonus + poolWin;
-                roundWin += mysteryBonus + poolWin;
+                // 彩池獎金已由伺服器分發，這裡只更新餘額顯示
+                myBalance += poolWin;
+                roundWin += poolWin;
                 // 通知伺服器有神秘中獎，廣播給所有人
-                if (mysteryBonus > 0) {
+                if (poolWin > 0) {
                     fetch('/api/roulette/report-winner', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: myName, winAmount: mysteryBonus + poolWin, type: 'mystery' })
+                        body: JSON.stringify({ username: myName, winAmount: poolWin, type: 'mystery' })
                     }).catch(() => {});
                 }
             }
@@ -1935,8 +1935,8 @@ function closeProfileModal(){
                     setTimeout(() => playSound('lose'), 100);
                 }
                 // 神秘獎金顯示在結算彈窗
-            if (mysteryBonus > 0) {
-                setTimeout(() => showResultPopup(netWin + mysteryBonus, roundBet, mysteryBonus), 100);
+            if (wonMystery && lastSpin.perPersonPool) {
+                setTimeout(() => showResultPopup(netWin, roundBet, lastSpin.perPersonPool), 100);
             } else {
                 setTimeout(() => showResultPopup(netWin, roundBet), 100);
             }

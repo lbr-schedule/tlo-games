@@ -99,6 +99,10 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDbAvailable = true;
         // 建立 game_config 表格（神秘彩池持久化）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
+        // 建立 roulette_bets 表格（所有下注追蹤）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
+        // 建立 mystery_bets 表格（每局神秘下注追蹤）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_mystery_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, round_id TEXT UNIQUE, result_number INTEGER, pool_amount INTEGER, winners INTEGER DEFAULT 0, distributed INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_mystery_bets 表格失敗:', e.message));
         // 建立 roulette_player_stats 表格（如果不存在）
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1, completed_tasks TEXT DEFAULT '[]')`
@@ -141,6 +145,53 @@ async function saveMysteryPool() {
     } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
 }
 
+// 分發神秘彩池獎金
+async function distributeMysteryPool(roundId, poolAmount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) return poolAmount;
+    if (!roundId || poolAmount <= 0) return 0;
+    try {
+        // 找出這局所有下注神秘的人
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, amount FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`,
+            args: [roundId]
+        });
+        const winners = result.rows || [];
+        if (winners.length === 0) {
+            console.log('神秘彩池無人中獎，不分發');
+            return 0;
+        }
+        const poolPerPerson = Math.floor(poolAmount / winners.length);
+        console.log('神秘彩池分發: 共' + winners.length + '人，各得 $' + poolPerPerson);
+        for (const w of winners) {
+            await rouletteDb.execute({
+                sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                args: [poolPerPerson, w.username]
+            });
+            console.log('  -> ' + w.username + ' 獲得 $' + poolPerPerson);
+        }
+        // 標記已分發
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_mystery_bets SET winners = ?, distributed = 1 WHERE round_id = ?`,
+            args: [winners.length, roundId]
+        });
+        rouletteState.lastWinner = { username: winners[0].username, amount: poolPerPerson, type: 'mystery' };
+        await saveWinnerState();
+        return poolPerPerson;
+    } catch(e) { console.log('分發彩池失敗:', e.message); return 0; }
+}
+
+// 追蹤下注（寫入DB）
+async function trackBet(username, roundId, betType, choice, amount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    if (!roundId) return;
+    try {
+        await rouletteDb.execute({
+            sql: `INSERT INTO roulette_bets (username, round_id, bet_type, choice, amount) VALUES (?, ?, ?, ?, ?)`,
+            args: [username, roundId, betType, choice, amount]
+        });
+    } catch(e) { console.log('追蹤下注失敗:', e.message); }
+}
+
 async function loadRouletteAdIndex() {
     if (LOCAL_TEST_MODE || !rouletteDb) return;
     try {
@@ -171,7 +222,8 @@ let rouletteState = {
     phaseStartTime: 0,
     hasPlayer: false,
     mysteryPool: 0,  // 神秘彩池
-    lastWinner: null,    // 神秘中獎者 {username, amount, type}
+    lastWinner: null,
+    currentRoundId: null,    // 神秘中獎者 {username, amount, type}
     bigWinner: null,     // 大贏家 {username, amount}
     rouletteAdIndex: 0   // 廣告輪播索引（持久化）
 };
@@ -708,14 +760,30 @@ function spinWheel() {
     
     // 保存當前彩池金額（用於顯示）
     const poolBeforeResult = rouletteState.mysteryPool;
+    const wasMystery = selected.num === 0;
     
     rouletteState.lastSpin = { 
         result: selected.num, 
         color: selected.color, 
         time: Date.now(),
-        mystery: selected.num === 0,
-        mysteryPool: selected.num === 0 ? poolBeforeResult : 0
+        mystery: wasMystery,
+        mysteryPool: wasMystery ? poolBeforeResult : 0
     };
+    
+    // 神秘中獎：分發彩池（async，不阻擋轉盤）
+    if (wasMystery && poolBeforeResult > 0 && rouletteState.currentRoundId) {
+        (async () => {
+            const poolPerPerson = await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
+            rouletteState.lastSpin.perPersonPool = poolPerPerson;
+            rouletteState.lastSpin.mysteryWinners = (await rouletteDb.execute({ sql: `SELECT COUNT(*) as cnt FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`, args: [rouletteState.currentRoundId] })).rows?.[0]?.cnt || 0;
+            rouletteState.mysteryPool = 0;
+            await saveMysteryPool();
+            rouletteState.currentRoundId = null;
+        })();
+    } else if (!wasMystery) {
+        // 非神秘局更換 roundId
+        rouletteState.currentRoundId = null;
+    }
     
     // 只有當有人中神秘（0）且有下注神秘時，才在結算時歸零彩池
     // 彩池歸零的時機：結算時玩家領取獎金後才歸零（見 bet API 中的神秘中獎邏輯）
@@ -779,6 +847,8 @@ function startBetting() {
     rouletteState.lastSpin = null;
     rouletteState.currentBets = [];
     rouletteState.phaseStartTime = Date.now();
+    // 新回合：更換 roundId
+    rouletteState.currentRoundId = Date.now().toString();
     // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
     // 贏家廣播保留直到下一個新贏家出現（不主動清除，確保所有人都能看到）
 }
