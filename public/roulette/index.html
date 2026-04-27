@@ -586,7 +586,7 @@
         <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:300px;width:90%;text-align:center;" onclick="event.stopPropagation()">
             <h3 style="color:#ffd700;margin:0 0 16px;">設定生日</h3>
             <input type="date" id="birthdayInput" style="width:100%;padding:12px;border-radius:8px;background:#222;color:#fff;border:1px solid #444;box-sizing:border-box;margin-bottom:16px;" />
-            <button onclick="submitBirthday()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:bold;margin-bottom:8px;">確認</button>
+            <button id="birthdaySubmitBtn" onclick="submitBirthday()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:bold;margin-bottom:8px;">確認</button>
             <button onclick="closeBirthdayModal()" style="width:100%;padding:10px;background:#222;color:#aaa;border:none;border-radius:8px;cursor:pointer;">取消</button>
         </div>
     </div>
@@ -1046,9 +1046,13 @@ async function showProfile(){
     // Show cached data immediately if available
     if(window._profileData && window._profileData.profile && window._profileData.profile.username === myName){
         renderProfile(window._profileData);
+        // Only refresh if cache is old (>5 min old)
+        var cacheTime=window._profileData._cacheTime||0;
+        if(Date.now()-cacheTime>300000) loadProfile(true);
+    } else {
+        // No cache, load fresh
+        loadProfile(false);
     }
-    // Always refresh in background
-    loadProfile(true); // silent refresh, no skeleton
 }
 
 async function loadProfile(silent){
@@ -1067,6 +1071,8 @@ async function loadProfile(silent){
         var d=await r.json();
         console.log('Profile response:', d);
         if(!d.success){cont.innerHTML="<p style='color:#ff6b6b;'>"+d.message+"</p>";return;}
+        d._cacheTime=Date.now();
+        window._profileData=d;
         renderProfile(d);
     }catch(e){console.error('Profile load error:', e);cont.innerHTML="<p style='color:#ff6b6b;'>載入失敗: "+e.message+"</p>";}
 }
@@ -3010,6 +3016,19 @@ document.addEventListener('click', function(e){
         }
 
         // ========== 片頭 Intro ==========
+        function introEnableSound(){
+            var video=document.getElementById('introVideoStatic');
+            var hint=document.getElementById('introTapHint');
+            if(video){video.muted=false;video.play().catch(function(e){console.log('Intro play error:',e);});}
+            if(hint)hint.style.display='none';
+        }
+        function skipIntroOverlay(){
+            var overlay=document.getElementById('introOverlay');
+            var video=document.getElementById('introVideoStatic');
+            if(video)video.pause();
+            if(overlay)overlay.style.display='none';
+        }
+
         function playIntroVideo() {
             if (localStorage.getItem('rouletteIntroPlayed')) return;
             localStorage.setItem('rouletteIntroPlayed', '1');
@@ -3073,10 +3092,13 @@ document.addEventListener('click', function(e){
 
         <!-- INTRO OVERLAY - shows immediately on load -->
         <div id="introOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:600;display:none;justify-content:center;align-items:center;flex-direction:column;">
-            <video id="introVideoStatic" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;">
+            <video id="introVideoStatic" autoplay playsinline style="width:100%;height:100%;object-fit:cover;" onclick="this.muted=false;">
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
-            <button onclick="document.getElementById('introOverlay').style.display='none'" style="position:absolute;bottom:30px;right:20px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;">跳過 ✕</button>
+            <div id="introTapHint" onclick="introEnableSound()" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(255,215,0,0.9);color:#1a1a2e;padding:12px 24px;border-radius:20px;font-weight:bold;cursor:pointer;z-index:10;">
+                ▶️ 點擊開啟聲音
+            </div>
+            <button onclick="skipIntroOverlay()" style="position:absolute;bottom:30px;right:20px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;">跳過 ✕</button>
         </div>
         <script>
             // Auto-show intro on page load (bypass service worker cache)
