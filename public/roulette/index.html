@@ -614,8 +614,8 @@
         <div class="modal" style="max-width:320px;">
             <h2>🎯 玩家專區</h2>
             
-            <button onclick="showProfile();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
-                👤 個人資料
+            <button onclick="showProfile();checkProfileNew();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;position:relative;">
+                👤 個人資料 <span id="profileNewBadge" style="background:#ff4757;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;position:absolute;top:8px;right:12px;">NEW</span>
             </button>
 
             <button onclick="showMyInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
@@ -824,6 +824,25 @@
 // ================================================================
 const TIER_NAMES = {bronze:'青銅',silver:'白銀',gold:'黃金',platinum:'白金',diamond:'鑽石'};
 const TIER_COLORS = {bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',platinum:'#e5e4e2',diamond:'#b9f2ff'};
+
+// 個人資料新功能提示（每位玩家只看一次）
+window.checkProfileNew=function(){
+    if(!myName)return;
+    var key="roulette_profile_notified_"+myName;
+    if(localStorage.getItem(key))return;
+    localStorage.setItem(key,"1");
+    var badge=document.getElementById("profileNewBadge");
+    if(badge)badge.style.display="none";
+    showProfileNewNotification();
+};
+function showProfileNewNotification(){
+    var n=document.createElement("div");
+    n.id="profileNewToast";
+    n.style.cssText="position:fixed;bottom:30%;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ffd700,#ff7b00);color:#1a1a2e;padding:16px 24px;border-radius:16px;font-weight:bold;font-size:0.95rem;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;max-width:280px;";
+    n.innerHTML="🎉 個人資料功能上線！<br><span style='font-size:0.8rem;font-weight:normal;'>更換頭像、設定生日與興趣標籤，打造專屬檔案！</span>";
+    document.body.appendChild(n);
+    setTimeout(function(){if(n.parentNode)n.remove();},4000);
+}
 const PERSONALITY_TAGS = ['冒險家','幽默派','創意派','冷靜派','外向派'];
 const INTEREST_TAGS = ['遊戲狂','影視迷','運動愛好者','音樂控','旅行家'];
 const BADGE_TAGS = ['謎之存在','貓奴','狗奴','夜貓子','科幻迷','二次元'];
@@ -1042,8 +1061,10 @@ function renderProfile(d){
     var p=d.profile;
     var tc=TIER_COLORS[d.tier]||'#ffd700';
     var tn=TIER_NAMES[d.tier]||d.tier;
-    var av=p.avatar_url||'/roulette/avatar1.jpg';
+    var av=p.avatar_url||"/roulette/avatar1.jpg";
     window._profileData=d;
+    // Preload avatar immediately
+    var avImg=new Image();avImg.src=av;
     var h="<div style='position:relative;display:inline-block;margin:10px auto;cursor:pointer;' data-profile-action='open-avatar' onclick=\"openAvatarModal();\"><img src='"+av+"' style='width:80px;height:80px;border-radius:50%;border:3px solid "+tc+";object-fit:cover;' /><div style='position:absolute;bottom:-4px;right:-4px;background:"+tc+";color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;'>Lv."+d.level+"</div><div style='position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;'>✏️</div></div>";
     h+="<div style='font-size:1.1rem;font-weight:bold;color:#fff;margin-top:8px;'>"+p.username+"</div>";
     h+="<div style='color:"+tc+";font-size:0.85rem;margin-bottom:12px;'>"+tn+"</div>";
