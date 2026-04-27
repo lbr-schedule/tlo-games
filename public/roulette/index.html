@@ -2981,17 +2981,34 @@ document.addEventListener('click', function(e){
 
         // ========== 片頭 Intro ==========
         function playIntroVideo() {
-            // DEBUG: always play for now (remove after testing)
-            // if (localStorage.getItem('rouletteIntroPlayed')) return;
-            localStorage.removeItem('rouletteIntroPlayed');  // reset for testing
+            localStorage.removeItem('rouletteIntroPlayed');
             localStorage.setItem('rouletteIntroPlayed', '1');
             console.log('🎬 playIntroVideo called');
-            alert('🎬 片頭即將播放！');
             var popup = document.getElementById('introPopup');
             var video = document.getElementById('introVideo');
             if (!popup || !video) return;
             popup.classList.add('show');
-            video.play().catch(function(e){ console.log('Intro video error:', e); });
+
+            // Try to play with sound
+            var playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function(e) {
+                    console.log('Autoplay blocked, trying with sound unlock:', e);
+                    // Autoplay was blocked - try to unlock sound via user interaction
+                    var unlockSound = function() {
+                        video.muted = false;
+                        video.play().then(function() {
+                            console.log('Intro video playing with sound');
+                        }).catch(function(err) {
+                            console.log('Still cannot play:', err);
+                        });
+                        document.removeEventListener('click', unlockSound);
+                        document.removeEventListener('touchstart', unlockSound);
+                    };
+                    document.addEventListener('click', unlockSound, { once: true });
+                    document.addEventListener('touchstart', unlockSound, { once: true });
+                });
+            }
         }
         function skipIntro() {
             var video = document.getElementById('introVideo');
@@ -3021,7 +3038,7 @@ document.addEventListener('click', function(e){
 
         <!-- 片頭動畫彈窗 -->
         <div class="intro-popup" id="introPopup">
-            <video id="introVideo" autoplay playsinline muted>
+            <video id="introVideo" autoplay playsinline>
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
             <button class="skip-btn" onclick="skipIntro()">跳過 ✕</button>
