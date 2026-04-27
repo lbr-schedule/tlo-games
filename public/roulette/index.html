@@ -1014,7 +1014,10 @@ async function showProfile(){
 async function loadProfile(){
     var cont=document.getElementById('profileContent');
     if(!cont){return;}
-    cont.innerHTML='<div style="padding:20px;color:#ffd700;">載入中...</div>';
+    // Show skeleton immediately while loading
+    if(!window._profileData){
+        cont.innerHTML='<div style="padding:20px;color:#ffd700;text-align:center;">⚙️ 載入中...</div>';
+    }
     console.log('loadProfile called, myName:', myName);
     if(!myName){cont.innerHTML="<p style='color:#ff6b6b;'>請先登入</p>";return;}
     try{
