@@ -1975,6 +1975,88 @@ app.get('/api/roulette/player/:username', async (req, res) => {
     }
 });
 
+// ========== 個人資料 API ==========
+app.get('/api/roulette/profile/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    try {
+        let player = null;
+        if (rouletteDb && rouletteDbAvailable) {
+            const r = await rouletteDb.execute({
+                sql: 'SELECT username, score, realname, phone, email, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag FROM players WHERE username = ?',
+                args: [username]
+            });
+            if (r.rows && r.rows[0]) player = r.rows[0];
+        }
+        
+        // Player only from DB (no in-memory fallback)
+        
+        if (!player) return res.json({ success: false, message: '玩家不存在' });
+        
+        let level = 1, tier = '新手';
+        if (rouletteDb && rouletteDbAvailable) {
+            const s = await rouletteDb.execute({
+                sql: 'SELECT level FROM roulette_player_stats WHERE username = ?',
+                args: [username]
+            });
+            if (s.rows && s.rows[0]) level = s.rows[0].level || 1;
+        }
+        
+        res.json({
+            success: true,
+            profile: {
+                username: player.username,
+                score: player.score,
+                avatar_url: player.avatar_url,
+                birthday: player.birthday,
+                gender: player.gender,
+                personality_tag: player.personality_tag,
+                interest_tag: player.interest_tag,
+                badge_tag: player.badge_tag
+            },
+            level: level,
+            tier: tier
+        });
+    } catch (e) {
+        console.error('Profile get error:', e);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/roulette/profile', async (req, res) => {
+    const { username, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag } = req.body;
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    try {
+        if (rouletteDb && rouletteDbAvailable) {
+            const fields = [];
+            const values = [];
+            if (avatar_url !== undefined) { fields.push('avatar_url = ?'); values.push(avatar_url); }
+            if (birthday !== undefined) { fields.push('birthday = ?'); values.push(birthday); }
+            if (gender !== undefined) { fields.push('gender = ?'); values.push(gender); }
+            if (personality_tag !== undefined) { fields.push('personality_tag = ?'); values.push(personality_tag); }
+            if (interest_tag !== undefined) { fields.push('interest_tag = ?'); values.push(interest_tag); }
+            if (badge_tag !== undefined) { fields.push('badge_tag = ?'); values.push(badge_tag); }
+            
+            if (fields.length > 0) {
+                values.push(username);
+                await rouletteDb.execute({
+                    sql: 'UPDATE players SET ' + fields.join(', ') + ' WHERE username = ?',
+                    args: values
+                });
+            }
+        }
+        
+        // Roulette player data is only stored in DB (no in-memory)
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Profile update error:', e);
+        res.json({ success: false, message: e.message });
+    }
+});
+
 // 管理員：直接執行 SQL（用於資料庫欄位新增）
 app.post('/api/roulette/admin/exec-sql', async (req, res) => {
     const { sql } = req.body;

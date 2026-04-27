@@ -2902,8 +2902,12 @@ document.addEventListener('click', function(e){
 
         // ========== 片頭 Intro ==========
         function playIntroVideo() {
-            if (localStorage.getItem('rouletteIntroPlayed')) return;
+            // DEBUG: always play for now (remove after testing)
+            // if (localStorage.getItem('rouletteIntroPlayed')) return;
+            localStorage.removeItem('rouletteIntroPlayed');  // reset for testing
             localStorage.setItem('rouletteIntroPlayed', '1');
+            console.log('🎬 playIntroVideo called');
+            alert('🎬 片頭即將播放！');
             var popup = document.getElementById('introPopup');
             var video = document.getElementById('introVideo');
             if (!popup || !video) return;
@@ -2938,10 +2942,40 @@ document.addEventListener('click', function(e){
 
         <!-- 片頭動畫彈窗 -->
         <div class="intro-popup" id="introPopup">
-            <video id="introVideo" autoplay playsinline>
+            <video id="introVideo" autoplay playsinline muted>
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
             <button class="skip-btn" onclick="skipIntro()">跳過 ✕</button>
         </div>
+
+        <!-- INTRO OVERLAY - shows immediately on load -->
+        <div id="introOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:600;display:none;justify-content:center;align-items:center;flex-direction:column;">
+            <video id="introVideoStatic" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;">
+                <source src="/roulette/video/intro.mp4" type="video/mp4">
+            </video>
+            <button onclick="document.getElementById('introOverlay').style.display='none'" style="position:absolute;bottom:30px;right:20px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;">跳過 ✕</button>
+        </div>
+        <script>
+            // Auto-show intro on page load (bypass service worker cache)
+            (function() {
+                var overlay = document.getElementById('introOverlay');
+                var video = document.getElementById('introVideoStatic');
+                if (overlay && video) {
+                    // Show overlay
+                    overlay.style.display = 'flex';
+                    video.play().catch(function(e) {
+                        console.log('Video autoplay blocked, hiding overlay');
+                        overlay.style.display = 'none';
+                    });
+                    // Hide when video ends
+                    video.addEventListener('ended', function() {
+                        overlay.style.display = 'none';
+                    });
+                    video.addEventListener('error', function() {
+                        overlay.style.display = 'none';
+                    });
+                }
+            })();
+        </script>
     </body>
 </html>
