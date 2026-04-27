@@ -3020,8 +3020,6 @@ document.addEventListener('click', function(e){
             if (!popup || !video) return;
 
             popup.classList.add('show');
-            // Show play button - user taps to start with sound
-            if (playBtn) playBtn.style.display = 'flex';
         }
 
         function playIntroWithSound() {
@@ -3064,10 +3062,12 @@ document.addEventListener('click', function(e){
 
         <!-- 片頭動畫彈窗 -->
         <div class="intro-popup" id="introPopup">
-            
-            <video id="introVideo" playsinline onclick="introVideoTap(this)" style="cursor:pointer;">
+            <video id="introVideo" playsinline style="cursor:pointer;">
                 <source src="/roulette/video/intro.mp4" type="video/mp4">
             </video>
+            <div id="introPlayBtn" onclick="playIntroWithSound()" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:rgba(255,215,0,0.9);border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:2.5rem;z-index:15;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;">
+                ▶️
+            </div>
             <button class="skip-btn" onclick="skipIntro()">跳過 ✕</button>
         </div>
 
