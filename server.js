@@ -2022,7 +2022,9 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
                 badge_tag: player.badge_tag
             },
             level: level,
-            tier: tier
+            tier: tier,
+            title: title,
+            weekly_bet: weeklyBet
         });
     } catch (e) {
         console.error('Profile get error:', e);
