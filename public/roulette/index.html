@@ -949,7 +949,7 @@ async function submitMood(){
             closeMoodModal();
             if(window._profileData&&window._profileData.profile){
                 window._profileData.profile.mood=v;
-                var el=document.querySelector('[data-profile-action='open-mood']');
+                var el=document.querySelector("[data-profile-action='open-mood']");
                 if(el){el.textContent=v;el.style.color='#ffd700';}
             }
         }
