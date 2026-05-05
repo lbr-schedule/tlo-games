@@ -609,6 +609,18 @@
         </div>
     </div>
 
+
+    <!-- 心情小語 Modal -->
+    <div class="modal-overlay" id="moodModal" style="display:none;z-index:1003;" onclick="closeMoodModal()">
+        <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+            <h3 style="color:#ffd700;margin:0 0 16px;">💭 心情小語</h3>
+            <p style="color:#aaa;font-size:0.85rem;margin-bottom:16px;">寫下你的心情或想法（最多15字）</p>
+            <input type="text" id="moodInput" maxlength="15" placeholder="今天心情很好！" style="width:100%;padding:12px;border-radius:8px;background:#222;color:#fff;border:1px solid #444;box-sizing:border-box;margin-bottom:16px;font-size:1rem;" />
+            <button onclick="submitMood()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;margin-bottom:8px;">儲存</button>
+            <button onclick="closeMoodModal()" style="width:100%;padding:10px;background:#222;color:#aaa;border:none;border-radius:8px;cursor:pointer;">取消</button>
+        </div>
+    </div>
+
     <!-- 玩家專區選單 -->
     <div class="modal-overlay" id="playerMenuModal">
         <div class="modal" style="max-width:320px;">
@@ -918,6 +930,32 @@ function openBirthdayModal(){
 }
 function closeBirthdayModal(){document.getElementById('birthdayModal').style.display='none';}
 async function submitBirthday(){
+
+function openMoodModal(){
+    var p=window._profileData&&window._profileData.profile;
+    if(p&&p.mood)document.getElementById('moodInput').value=p.mood;
+    else document.getElementById('moodInput').value='';
+    document.getElementById('moodModal').style.display='flex';
+}
+function closeMoodModal(){document.getElementById('moodModal').style.display='none';}
+async function submitMood(){
+    var v=document.getElementById('moodInput').value;
+    if(!v)return;
+    if(v.length>15){alert('心情小語最多15字');return;}
+    try{
+        var r=await fetch('/api/roulette/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:myName,mood:v})});
+        var d=await r.json();
+        if(d.success){
+            closeMoodModal();
+            if(window._profileData&&window._profileData.profile){
+                window._profileData.profile.mood=v;
+                var el=document.querySelector('[data-profile-action='open-mood']');
+                if(el){el.textContent=v;el.style.color='#ffd700';}
+            }
+        }
+    }catch(e){console.error(e);}
+}
+
     var v=document.getElementById('birthdayInput').value;
     if(!v)return;
     try{
@@ -1114,6 +1152,7 @@ function renderProfile(d){
     h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>個性</div><div data-profile-action='tag-personality' onclick=\"openTagModal(&quot;personality&quot;);\" style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.personality_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.personality_tag?p.personality_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
     h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>興趣</div><div data-profile-action='tag-interest' onclick=\"openTagModal(&quot;interest&quot;);\" style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.interest_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.interest_tag?p.interest_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
     h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>身份徽章</div><div data-profile-action='tag-badge' onclick=\"openTagModal(&quot;badge&quot;);\" style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.badge_tag?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.badge_tag?p.badge_tag:'點擊選擇')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
+    h+="<div style='text-align:left;margin-top:12px;'><div style='color:#aaa;font-size:0.75rem;margin-bottom:4px;'>心情小語</div><div data-profile-action='open-mood' onclick=\"openMoodModal();\" style='padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:"+(p.mood?"#ffd700":"#888")+";cursor:pointer;font-size:0.9rem;'>"+(p.mood?p.mood:'點擊設定')+" <span style='float:right;color:#666;'>✏️</span></div></div>";
     cont.innerHTML=h;
 }
 
@@ -2838,10 +2877,10 @@ function closeProfileModal(){
                         <div>下注時 <b style="color:#00ff00;">+$200</b></div>
                     </div>
                     <div style="font-size:0.8rem;color:#aaa;margin:10px 0 5px;">將遊戲分數截圖傳至 LINE 兌換獎品</div>
-                    <div style="font-size:0.8rem;color:#00c864;">🥇 50,000分→襪子</div>
-                    <div style="font-size:0.8rem;color:#00c864;">🥈 100,000分→短袖</div>
-                    <div style="font-size:0.8rem;color:#00c864;">🥉 120,000分→帽子</div>
-                    <div style="font-size:0.8rem;color:#ff69b4;">💍 500,000分→LBR戒指(新增)</div>
+                    <div style="font-size:0.8rem;color:#00c864;">🥇 350,000分→襪子</div>
+                    <div style="font-size:0.8rem;color:#00c864;">🥈 600,000分→短袖</div>
+                    <div style="font-size:0.8rem;color:#00c864;">🥉 790,000分→帽子</div>
+                    <div style="font-size:0.8rem;color:#ff69b4;">💍 1,280,000分→LBR戒指</div>
                 `;
                 btn1.style.background = '#333';
                 btn1.style.color = '#fff';
@@ -3016,7 +3055,7 @@ document.addEventListener('click', function(e){
         
         function openVideoPopup() {
             if (!myName) { showToast('請先登入'); return; }
-            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
+            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/Z4cRE6moXBk?autoplay=1';
             document.getElementById('videoPopup').classList.add('show');
             document.getElementById('videoClaimSubmit').disabled = true;
             document.getElementById('videoClaimSubmit').textContent = '請等待...';

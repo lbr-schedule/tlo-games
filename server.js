@@ -1715,6 +1715,12 @@ app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
             sql: `ALTER TABLE players ADD COLUMN lastLogin TEXT DEFAULT ''`
         });
         console.log('已新增 lastLogin 欄位');
+        
+        // 嘗試新增 mood 欄位（如果已存在會失敗，但這是預期的）
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN mood TEXT DEFAULT ''`
+        });
+        console.log('已新增 mood 欄位');
         res.json({ success: true, message: '已新增 lastLogin 欄位' });
     } catch(e) {
         if (e.message.includes('duplicate column')) {
@@ -2109,7 +2115,7 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
         if (rouletteDb && rouletteDbAvailable) {
             // Single JOIN query instead of two separate queries
             const r = await rouletteDb.execute({
-                sql: `SELECT p.username, p.score, p.realname, p.phone, p.email, p.avatar_url, p.birthday, p.gender, p.personality_tag, p.interest_tag, p.badge_tag, COALESCE(s.weekly_bet, 0) as weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username WHERE p.username = ?`,
+                sql: `SELECT p.username, p.score, p.realname, p.phone, p.email, p.avatar_url, p.birthday, p.gender, p.personality_tag, p.interest_tag, p.badge_tag, p.mood, COALESCE(s.weekly_bet, 0) as weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username WHERE p.username = ?`,
                 args: [username]
             });
             if (r.rows && r.rows[0]) {
@@ -2136,7 +2142,8 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
                 gender: player.gender,
                 personality_tag: player.personality_tag,
                 interest_tag: player.interest_tag,
-                badge_tag: player.badge_tag
+                badge_tag: player.badge_tag,
+                mood: player.mood || ''
             },
             level: level,
             tier: tier,
@@ -2150,7 +2157,7 @@ app.get('/api/roulette/profile/:username', async (req, res) => {
 });
 
 app.post('/api/roulette/profile', async (req, res) => {
-    const { username, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag } = req.body;
+    const { username, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag, mood } = req.body;
     if (!username) return res.json({ success: false, message: '缺少帳號' });
     
     try {
@@ -2163,6 +2170,7 @@ app.post('/api/roulette/profile', async (req, res) => {
             if (personality_tag !== undefined) { fields.push('personality_tag = ?'); values.push(personality_tag); }
             if (interest_tag !== undefined) { fields.push('interest_tag = ?'); values.push(interest_tag); }
             if (badge_tag !== undefined) { fields.push('badge_tag = ?'); values.push(badge_tag); }
+            if (mood !== undefined) { fields.push('mood = ?'); values.push(mood); }
             
             if (fields.length > 0) {
                 values.push(username);
