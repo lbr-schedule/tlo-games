@@ -2275,6 +2275,11 @@ const PET_TYPES = {
 
 const XP_PER_LEVEL = 100; // 每級需要 100 XP
 
+// 取得所有寵物類型（需在 :username 之前定義，否則会被 /pet/types 匹配到 pet/:username）
+app.get('/api/roulette/pet-types', (req, res) => {
+    res.json({ success: true, types: PET_TYPES });
+});
+
 // 取得寵物資料
 app.get('/api/roulette/pet/:username', async (req, res) => {
     const username = req.params.username;
