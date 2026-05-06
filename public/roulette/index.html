@@ -332,6 +332,7 @@
             
             <div class="game-tabs">
                 <button class="game-tab active" onclick="showTab('game')">🎮 遊戲</button>
+                <button class="game-tab" onclick="showTab('pet')">🐰 寵物</button>
                 <button class="game-tab" onclick="showTab('leaderboard')">🏆 排行</button>
                 <button class="game-tab" onclick="showTab('history')">📜 歷史</button>
                 <button class="game-tab" onclick="showTab('tasks')">📋 任務</button>
@@ -415,6 +416,12 @@
                     <!-- 任務列表 -->
                     <div id="tasksList" style="text-align:left;">載入中...</div>
                 </div>
+            </div>
+            
+            <!-- 寵物 Tab -->
+            <div class="tab-content" id="petTab" style="padding:10px;">
+                <h4 style="color:#ffd700;margin-bottom:12px;text-align:center;">🐰 我的寵物</h4>
+                <div id="petInfo" style="text-align:center;">載入中...</div>
             </div>
         </div>
     </div>
@@ -1393,6 +1400,164 @@ function closeProfileModal(){
         }
         
 
+        // 寵物系統
+        async function loadPetInfo() {
+            if (!myName) {
+                document.getElementById('petInfo').innerHTML = '<div style="text-align:center;color:#888;">請先登入</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/roulette/pet/' + encodeURIComponent(myName));
+                const data = await res.json();
+                if (!data.success) {
+                    document.getElementById('petInfo').innerHTML = '<div style="text-align:center;color:#888;">載入失敗</div>';
+                    return;
+                }
+                const pet = data.pet;
+                const petInfo = data.petInfo;
+                
+                if (!pet || pet.pet_type === 'none') {
+                    // 顯示領養介面
+                    showPetAdoptModal();
+                } else {
+                    // 顯示寵物資訊
+                    const xpNeeded = pet.pet_level * 100;
+                    const xpPercent = (pet.pet_xp / xpNeeded) * 100;
+                    const html = `
+                        <div style="background:#1a1a2e;border-radius:12px;padding:16px;margin-bottom:12px;">
+                            <div style="font-size:3rem;text-align:center;">${petInfo?.emoji || '🐰'}</div>
+                            <div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-top:8px;">${pet.pet_name || petInfo?.name || '我的寵物'}</div>
+                            <div style="text-align:center;color:#ffd700;font-size:0.85rem;margin-top:4px;">Lv.${pet.pet_level} ${petInfo?.ability || ''}</div>
+                            <div style="margin-top:12px;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#888;margin-bottom:4px;">
+                                    <span>經驗值</span><span>${pet.pet_xp}/${xpNeeded}</span>
+                                </div>
+                                <div style="background:#333;border-radius:4px;height:8px;">
+                                    <div style="width:${xpPercent}%;background:linear-gradient(90deg,#ffd700,#ff6600);height:100%;border-radius:4px;"></div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:12px;">
+                                <div style="flex:1;background:#222;padding:8px;border-radius:8px;text-align:center;">
+                                    <div style="font-size:0.7rem;color:#888;">飽食度</div>
+                                    <div style="color:${pet.pet_hunger > 50 ? '#00c864' : '#ff4757'};font-weight:bold;">${pet.pet_hunger}%</div>
+                                </div>
+                                <div style="flex:1;background:#222;padding:8px;border-radius:8px;text-align:center;">
+                                    <div style="font-size:0.7rem;color:#888;">精力</div>
+                                    <div style="color:${pet.pet_energy > 50 ? '#00c864' : '#ff4757'};font-weight:bold;">${pet.pet_energy}%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="showFeedModal()" style="width:100%;padding:12px;background:linear-gradient(135deg,#ffd700,#ff6600);border:none;border-radius:10px;font-weight:bold;font-size:0.95rem;cursor:pointer;color:#1a1a2e;">🍖 餵食（金幣换 XP）</button>
+                    `;
+                    document.getElementById('petInfo').innerHTML = html;
+                }
+            } catch(e) {
+                console.error('loadPetInfo error:', e);
+                document.getElementById('petInfo').innerHTML = '<div style="text-align:center;color:#888;">載入失敗</div>';
+            }
+        }
+        
+        function showPetAdoptModal() {
+            const html = `
+                <div style="text-align:center;">
+                    <div style="font-size:3rem;margin-bottom:8px;">🥚</div>
+                    <h4 style="color:#ffd700;margin-bottom:8px;">選擇你的夥伴！</h4>
+                    <p style="color:#888;font-size:0.85rem;margin-bottom:16px;">領養一隻寵物，陪你一起玩遊戲</p>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+                        <button onclick="adoptPet('rabbit')" style="padding:12px;background:#1a1a2e;border:2px solid #ffb6c1;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🐰</div>
+                            <div style="font-size:0.8rem;color:#ffb6c1;font-weight:bold;">兔子</div>
+                            <div style="font-size:0.65rem;color:#888;">幸運+5%</div>
+                        </button>
+                        <button onclick="adoptPet('cat')" style="padding:12px;background:#1a1a2e;border:2px solid #ffa500;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🐱</div>
+                            <div style="font-size:0.8rem;color:#ffa500;font-weight:bold;">貓咪</div>
+                            <div style="font-size:0.65rem;color:#888;">直播金幣+10%</div>
+                        </button>
+                        <button onclick="adoptPet('dog')" style="padding:12px;background:#1a1a2e;border:2px solid #8b4513;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🐶</div>
+                            <div style="font-size:0.8rem;color:#8b4513;font-weight:bold;">狗狗</div>
+                            <div style="font-size:0.65rem;color:#888;">XP+10%</div>
+                        </button>
+                        <button onclick="adoptPet('fox')" style="padding:12px;background:#1a1a2e;border:2px solid #ff6600;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🦊</div>
+                            <div style="font-size:0.8rem;color:#ff6600;font-weight:bold;">狐狸</div>
+                            <div style="font-size:0.65rem;color:#888;">神秘獎池+3%</div>
+                        </button>
+                        <button onclick="adoptPet('butterfly')" style="padding:12px;background:#1a1a2e;border:2px solid #ff69b4;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🦋</div>
+                            <div style="font-size:0.8rem;color:#ff69b4;font-weight:bold;">蝴蝶</div>
+                            <div style="font-size:0.65rem;color:#888;">女性專屬</div>
+                        </button>
+                        <button onclick="adoptPet('dragon')" style="padding:12px;background:#1a1a2e;border:2px solid #9932cc;border-radius:10px;cursor:pointer;">
+                            <div style="font-size:2rem;">🐉</div>
+                            <div style="font-size:0.8rem;color:#9932cc;font-weight:bold;">龍</div>
+                            <div style="font-size:0.65rem;color:#888;">終極（Lv20）</div>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('petInfo').innerHTML = html;
+        }
+        
+        async function adoptPet(type) {
+            try {
+                const res = await fetch('/api/roulette/pet/adopt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, pet_type: type })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadPetInfo();
+                    showToast('🎉 領養成功！');
+                } else {
+                    showToast(data.message || '領養失敗');
+                }
+            } catch(e) {
+                showToast('領養失敗');
+            }
+        }
+        
+        function showFeedModal() {
+            const html = `
+                <div style="text-align:center;">
+                    <h4 style="color:#ffd700;margin-bottom:8px;">🍖 餵食寵物</h4>
+                    <p style="color:#888;font-size:0.85rem;margin-bottom:12px;">消耗金幣換取經驗值</p>
+                    <button onclick="feedPet(100)" style="width:100%;padding:10px;margin-bottom:8px;background:#222;border:1px solid #444;border-radius:8px;color:#fff;cursor:pointer;font-size:0.9rem;">100 金幣 → +10 XP</button>
+                    <button onclick="feedPet(500)" style="width:100%;padding:10px;margin-bottom:8px;background:#222;border:1px solid #444;border-radius:8px;color:#fff;cursor:pointer;font-size:0.9rem;">500 金幣 → +50 XP</button>
+                    <button onclick="feedPet(1000)" style="width:100%;padding:10px;background:linear-gradient(135deg,#ffd700,#ff6600);border:none;border-radius:8px;color:#1a1a2e;font-weight:bold;font-size:0.9rem;cursor:pointer;">1000 金幣 → +100 XP（推薦）</button>
+                </div>
+            `;
+            // 簡單用 alert 或替換內容
+            alert('🍖 餵食功能：消耗金幣換 XP\n每 10 金幣 = 1 XP\n\n目前餘額：' + (window.playerScore || 0) + ' 金幣');
+        }
+        
+        async function feedPet(coins) {
+            if ((window.playerScore || 0) < coins) {
+                showToast('金幣不足！');
+                return;
+            }
+            try {
+                const res = await fetch('/api/roulette/pet/feed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, coins })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.playerScore = (window.playerScore || 0) - coins;
+                    document.getElementById('myScore').textContent = window.playerScore;
+                    loadPetInfo();
+                    showToast('🍖 +' + data.xpGain + ' XP');
+                } else {
+                    showToast(data.message || '餵食失敗');
+                }
+            } catch(e) {
+                showToast('餵食失敗');
+            }
+        }
+        
         async function loadTasks() {
             console.log('loadTasks called, myName:', myName);
             if (!myName) return;
@@ -1506,10 +1671,11 @@ function closeProfileModal(){
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.game-tab').forEach((t, i) => {
                 t.classList.remove('active');
-                if ((tab === 'game' && i === 0) || (tab === 'leaderboard' && i === 1) || (tab === 'history' && i === 2) || (tab === 'tasks' && i === 3)) t.classList.add('active');
+                if ((tab === 'game' && i === 0) || (tab === 'pet' && i === 1) || (tab === 'leaderboard' && i === 2) || (tab === 'history' && i === 3) || (tab === 'tasks' && i === 4)) t.classList.add('active');
             });
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             if (tab === 'game') document.getElementById('gameTab').classList.add('active');
+            else if (tab === 'pet') { document.getElementById('petTab').classList.add('active'); loadPetInfo(); }
             else if (tab === 'leaderboard') { document.getElementById('leaderboardTab').classList.add('active'); loadLeaderboard(); }
             else if (tab === 'history') document.getElementById('historyTab').classList.add('active');
             else if (tab === 'tasks') { document.getElementById('tasksTab').classList.add('active'); loadTasks(); }

@@ -107,6 +107,10 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1, completed_tasks TEXT DEFAULT '[]')`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
+        // 建立 pets 表格（寵物系統）
+        rouletteDb.execute({
+            sql: `CREATE TABLE IF NOT EXISTS roulette_pets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, pet_type TEXT DEFAULT 'none', pet_name TEXT DEFAULT '', pet_level INTEGER DEFAULT 1, pet_xp INTEGER DEFAULT 0, pet_hunger INTEGER DEFAULT 100, pet_energy INTEGER DEFAULT 100, last_fed TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')))`
+        }).catch(e => console.log('建立 roulette_pets 表格失敗:', e.message));
         // 啟動時載入神秘彩池、廣告索引、贏家狀態
         loadMysteryPool();
         loadRouletteAdIndex();
@@ -1244,6 +1248,9 @@ app.post('/api/roulette/bet', async (req, res) => {
         }).catch(e => console.log('更新下注失敗:', e.message));
     }
     
+    // 寵物經驗值加成
+    addPetXp(username, amount);
+    
     // 計算等級（每週結算）
     const level = calculateLevel(amount); // 仮：每筆下注都算 level up
     
@@ -2255,6 +2262,170 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
         res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
     }
 });
+
+// 寵物系統 API
+const PET_TYPES = {
+    rabbit: { name: '🐰 兔子', emoji: '🐰', maxLevel: 10, ability: '幸運+5%', color: '#ffb6c1' },
+    cat: { name: '🐱 貓咪', emoji: '🐱', maxLevel: 10, ability: '直播金幣+10%', color: '#ffa500' },
+    dog: { name: '🐶 狗狗', emoji: '🐶', maxLevel: 10, ability: '下注XP+10%', color: '#8b4513' },
+    fox: { name: '🦊 狐狸', emoji: '🦊', maxLevel: 15, ability: '神秘獎池+3%', color: '#ff6600' },
+    dragon: { name: '🐉 龍', emoji: '🐉', maxLevel: 20, ability: '終極', color: '#9932cc' },
+    butterfly: { name: '🦋 蝴蝶', emoji: '🦋', maxLevel: 15, ability: '女性專屬', color: '#ff69b4' }
+};
+
+const XP_PER_LEVEL = 100; // 每級需要 100 XP
+
+// 取得寵物資料
+app.get('/api/roulette/pet/:username', async (req, res) => {
+    const username = req.params.username;
+    if (!username) return res.json({ success: false, message: '請提供用戶名' });
+    
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        const pet = localPlayers[username]?.pet || { pet_type: 'none', pet_name: '', pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 };
+        return res.json({ success: true, pet, petInfo: PET_TYPES[pet.pet_type] || null });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_pets WHERE username = ?`,
+            args: [username]
+        });
+        
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            const pet = {
+                pet_type: row.pet_type,
+                pet_name: row.pet_name,
+                pet_level: row.pet_level,
+                pet_xp: row.pet_xp,
+                pet_hunger: row.pet_hunger,
+                pet_energy: row.pet_energy
+            };
+            res.json({ success: true, pet, petInfo: PET_TYPES[pet.pet_type] || null });
+        } else {
+            res.json({ success: true, pet: { pet_type: 'none', pet_name: '', pet_level: 0, pet_xp: 0, pet_hunger: 100, pet_energy: 100 }, petInfo: null });
+        }
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 領養寵物
+app.post('/api/roulette/pet/adopt', async (req, res) => {
+    const { username, pet_type, pet_name } = req.body;
+    if (!username || !pet_type) return res.json({ success: false, message: '缺少參數' });
+    if (!PET_TYPES[pet_type]) return res.json({ success: false, message: '無效的寵物類型' });
+    
+    // 檢查是否已有寵物
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (!localPlayers[username]) localPlayers[username] = { score: 0, weekly_bet: 0 };
+        if (localPlayers[username].pet?.pet_type !== 'none') {
+            return res.json({ success: false, message: '已有寵物' });
+        }
+        localPlayers[username].pet = { pet_type, pet_name: pet_name || PET_TYPES[pet_type].name, pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 };
+        return res.json({ success: true, pet: localPlayers[username].pet, petInfo: PET_TYPES[pet_type] });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        // 檢查是否已有寵物
+        const existResult = await rouletteDb.execute({ sql: `SELECT pet_type FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (existResult.rows && existResult.rows.length > 0 && existResult.rows[0].pet_type !== 'none') {
+            return res.json({ success: false, message: '已有寵物' });
+        }
+        
+        await rouletteDb.execute({
+            sql: `INSERT OR REPLACE INTO roulette_pets (username, pet_type, pet_name, pet_level, pet_xp, pet_hunger, pet_energy, created_at) VALUES (?, ?, ?, 1, 0, 100, 100, datetime('now'))`,
+            args: [username, pet_type, pet_name || PET_TYPES[pet_type].name]
+        });
+        
+        res.json({ success: true, pet: { pet_type, pet_name: pet_name || PET_TYPES[pet_type].name, pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 }, petInfo: PET_TYPES[pet_type] });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 餵食寵物（消耗金幣，增加經驗）
+app.post('/api/roulette/pet/feed', async (req, res) => {
+    const { username, coins } = req.body;
+    if (!username || !coins) return res.json({ success: false, message: '缺少參數' });
+    
+    const xpGain = Math.floor(coins / 10); // 每 10 金幣 = 1 XP
+    
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (!localPlayers[username]?.pet || localPlayers[username].pet.pet_type === 'none') {
+            return res.json({ success: false, message: '沒有寵物' });
+        }
+        const pet = localPlayers[username].pet;
+        pet.pet_xp += xpGain;
+        pet.pet_hunger = Math.min(100, pet.pet_hunger + 20);
+        pet.pet_energy = Math.min(100, pet.pet_energy + 10);
+        // 檢查升級
+        if (pet.pet_xp >= pet.pet_level * XP_PER_LEVEL) {
+            pet.pet_xp -= pet.pet_level * XP_PER_LEVEL;
+            pet.pet_level++;
+        }
+        return res.json({ success: true, pet, xpGain });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        // 取得當前寵物資料
+        const petResult = await rouletteDb.execute({ sql: `SELECT * FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (!petResult.rows || petResult.rows.length === 0 || petResult.rows[0].pet_type === 'none') {
+            return res.json({ success: false, message: '沒有寵物' });
+        }
+        
+        const pet = petResult.rows[0];
+        const newXp = pet.pet_xp + xpGain;
+        const newLevel = newXp >= (pet.pet_level * XP_PER_LEVEL) ? pet.pet_level + 1 : pet.pet_level;
+        const remainingXp = newXp >= (pet.pet_level * XP_PER_LEVEL) ? newXp - (pet.pet_level * XP_PER_LEVEL) : newXp;
+        
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_pets SET pet_xp = ?, pet_level = ?, pet_hunger = MIN(100, pet_hunger + 20), pet_energy = MIN(100, pet_energy + 10), last_fed = datetime('now') WHERE username = ?`,
+            args: [remainingXp, newLevel, username]
+        });
+        
+        res.json({ success: true, pet: { ...pet, pet_xp: remainingXp, pet_level: newLevel }, xpGain });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 取得所有寵物類型
+app.get('/api/roulette/pet/types', (req, res) => {
+    res.json({ success: true, types: PET_TYPES });
+});
+
+// 寵物下注加 XP（每次下注呼叫）
+async function addPetXp(username, betAmount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (localPlayers[username]?.pet && localPlayers[username].pet.pet_type !== 'none') {
+            localPlayers[username].pet.pet_xp += Math.floor(betAmount / 100);
+            if (localPlayers[username].pet.pet_xp >= localPlayers[username].pet.pet_level * XP_PER_LEVEL) {
+                localPlayers[username].pet.pet_xp -= localPlayers[username].pet.pet_level * XP_PER_LEVEL;
+                localPlayers[username].pet.pet_level++;
+            }
+        }
+        return;
+    }
+    if (!rouletteDbAvailable || !rouletteDb) return;
+    try {
+        const petResult = await rouletteDb.execute({ sql: `SELECT pet_xp, pet_level, pet_type FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (petResult.rows && petResult.rows.length > 0 && petResult.rows[0].pet_type !== 'none') {
+            const pet = petResult.rows[0];
+            const xpGain = Math.floor(betAmount / 100);
+            const newXp = pet.pet_xp + xpGain;
+            const newLevel = newXp >= (pet.pet_level * XP_PER_LEVEL) ? pet.pet_level + 1 : pet.pet_level;
+            const remainingXp = newXp >= (pet.pet_level * XP_PER_LEVEL) ? newXp - (pet.pet_level * XP_PER_LEVEL) : newXp;
+            await rouletteDb.execute({ sql: `UPDATE roulette_pets SET pet_xp = ?, pet_level = ? WHERE username = ?`, args: [remainingXp, newLevel, username] });
+        }
+    } catch(e) { console.log('addPetXp error:', e.message); }
+}
 
 // 靜態檔案
 app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
