@@ -13,10 +13,9 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a1a; color: #
 
 /* ========== 登入/註冊 ========== */
 #loginScreen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
   background: linear-gradient(135deg, #0f0f2e 0%, #1a1a4a 50%, #0a0a1a 100%);
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 20px;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
 }
 #loginScreen.active { display: flex; }
 
@@ -56,8 +55,9 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a1a; color: #
 
 /* ========== 選單 ========== */
 #menuScreen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90;
   background: linear-gradient(135deg, #0f0f2e 0%, #1a1a4a 50%, #0a0a1a 100%);
-  min-height: 100vh; padding: 20px;
+  min-height: 100vh; padding: 20px; overflow-y: auto;
 }
 #menuScreen.active { display: block; }
 
