@@ -697,6 +697,11 @@ app.use(express.json({ limit: '50mb' }));
 const pokerRouter = require('./poker-server.js');
 app.use('/api/poker', pokerRouter);
 
+// 測試端點
+app.get('/api/poker/test', (req, res) => {
+    res.json({ success: true, message: 'Poker API working!', pokerDbAvailable });
+});
+
 // ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
 // 客戶端每1秒輪詢一次 /dice/poll
 app.get('/dice/poll', (req, res) => {
