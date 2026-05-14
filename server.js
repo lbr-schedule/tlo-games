@@ -2437,8 +2437,9 @@ app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
 app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
 app.use('/mahjong', express.static(path.join(__dirname, 'public')));
 app.use('/coin-roulette', express.static(path.join(__dirname, 'public/coin-roulette')));
+app.use('/poker', express.static(path.join(__dirname, 'public/poker')));
 
-// 首頁
+// 撲克遊戲 Poker
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -2519,6 +2520,65 @@ if (COIN_LOCAL_TEST_MODE) {
         console.log('轉轉金幣資料庫 Client 已建立, URL:', coinDbUrl);
     } catch(e) { console.log('轉轉金幣資料庫建立失敗:', e.message); coinDbAvailable = false; }
 }
+
+// ============ 撲克遊戲資料庫 ============
+const POKER_DB_URL = process.env.POKER_DATABASE_URL || 'libsql://lbr-poker-lbr-schedule.aws-ap-northeast-1.turso.io';
+const POKER_DB_AUTH = process.env.POKER_DATABASE_AUTH_TOKEN || '';
+let pokerDb = null;
+let pokerDbAvailable = false;
+
+try {
+    pokerDb = createClient({ url: POKER_DB_URL, authToken: POKER_DB_AUTH });
+    pokerDbAvailable = true;
+    console.log('撲克遊戲資料庫 Client 已建立, URL:', POKER_DB_URL);
+} catch(e) { 
+    console.log('撲克遊戲資料庫建立失敗:', e.message); 
+    pokerDbAvailable = false; 
+}
+
+// 初始化撲克資料庫
+if (pokerDbAvailable) {
+    (async () => {
+        try {
+            await pokerDb.execute(\`
+                CREATE TABLE IF NOT EXISTS poker_users (
+                    username TEXT PRIMARY KEY,
+                    password TEXT NOT NULL,
+                    score INTEGER DEFAULT 10000,
+                    games_played INTEGER DEFAULT 0,
+                    games_won INTEGER DEFAULT 0,
+                    games_tied INTEGER DEFAULT 0,
+                    total_bet INTEGER DEFAULT 0,
+                    total_won INTEGER DEFAULT 0,
+                    last_login TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            \`);
+            await pokerDb.execute(\`
+                CREATE TABLE IF NOT EXISTS poker_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    result TEXT NOT NULL,
+                    pot INTEGER NOT NULL,
+                    hand_name TEXT,
+                    opponent TEXT,
+                    time TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            \`);
+            await pokerDb.execute(\`
+                CREATE TABLE IF NOT EXISTS poker_daily_bonus (
+                    username TEXT PRIMARY KEY,
+                    last_claim TEXT,
+                    streak INTEGER DEFAULT 0
+                )
+            \`);
+            console.log('撲克資料庫初始化完成');
+        } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
+    })();
+}
+
+// 讓 router 可以訪問 db
+app.locals.pokerDb = pokerDb;
 
 const COIN_ADS = [
     'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
