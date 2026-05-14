@@ -139,7 +139,13 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 <div id="startScreen">
   <img src="card_back.png" style="width:56px;height:auto;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.4);margin-bottom:0.5rem">
-  <!-- 登入/註冊 -->
+  <div id="loggedInSection" style="display:none;flex-direction:column;align-items:center;gap:8px;margin-bottom:1rem">
+    <div style="color:#f5c518;font-weight:bold;font-size:1.1rem">👤 <span id="displayUsername"></span></div>
+    <div style="color:#aaa;font-size:0.9rem">💰 <span id="displayScore"></span> 金幣</div>
+    <button class="btn btn-primary" onclick="enterGame()" style="padding:8px 24px">開始遊戲</button>
+    <button class="btn btn-secondary" onclick="showHistory();document.getElementById('startScreen').style.display='none';" style="padding:6px 16px;font-size:0.9rem">📜 歷史紀錄</button>
+    <button class="btn btn-secondary" onclick="logoutPoker()" style="padding:6px 16px;font-size:0.85rem;margin-top:0.5rem">登出</button>
+  </div>
   <div id="authSection" style="display:none;flex-direction:column;align-items:center;gap:8px;margin-bottom:1rem;width:100%">
     <div style="display:flex;gap:6px">
       <button class="btn btn-secondary" onclick="showAuthTab('login')" id="loginTabBtn" style="padding:6px 16px;font-size:0.9rem">登入</button>
@@ -158,13 +164,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
       <button class="btn btn-primary" onclick="doBackendRegister()" style="padding:8px 24px">註冊</button>
       <div id="regMsg2" style="color:#f44;font-size:0.85rem"></div>
     </div>
-  </div>
-  <div id="loggedInSection" style="display:none;flex-direction:column;align-items:center;gap:8px;margin-bottom:1rem">
-    <div style="color:#f5c518;font-weight:bold;font-size:1.1rem">👤 <span id="displayUsername"></span></div>
-    <div style="color:#aaa;font-size:0.9rem">💰 <span id="displayScore"></span> 金幣</div>
-    <button class="btn btn-primary" onclick="enterGame()" style="padding:8px 24px">開始遊戲</button>
-    <button class="btn btn-secondary" onclick="showHistory();document.getElementById('startScreen').style.display='none';" style="padding:6px 16px;font-size:0.9rem">📜 歷史紀錄</button>
-    <button class="btn btn-secondary" onclick="logoutPoker()" style="padding:6px 16px;font-size:0.85rem;margin-top:0.5rem">登出</button>
   </div>
   <div id="guestSection">
     <input class="name-input" id="playerNameInput" value="老闆" placeholder="你的名字">
