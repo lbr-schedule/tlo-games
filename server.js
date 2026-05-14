@@ -2536,18 +2536,33 @@ const POKER_DB_AUTH = process.env.POKER_DATABASE_AUTH_TOKEN || '';
 let pokerDb = null;
 let pokerDbAvailable = false;
 
-try {
-    pokerDb = createClient({ url: POKER_DB_URL, authToken: POKER_DB_AUTH });
-    pokerDbAvailable = true;
-    console.log('撲克遊戲資料庫 Client 已建立, URL:', POKER_DB_URL);
-} catch(e) { 
-    console.log('撲克遊戲資料庫建立失敗:', e.message); 
-    pokerDbAvailable = false; 
+// 撲克本地測試模式（用記憶體模式，適合開發）
+const POKER_LOCAL_TEST_MODE = process.env.POKER_LOCAL_TEST === 'true';
+
+if (POKER_LOCAL_TEST_MODE) {
+    console.log('⚠️ 撲克本地測試模式：使用記憶體資料庫');
+    pokerDbAvailable = false;
+} else {
+    try {
+        pokerDb = createClient({ url: POKER_DB_URL, authToken: POKER_DB_AUTH });
+        pokerDbAvailable = true;
+        console.log('撲克遊戲資料庫 Client 已建立, URL:', POKER_DB_URL);
+    } catch(e) { 
+        console.log('撲克遊戲資料庫建立失敗:', e.message); 
+        pokerDbAvailable = false; 
+    }
 }
+
+// 記憶體資料庫（本地測試用）
+const pokerMemoryDb = {
+    users: {},  // username -> {password, score, games_played, games_won, games_tied, ...}
+    history: [],
+    dailyBonus: {}
+};
 
 // 延遲初始化撲克DB（不阻斷伺服器啟動）
 setTimeout(async () => {
-    if (!pokerDb) return;
+    if (!pokerDb && !POKER_LOCAL_TEST_MODE) return;
     try {
         await pokerDb.execute({ sql: 'SELECT 1' });
         pokerDbAvailable = true;
