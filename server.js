@@ -2536,6 +2536,19 @@ try {
     pokerDbAvailable = false; 
 }
 
+// 延遲初始化撲克DB（不阻斷伺服器啟動）
+setTimeout(async () => {
+    if (!pokerDb) return;
+    try {
+        await pokerDb.execute({ sql: 'SELECT 1' });
+        pokerDbAvailable = true;
+        console.log('撲克資料庫連線測試成功');
+    } catch(e) {
+        console.log('撲克資料庫連線測試失敗:', e.message);
+        pokerDbAvailable = false;
+    }
+}, 2000);
+
 // 初始化撲克資料庫
 if (pokerDbAvailable) {
     (async () => {
@@ -2548,8 +2561,10 @@ if (pokerDbAvailable) {
     })();
 }
 
-// 讓 router 可以訪問 db
-app.locals.pokerDb = pokerDb;
+// 讓 router 可以訪問 db (只有在可用時才設定)
+if (pokerDbAvailable) {
+    app.locals.pokerDb = pokerDb;
+}
 
 const COIN_ADS = [
     'https://placehold.co/600x800/1a1a2e/ffd700?text=LBR+STUDIO%0A%E6%9C%8D%E9%A3%BE%E5%93%81%E7%89%88',
