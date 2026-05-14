@@ -2540,38 +2540,9 @@ try {
 if (pokerDbAvailable) {
     (async () => {
         try {
-            await pokerDb.execute(\`
-                CREATE TABLE IF NOT EXISTS poker_users (
-                    username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL,
-                    score INTEGER DEFAULT 10000,
-                    games_played INTEGER DEFAULT 0,
-                    games_won INTEGER DEFAULT 0,
-                    games_tied INTEGER DEFAULT 0,
-                    total_bet INTEGER DEFAULT 0,
-                    total_won INTEGER DEFAULT 0,
-                    last_login TEXT,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )
-            \`);
-            await pokerDb.execute(\`
-                CREATE TABLE IF NOT EXISTS poker_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL,
-                    result TEXT NOT NULL,
-                    pot INTEGER NOT NULL,
-                    hand_name TEXT,
-                    opponent TEXT,
-                    time TEXT DEFAULT CURRENT_TIMESTAMP
-                )
-            \`);
-            await pokerDb.execute(\`
-                CREATE TABLE IF NOT EXISTS poker_daily_bonus (
-                    username TEXT PRIMARY KEY,
-                    last_claim TEXT,
-                    streak INTEGER DEFAULT 0
-                )
-            \`);
+            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_users (username TEXT PRIMARY KEY, password TEXT NOT NULL, score INTEGER DEFAULT 10000, games_played INTEGER DEFAULT 0, games_won INTEGER DEFAULT 0, games_tied INTEGER DEFAULT 0, total_bet INTEGER DEFAULT 0, total_won INTEGER DEFAULT 0, last_login TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
+            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
+            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
             console.log('撲克資料庫初始化完成');
         } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
     })();
