@@ -85,7 +85,7 @@ async function initPokerDb(client) {
 
 // ============ 認證 ============
 
-router.post('/api/poker/register', async (req, res) => {
+router.post('/register', async (req, res) => {
     try {
         const { username, password, invitedBy } = req.body;
         if (!username || !password) {
@@ -133,7 +133,7 @@ router.post('/api/poker/register', async (req, res) => {
     }
 });
 
-router.post('/api/poker/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const result = await req.app.locals.pokerDb.execute(
@@ -165,7 +165,7 @@ router.post('/api/poker/login', async (req, res) => {
 
 // ============ 排行榜 ============
 
-router.get('/api/poker/leaderboard', async (req, res) => {
+router.get('/leaderboard', async (req, res) => {
     try {
         const result = await req.app.locals.pokerDb.execute(
             'SELECT username, score, games_won FROM poker_users ORDER BY score DESC LIMIT 20'
@@ -192,7 +192,7 @@ router.get('/api/poker/leaderboard', async (req, res) => {
 
 // ============ 歷史紀錄 ============
 
-router.get('/api/poker/history/:username', async (req, res) => {
+router.get('/history/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const result = await req.app.locals.pokerDb.execute(
@@ -207,7 +207,7 @@ router.get('/api/poker/history/:username', async (req, res) => {
 
 // ============ 玩家專區 ============
 
-router.get('/api/poker/player/:username', async (req, res) => {
+router.get('/player/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const result = await req.app.locals.pokerDb.execute(
@@ -245,7 +245,7 @@ router.get('/api/poker/player/:username', async (req, res) => {
 
 // ============ 更新分數 ============
 
-router.post('/api/poker/update-score', async (req, res) => {
+router.post('/update-score', async (req, res) => {
     try {
         const { username, score_change, result, pot, hand_name, opponent } = req.body;
         
@@ -282,7 +282,7 @@ router.post('/api/poker/update-score', async (req, res) => {
 
 // ============ 每日獎勵 ============
 
-router.post('/api/poker/daily-bonus', async (req, res) => {
+router.post('/daily-bonus', async (req, res) => {
     try {
         const { username } = req.body;
         const now = new Date().toISOString();
@@ -329,7 +329,7 @@ router.post('/api/poker/daily-bonus', async (req, res) => {
 
 // ============ 修改密碼 ============
 
-router.post('/api/poker/change-password', async (req, res) => {
+router.post('/change-password', async (req, res) => {
     try {
         const { username, old_password, new_password } = req.body;
         const result = await req.app.locals.pokerDb.execute(
