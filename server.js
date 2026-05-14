@@ -693,6 +693,10 @@ async function handleDiceMessage(ws, msg) {
 // JSON 解析
 app.use(express.json({ limit: '50mb' }));
 
+// ============ 撲克遊戲 ============
+const pokerRouter = require('./poker-server.js');
+app.use('/api/poker', pokerRouter);
+
 // ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
 // 客戶端每1秒輪詢一次 /dice/poll
 app.get('/dice/poll', (req, res) => {
@@ -2550,20 +2554,21 @@ setTimeout(async () => {
 }, 2000);
 
 // 初始化撲克資料庫
-if (pokerDbAvailable) {
-    (async () => {
-        try {
-            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_users (username TEXT PRIMARY KEY, password TEXT NOT NULL, score INTEGER DEFAULT 10000, games_played INTEGER DEFAULT 0, games_won INTEGER DEFAULT 0, games_tied INTEGER DEFAULT 0, total_bet INTEGER DEFAULT 0, total_won INTEGER DEFAULT 0, last_login TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
-            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
-            await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
-            console.log('撲克資料庫初始化完成');
-        } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
-    })();
+// 初始化撲克資料表
+async function initPokerTables() {
+    if (!pokerDbAvailable || !pokerDb) return;
+    try {
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_users (username TEXT PRIMARY KEY, password TEXT NOT NULL, score INTEGER DEFAULT 10000, games_played INTEGER DEFAULT 0, games_won INTEGER DEFAULT 0, games_tied INTEGER DEFAULT 0, total_bet INTEGER DEFAULT 0, total_won INTEGER DEFAULT 0, last_login TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
+        console.log('撲克資料庫初始化完成');
+    } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
 }
 
 // 讓 router 可以訪問 db (只有在可用時才設定)
-if (pokerDbAvailable) {
+if (pokerDbAvailable && pokerDb) {
     app.locals.pokerDb = pokerDb;
+    initPokerTables();
 }
 
 const COIN_ADS = [
