@@ -2537,10 +2537,11 @@ let pokerDb = null;
 let pokerDbAvailable = false;
 
 // 撲克本地測試模式（用記憶體模式，適合開發）
-const POKER_LOCAL_TEST_MODE = process.env.POKER_LOCAL_TEST === 'true';
+const POKER_LOCAL_TEST_MODE = process.env.POKER_LOCAL_TEST === 'true' || process.env.POKER_LOCAL_TEST === true;
 
 if (POKER_LOCAL_TEST_MODE) {
     console.log('⚠️ 撲克本地測試模式：使用記憶體資料庫');
+    pokerDb = null;
     pokerDbAvailable = false;
 } else {
     try {
@@ -2549,6 +2550,7 @@ if (POKER_LOCAL_TEST_MODE) {
         console.log('撲克遊戲資料庫 Client 已建立, URL:', POKER_DB_URL);
     } catch(e) { 
         console.log('撲克遊戲資料庫建立失敗:', e.message); 
+        pokerDb = null;
         pokerDbAvailable = false; 
     }
 }
@@ -2589,6 +2591,60 @@ async function initPokerTables() {
 if (pokerDbAvailable && pokerDb) {
     app.locals.pokerDb = pokerDb;
     initPokerTables();
+}
+
+// 記憶體資料庫注入（本地測試用）
+if (POKER_LOCAL_TEST_MODE) {
+    app.locals.pokerDb = {
+        execute: async (opts) => {
+            const sql = opts.sql || opts;
+            const args = opts.args || [];
+            
+            // Simple in-memory mock
+            if (sql.includes('SELECT') && sql.includes('poker_users') && sql.includes('WHERE username')) {
+                const username = args[0];
+                const user = pokerMemoryDb.users[username];
+                if (user) {
+                    return { rows: [{ username: user.username, score: user.score, games_played: user.games_played, games_won: user.games_won, games_tied: user.games_tied }], rowsAffected: 0 };
+                }
+                return { rows: [], rowsAffected: 0 };
+            }
+            if (sql.includes('INSERT INTO poker_users')) {
+                const username = args[0];
+                const password = args[1];
+                pokerMemoryDb.users[username] = { username, password, score: 10000, games_played: 0, games_won: 0, games_tied: 0, total_bet: 0, total_won: 0 };
+                return { rowsAffected: 1, lastInsertRowid: Math.floor(Math.random() * 10000) };
+            }
+            if (sql.includes('SELECT') && sql.includes('poker_users') && !sql.includes('WHERE')) {
+                const users = Object.values(pokerMemoryDb.users).sort((a, b) => b.score - a.score).slice(0, 20);
+                return { rows: users.map(u => ({ username: u.username, score: u.score, games_won: u.games_won })), rowsAffected: 0 };
+            }
+            if (sql.includes('INSERT INTO poker_history')) {
+                pokerMemoryDb.history.push({ id: pokerMemoryDb.history.length + 1, username: args[0], result: args[1], pot: args[2], hand_name: args[3], opponent: args[4] });
+                return { rowsAffected: 1, lastInsertRowid: pokerMemoryDb.history.length };
+            }
+            if (sql.includes('SELECT') && sql.includes('poker_history')) {
+                const username = sql.includes('WHERE username') ? args[0] : null;
+                const hist = username ? pokerMemoryDb.history.filter(h => h.username === username).slice(-50) : pokerMemoryDb.history.slice(-50);
+                return { rows: hist, rowsAffected: 0 };
+            }
+            if (sql.includes('UPDATE poker_users')) {
+                const username = args[1];
+                if (pokerMemoryDb.users[username]) {
+                    if (sql.includes('score = score +')) {
+                        pokerMemoryDb.users[username].score += args[0];
+                    }
+                    if (sql.includes('games_won')) {
+                        pokerMemoryDb.users[username].games_won = (pokerMemoryDb.users[username].games_won || 0) + 1;
+                    }
+                }
+                return { rowsAffected: 1 };
+            }
+            return { rows: [], rowsAffected: 0 };
+        }
+    };
+    // Initialize memory tables
+    console.log('✅ 撲克記憶體資料庫已初始化');
 }
 
 const COIN_ADS = [
