@@ -82,6 +82,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 .waiting-hint { text-align: center; font-size: 0.85rem; color: #888; margin: 0.4rem 0; animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-overlay.show { display: flex; }
+.modal { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; }
 
 .result-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 100; }
 .result-overlay.show { display: flex; }
@@ -223,7 +226,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <div class="to-call-info" id="toCallInfo">需要跟注: <b id="toCallAmount">0</b></div>
     <div class="action-row" id="actionRow"></div>
   </div>
-  <div class="waiting-hint" id="waitingHint" style="display:none">電腦思考中...</div>
+  <div class="waiting-hint" id="waitingHint" style="display:none">等待對手...</div>
 </div>
 
 <div id="historyScreen">
@@ -235,14 +238,19 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 玩家專區選單 -->
-<div class="modal-overlay" id="playerMenuModal" style="display:none;z-index:1001;">
-  <div class="modal" style="max-width:320px;background:#1a1a3a;border-radius:16px;padding:20px;text-align:center;">
-    <h2 style="color:#ffd700;margin-bottom:15px;">☰ 玩家專區</h2>
+<div class="modal-overlay" id="playerMenuModal" onclick="if(event.target===this)closePlayerMenu()">
+  <div class="modal">
+    <h2>☰ 玩家專區</h2>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
       <button onclick="showPokerLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🔥 連續登入</button>
       <button onclick="showPokerVideo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎬 看影片</button>
       <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級</button>
+      <button onclick="showPokerTasks();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📋 每日任務</button>
+      <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
+      <button onclick="showPokerLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🔥 連續登入</button>
+      <button onclick="showPokerVideo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎬 看影片領獎勵</button>
+      <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級 / 經驗值</button>
       <button onclick="showPokerTasks();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📋 每日任務</button>
       <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲歷史</button>
       <button onclick="showPokerHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">❓ 遊戲說明</button>
@@ -252,7 +260,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 <!-- 個人資料 Modal -->
 <div class="modal-overlay" id="pokerProfileModal" onclick="if(event.target===this)closePokerProfileModal()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
-    <h3 style="color:#ffd700;margin:0 0 16px;">👤 個人資料</h3>
+    <h3 style="color:#ffd700;margin:0 0 16px;">個人資料</h3>
     <div id="pokerProfileContent" style="color:#fff;"></div>
     <button onclick="closePokerProfileModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:16px;">關閉</button>
   </div>
@@ -309,6 +317,103 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
     <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
+
+<!-- 個人資料 Modal -->
+<div class="modal-overlay" id="pokerProfileModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>👤 個人資料</h2>
+    <div id="pokerProfileContent" style="color:#fff;text-align:left;margin-top:10px;"></div>
+    <button onclick="closePokerProfileModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
+
+<!-- 連續登入 Modal -->
+<div class="modal-overlay" id="pokerLoginRewardModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>🔥 連續登入</h2>
+    <div id="pokerLoginRewardContent" style="color:#fff;text-align:center;margin-top:10px;"></div>
+    <button onclick="closePokerLoginRewardModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
+
+<!-- 看影片 Modal -->
+<div class="modal-overlay" id="pokerVideoModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>🎬 看影片領獎勵</h2>
+    <div style="color:#fff;text-align:center;margin:15px 0;">
+      <p style="margin-bottom:15px;">觀看影片即可獲得</p>
+      <div style="font-size:2rem;margin-bottom:15px;">💰 1,000 金幣</div>
+      <button onclick="claimPokerVideo()" id="pokerVideoClaimBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#fff;margin-bottom:10px;">領取獎勵</button>
+      <p id="pokerVideoStatus" style="color:#aaa;font-size:0.85rem;"></p>
+    </div>
+    <button onclick="closePokerVideoModal()" style="width:100%;padding:12px;background:#333;color:#fff;border:none;border-radius:10px;cursor:pointer;">關閉</button>
+  </div>
+</div>
+
+<!-- 等級 Modal -->
+<div class="modal-overlay" id="pokerLevelModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>📊 等級與經驗值</h2>
+    <div id="pokerLevelContent" style="color:#fff;text-align:center;margin-top:10px;"></div>
+    <button onclick="closePokerLevelModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
+
+<!-- 每日任務 Modal -->
+<div class="modal-overlay" id="pokerTasksModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>📋 每日任務</h2>
+    <div id="pokerTasksContent" style="color:#fff;text-align:left;margin-top:10px;"></div>
+    <button onclick="closePokerTasksModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
+
+<!-- 遊戲說明 Modal -->
+<div class="modal-overlay" id="pokerHelpModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>❓ 德州撲克說明</h2>
+    <div id="pokerHelpPage1" style="color:#fff;text-align:left;padding:10px 0;">
+      <h3 style="color:#ffd700;margin-bottom:10px;">🎴 基本規則</h3>
+      <p style="margin-bottom:8px;">1. 發給每位玩家 2 張底牌</p>
+      <p style="margin-bottom:8px;">2. 公共牌分三階段發出（3/1/1）</p>
+      <p style="margin-bottom:8px;">3. 玩家可選擇：過牌、加注、跟注、棄牌</p>
+      <p style="margin-bottom:15px;">4. 最後比大小，大的贏得底池</p>
+      <h3 style="color:#ffd700;margin-bottom:10px;">🃏 牌型大小</h3>
+      <p style="margin-bottom:6px;">皇家同花順 > 同花順 > 四條</p>
+      <p style="margin-bottom:6px;">full house > 同花 > 順子</p>
+      <p style="margin-bottom:6px;">三條 > 兩對 > 一對 > 高牌</p>
+      <button onclick="showPokerHelpPage(2)" style="width:100%;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">下一頁 →</button>
+    </div>
+    <div id="pokerHelpPage2" style="display:none;color:#fff;text-align:left;padding:10px 0;">
+      <h3 style="color:#ffd700;margin-bottom:10px;">💰 下注選項</h3>
+      <p style="margin-bottom:8px;">• 過牌：不通過，不下注</p>
+      <p style="margin-bottom:8px;">• 跟注：跟隨對手下注</p>
+      <p style="margin-bottom:8px;">• 加注：增加下注金額</p>
+      <p style="margin-bottom:15px;">• 棄牌：放棄此局</p>
+      <h3 style="color:#ffd700;margin-bottom:10px;">💡 技巧提示</h3>
+      <p style="margin-bottom:8px;">• 不要每次都加注</p>
+      <p style="margin-bottom:8px;">• 注意對手下注模式</p>
+      <p style="margin-bottom:8px;">• 適時棄牌保存籌碼</p>
+      <div style="display:flex;gap:10px;margin-top:15px;">
+        <button onclick="showPokerHelpPage(1)" style="flex:1;padding:10px;background:#444;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#fff;">← 上一頁</button>
+        <button onclick="closePokerHelpModal()" style="flex:1;padding:10px;background:#ffd700;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">知道了</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 反饋 Modal -->
+<div class="modal-overlay" id="pokerFeedbackModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>📝 提供反饋</h2>
+    <div style="color:#fff;text-align:center;padding:10px 0;">
+      <textarea id="pokerFeedbackText" placeholder="請輸入您的建議或問題..." style="width:100%;height:120px;padding:12px;border-radius:10px;background:#1a1a3a;color:#fff;border:1px solid #444;resize:none;box-sizing:border-box;margin-bottom:10px;"></textarea>
+      <button onclick="submitPokerFeedback()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">送出反饋</button>
+      <p id="pokerFeedbackStatus" style="color:#aaa;font-size:0.85rem;margin-top:10px;"></p>
+    </div>
+    <button onclick="closePokerFeedbackModal()" style="width:100%;padding:12px;background:#333;color:#fff;border:none;border-radius:10px;cursor:pointer;margin-top:10px;">關閉</button>
   </div>
 </div>
 
@@ -1111,161 +1216,56 @@ checkPokerLogin();
 
 // ===== 玩家專區 function =====
 function showPlayerMenu() {
-  document.getElementById('playerMenuModal').style.display='flex';
+  document.getElementById('playerMenuModal').classList.add('show');
 }
 function closePlayerMenu() {
-  document.getElementById('playerMenuModal').style.display='none';
+  document.getElementById('playerMenuModal').classList.remove('show');
 }
-var selectedPokerAvatar = '/poker/avatar1.jpg';
-var pendingPokerGender = '';
-var pendingPokerTagType = '';
-var pendingPokerTagValue = '';
-
 function showPokerProfile() {
   if(!currentUser){alert('請先登入');return;}
   fetch('/api/poker/profile/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
     if(d.success){
-      var p = d.profile || {};
+      var p = d.profile;
       var s = d.stats || {};
-      var avatar = p.avatar_url || '/poker/avatar1.jpg';
-      selectedPokerAvatar = avatar;
-      var html = '<div style="text-align:center;margin-bottom:15px;">';
-      html += '<div onclick="openPokerAvatarModal()" style="cursor:pointer;width:80px;height:80px;margin:0 auto;border-radius:50%;overflow:hidden;border:3px solid #ffd700;box-shadow:0 4px 12px rgba(255,215,0,0.3);"><img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;" /></div>';
-      html += '<div style="color:#ffd700;font-weight:bold;font-size:1.1rem;margin-top:8px;">'+currentUser.username+'</div>';
-      html += '<div style="color:#aaa;font-size:0.85rem;">Lv.'+(p.level||1)+' '+(p.tier||'青銅')+' '+(p.title||'菜鳥')+'</div></div>';
+      var html = '<div style="text-align:center;margin-bottom:15px;"><div style="font-size:3rem;margin-bottom:5px;">👤</div>';
+      html += '<div style="color:#ffd700;font-weight:bold;font-size:1.1rem;">'+currentUser.username+'</div>';
+      html += '<div style="color:#aaa;font-size:0.85rem;">Lv.'+(p.level||1)+' | '+(p.tier||'青銅')+' | '+(p.title||'菜鳥')+'</div></div>';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+(p.games_played||0)+'</div><div style="color:#888;font-size:0.75rem;">遊戲次數</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#4f4;font-size:1.2rem;font-weight:bold;">'+(p.games_won||0)+'</div><div style="color:#888;font-size:0.75rem;">獲勝次數</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+(p.score||0)+'</div><div style="color:#888;font-size:0.75rem;">金幣</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ff6b6b;font-size:1.2rem;font-weight:bold;">'+(s.login_streak||0)+'</div><div style="color:#888;font-size:0.75rem;">連續天數</div></div>';
+      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+p.games_played+'</div><div style="color:#888;font-size:0.75rem;">遊戲次數</div></div>';
+      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#4f4;font-size:1.2rem;font-weight:bold;">'+p.games_won+'</div><div style="color:#888;font-size:0.75rem;">獲勝次數</div></div>';
+      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#aaa;font-size:1.2rem;font-weight:bold;">'+(p.win_rate||0)+'%</div><div style="color:#888;font-size:0.75rem;">勝率</div></div>';
+      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+p.score+'</div><div style="color:#888;font-size:0.75rem;">金幣</div></div>';
       html += '</div>';
-      html += '<div style="text-align:left;margin-top:10px;">';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="openPokerGenderModal()"><span style="color:#888;">⚧ 性別</span><span style="color:#fff;">'+(p.gender||'未設定')+' ›</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="openPokerBirthdayModal()"><span style="color:#888;">🎂 生日</span><span style="color:#fff;">'+(p.birthday||'未設定')+' ›</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="openPokerTagModal(\x27personality\x27,\x27性格標籤\x27)"><span style="color:#888;">🏷️ 性格</span><span style="color:#fff;">'+(p.personality_tag||'未設定')+' ›</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="openPokerTagModal(\x27interest\x27,\x27興趣標籤\x27)"><span style="color:#888;">🎯 興趣</span><span style="color:#fff;">'+(p.interest_tag||'未設定')+' ›</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="openPokerTagModal(\x27badge\x27,\x27徽章\x27)"><span style="color:#888;">🏅 徽章</span><span style="color:#fff;">'+(p.badge_tag||'未設定')+' ›</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;padding:8px;background:#12122a;border-radius:8px;cursor:pointer;" onclick="openPokerTagModal(\x27mood\x27,\x27心情\x27)"><span style="color:#888;">💭 心情</span><span style="color:#fff;">'+(p.mood||'未設定')+' ›</span></div>';
-      html += '</div>';
-      html += '<div style="color:#666;font-size:0.75rem;margin-top:10px;text-align:center;">📅 加入日期：'+(p.member_since||'未知')+'</div>';
+      html += '<div style="text-align:left;margin-top:10px;"><div style="margin-bottom:8px;"><span style="color:#888;">📊 總下注：</span><span>'+(p.total_bet||0)+'</span></div>';
+      html += '<div style="margin-bottom:8px;"><span style="color:#888;">🏆 總贏額：</span><span>'+(p.total_won||0)+'</span></div>';
+      html += '<div style="margin-bottom:8px;"><span style="color:#888;">🔥 登入連續：</span><span>'+(s.login_streak||0)+' 天 '+(s.streak_title||'')+'</span></div>';
+      html += '<div style="margin-bottom:8px;"><span style="color:#888;">📅 加入日期：</span><span>'+(p.member_since||'未知').substring(0,10)+'</span></div></div>';
+      html += '<button onclick="editPokerProfile()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">編輯資料</button>';
       document.getElementById('pokerProfileContent').innerHTML = html;
       document.getElementById('pokerProfileModal').classList.add('show');
-    } else { alert(d.message||'載入失敗'); }
+    }
   }).catch(()=>{alert('載入失敗');});
 }
-
-function openPokerAvatarModal(){document.getElementById('pokerAvatarModal').style.display='flex';updatePokerAvatarSelection();}
-function closePokerAvatarModal(){document.getElementById('pokerAvatarModal').style.display='none';}
-function updatePokerAvatarSelection(){
-  document.querySelectorAll('#pokerAvatarModal img').forEach(function(img){img.parentElement.style.border='3px solid transparent';});
-  document.querySelectorAll('#pokerAvatarModal img').forEach(function(img){if(img.src.includes(selectedPokerAvatar)){img.parentElement.style.border='3px solid #ffd700';}});
-}
-function selectPokerAvatar(el,path){document.querySelectorAll('#pokerAvatarModal img').forEach(function(img){img.parentElement.style.border='3px solid transparent';});el.style.border='3px solid #ffd700';selectedPokerAvatar=path;}
-function savePokerAvatar(){
-  fetch('/api/poker/profile',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username,avatar_url:selectedPokerAvatar})}).then(r=>r.json()).then(function(d){
-    if(d.success){
-      currentUser.avatar_url=selectedPokerAvatar;localStorage.setItem('pokerUser',JSON.stringify(currentUser));
-      closePokerAvatarModal();showPokerProfile();
-    } else {alert(d.message||'儲存失敗');}
-  });
-}
-
-function openPokerGenderModal(){document.getElementById('pokerGenderModal').style.display='flex';pendingPokerGender='';}
-function closePokerGenderModal(){document.getElementById('pokerGenderModal').style.display='none';}
-function selectPokerGender(el,g){document.querySelectorAll('#pokerGenderModal button').forEach(function(b){b.style.border='1px solid #555';b.style.background='#333';});el.style.border='2px solid #ffd700';el.style.background='#555';pendingPokerGender=g;}
-function confirmPokerGender(){
-  if(!pendingPokerGender){alert('請選擇性別');return;}
-  fetch('/api/poker/profile',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username,gender:pendingPokerGender})}).then(r=>r.json()).then(function(d){
-    if(d.success){closePokerGenderModal();showPokerProfile();} else {alert(d.message||'儲存失敗');}
-  });
-}
-
-function openPokerBirthdayModal(){document.getElementById('pokerBirthdayModal').style.display='flex';}
-function closePokerBirthdayModal(){document.getElementById('pokerBirthdayModal').style.display='none';}
-function submitPokerBirthday(){
-  var bd=document.getElementById('pokerBirthdayInput').value;
-  if(!bd){alert('請選擇生日');return;}
-  fetch('/api/poker/profile',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username,birthday:bd})}).then(r=>r.json()).then(function(d){
-    if(d.success){closePokerBirthdayModal();showPokerProfile();} else {alert(d.message||'儲存失敗');}
-  });
-}
-
-const POKER_TAG_OPTIONS={
-  personality:['內向','外向','樂觀','沉穩','活潑','理性','感性','幽默','細心','果斷'],
-  interest:['音樂','運動','旅遊','美食','電影','閱讀','遊戲','攝影','設計','程式'],
-  badge:['🌟 新人','💪 活躍','🔥 忠誠','🏆 冠軍','🎯 精準','💰 富豪','🎲 賭神','📖 求知'],
-  mood:['開心','難過','生氣','興奮','平靜','疲憊','期待','滿足']
-};
-function openPokerTagModal(type,title){
-  pendingPokerTagType=type;pendingPokerTagValue='';
-  document.getElementById('pokerTagModalTitle').textContent=title;
-  var html='';
-  (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt){html+='<button onclick="selectPokerTag(this,''+opt+'')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">'+opt+'</button>';});
-  document.getElementById('pokerTagModalContent').innerHTML=html;
-  document.getElementById('pokerTagModal').style.display='flex';
-}
-function selectPokerTag(el,v){document.querySelectorAll('#pokerTagModalContent button').forEach(function(b){b.style.border='1px solid #555';});el.style.border='2px solid #ffd700';el.style.background='#555';pendingPokerTagValue=v;}
-function confirmPokerTag(){
-  if(!pendingPokerTagValue){alert('請選擇');return;}
-  var data={username:currentUser.username};
-  data[pendingPokerTagType]=pendingPokerTagValue;
-  fetch('/api/poker/profile',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify(data)}).then(r=>r.json()).then(function(d){
-    if(d.success){document.getElementById('pokerTagModal').style.display='none';showPokerProfile();} else {alert(d.message||'儲存失敗');}
-  });
-}
-
 function closePokerProfileModal(){document.getElementById('pokerProfileModal').classList.remove('show');}
-function showPokerHelp() {
-  alert('❓ 遊戲說明：\n\n🎯 德州撲克基本規則：\n• 發牌後可選擇跟注、加注或蓋牌\n• 三張公共牌後可再次行動\n• 第五張牌後攤牌比大小\n\n💰 贏取更多金幣！');
-}
-function showPokerFeedback() {
-  var fb = prompt('請輸入您的建議或問題：');
-  if(fb && fb.trim()) {
-    alert('感謝您的反饋！');
-  }
-}
-function showPokerHistory() {
-  showHistory();
-}
 
-// ===== 玩家專區功能（輪盤風格）=====
 function showPokerLoginReward() {
   if(!currentUser){alert('請先登入');return;}
-  var modal = document.getElementById('playerMenuModal');
   fetch('/api/poker/daily-bonus',{headers:{'Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
-    var rewards = [200,300,400,500,700,1000,2000];
-    var nextReward = rewards[Math.min(d.streak||0, 7)] || 200;
-    var dotsHtml = '';
-    for(var i=1;i<=7;i++){
-      var filled = i <= (d.streak||0);
-      var isToday = i === (d.streak||0) + 1;
-      dotsHtml += '<div style="flex:1;height:8px;border-radius:4px;background:'+(filled?'#ffd700':(isToday?'#555':'#333'))+';margin:0 2px;"></div>';
-    }
-    var daysHtml = '';
-    for(var i=1;i<=7;i++){
-      var filled = i <= (d.streak||0);
-      daysHtml += '<div style="flex:1;text-align:center;font-size:0.75rem;color:'+(filled?'#ffd700':'#666')+';">Day'+i+'<br><b>'+rewards[i-1]+'</b></div>';
-    }
-    var innerHtml = '<div style="background:linear-gradient(135deg,#ff8c00,#ffd700);border-radius:20px;padding:25px;text-align:center;color:#000;max-width:380px;">';
-    innerHtml += '<div style="font-size:1.3rem;font-weight:bold;margin-bottom:8px;">🔥 連續登入</div>';
-    innerHtml += '<div style="font-size:3rem;font-weight:bold;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3);">'+(d.streak>0?'Day '+d.streak:'Day 0')+'</div>';
-    innerHtml += '<div style="font-size:1rem;opacity:0.9;">下一個獎勵：$'+nextReward+'</div>';
-    innerHtml += '<div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:15px;margin-top:15px;">';
-    innerHtml += '<div style="display:flex;gap:4px;margin-bottom:10px;">'+dotsHtml+'</div>';
-    innerHtml += '<div style="display:flex;font-size:0.8rem;">'+daysHtml+'</div>';
-    innerHtml += '</div>';
+    var html = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">'+(d.streak>=3?'🔥':'⭐')+'</div>';
+    html += '<div style="color:#ffd700;font-size:1.5rem;font-weight:bold;">連續登入 '+d.streak+' 天</div>';
+    html += '<div style="color:#aaa;margin:10px 0;">'+(d.canClaim?'✅ 今日可領取！':'⏰ 明日再来')+'</div>';
+    html += '<div style="font-size:2rem;margin:15px 0;">💰 '+d.reward+' 金幣</div>';
     if(d.canClaim){
-      innerHtml += '<button onclick="claimPokerDaily()" style="width:100%;padding:14px;background:#1a1a2e;border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#ffd700;margin-top:15px;">領取登入獎勵</button>';
+      html += '<button onclick="claimPokerDaily()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">領取獎勵</button>';
     } else {
-      innerHtml += '<div style="width:100%;padding:14px;background:rgba(0,0,0,0.2);border-radius:12px;font-size:1rem;color:#666;margin-top:15px;text-align:center;">已領取</div>';
+      html += '<div style="color:#888;font-size:0.85rem;">已領取</div>';
     }
-    innerHtml += '<button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,0,0,0.3);border-radius:12px;font-size:1rem;cursor:pointer;color:#000;margin-top:10px;opacity:0.85;">返回選單</button>';
-    innerHtml += '</div>';
-    modal.innerHTML = '<div style="max-width:420px;width:95%;">'+innerHtml+'</div>';
-    modal.classList.add('show');
+    html += '<div style="margin-top:15px;color:#666;font-size:0.8rem;">連續登入獎勵：1天100/3天300/7天1000</div>';
+    document.getElementById('pokerLoginRewardContent').innerHTML = html;
+    document.getElementById('pokerLoginRewardModal').classList.add('show');
   }).catch(()=>{alert('載入失敗');});
 }
-
+function closePokerLoginRewardModal(){document.getElementById('pokerLoginRewardModal').classList.remove('show');}
 function claimPokerDaily(){
   fetch('/api/poker/claim-daily-bonus',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
     if(d.success){
@@ -1279,95 +1279,134 @@ function claimPokerDaily(){
 
 function showPokerVideo() {
   if(!currentUser){alert('請先登入');return;}
-  var modal = document.getElementById('playerMenuModal');
-  fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
-    var innerHtml = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;text-align:center;color:#fff;max-width:380px;">';
-    innerHtml += '<h2 style="color:#ffd700;margin-bottom:15px;">🎬 看影片領獎勵</h2>';
-    if(d.alreadyClaimed){
-      innerHtml += '<div style="font-size:3rem;margin-bottom:10px;">✅</div>';
-      innerHtml += '<div style="color:#aaa;margin-bottom:15px;">今日已領取</div>';
-      innerHtml += '<div style="background:#222;border-radius:12px;padding:15px;margin-bottom:15px;">';
-      innerHtml += '<div style="color:#ffd700;font-size:1.5rem;font-weight:bold;">+'+d.reward+'</div>';
-      innerHtml += '<div style="color:#888;font-size:0.85rem;">金幣已發放</div></div>';
-    } else {
-      innerHtml += '<div style="font-size:3rem;margin-bottom:10px;">💰</div>';
-      innerHtml += '<div style="color:#ffd700;font-size:2rem;font-weight:bold;margin-bottom:5px;">+1,000 金幣</div>';
-      innerHtml += '<div style="color:#aaa;margin-bottom:15px;">觀看影片後領取獎勵</div>';
-      innerHtml += '<a href="https://www.youtube.com/watch?v=9mmqyYwuSbg" target="_blank" onclick="setTimeout(function(){claimPokerVideoComplete();},3000);" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#fff;text-decoration:none;margin-bottom:10px;">🎬 觀看影片</a>';
-      innerHtml += '<div style="color:#666;font-size:0.8rem;margin-bottom:15px;">點擊上方按鈕觀看影片（3秒後自動標記完成）</div>';
-    }
-    innerHtml += '<button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:#333;border:none;border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:10px;">返回選單</button>';
-    innerHtml += '</div>';
-    modal.innerHTML = '<div style="max-width:420px;width:95%;">'+innerHtml+'</div>';
-    modal.classList.add('show');
-  }).catch(()=>{alert('載入失敗');});
+  document.getElementById('pokerVideoModal').classList.add('show');
+  document.getElementById('pokerVideoStatus').innerHTML = '<a href="https://www.youtube.com/watch?v=9mmqyYwuSbg" target="_blank" style="color:#ffd700;font-size:0.9rem;">📺 點我看影片</a><br><button onclick="confirmPokerVideo()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">確認完成觀看</button>';
 }
-
-function claimPokerVideoComplete(){
-  fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
+function closePokerVideoModal(){document.getElementById('pokerVideoModal').classList.remove('show');}
+function confirmPokerVideo(){
+  fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({})}).then(r=>r.json()).then(d=>{
     if(d.success){
-      currentUser.score = (currentUser.score||0) + d.reward;
+      alert('觀看完成！獲得 '+d.reward+' 金幣');
+      currentUser.score = (currentUser.score||0) + (d.reward||1000);
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
-      alert('領取成功！獲得 '+d.reward+' 金幣');
-      showPokerVideo();
-    }
-  });
+      closePokerVideoModal();
+    } else { alert(d.message||'領取失敗'); }
+  }).catch(()=>{alert('網路錯誤');});
 }
 
 function showPokerLevel() {
   if(!currentUser){alert('請先登入');return;}
-  var modal = document.getElementById('playerMenuModal');
   fetch('/api/poker/player-level/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
-    var tiers = [
-      {name:'青銅',minLv:1,maxLv:10,minBet:0,color:'#CD7F32'},
-      {name:'白銀',minLv:11,maxLv:20,minBet:10000,color:'#C0C0C0'},
-      {name:'黃金',minLv:21,maxLv:30,minBet:50000,color:'#FFD700'},
-      {name:'白金',minLv:31,maxLv:40,minBet:200000,color:'#E5E4E2'},
-      {name:'鑽石',minLv:41,maxLv:50,minBet:500000,color:'#B9F2FF'},
-    ];
-    var tierBars = tiers.map(function(t){
-      var active = d.level >= t.minLv;
-      return '<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><span style="color:'+t.color+';font-weight:bold;">'+t.name+'</span><span style="color:#888;">Lv.'+t.minLv+'-'+t.maxLv+'</span></div><div style="background:#333;border-radius:4px;height:8px;overflow:hidden;"><div style="width:'+(active?100:0)+'%;height:100%;background:'+t.color+';"></div></div><div style="font-size:0.75rem;color:#666;text-align:right;">門檻 $'+t.minBet.toLocaleString()+'</div></div>';
-    }).join('');
-    var innerHtml = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">';
-    innerHtml += '<h2 style="color:#ffd700;margin-bottom:15px;text-align:center;">📊 等級與經驗值</h2>';
-    innerHtml += '<div style="text-align:center;margin-bottom:15px;"><span style="background:linear-gradient(135deg,#ffd700,#ffaa00);padding:5px 20px;border-radius:20px;font-size:1.5rem;font-weight:bold;color:#000;">Lv.'+d.level+' '+d.title+'</span></div>';
-    innerHtml += '<div style="text-align:center;margin-bottom:15px;color:#aaa;">本週下注: $'+(d.weeklyBet||0).toLocaleString()+'</div>';
-    innerHtml += '<div style="margin-bottom:15px;">'+tierBars+'</div>';
-    innerHtml += '<div style="text-align:center;color:#888;font-size:0.85rem;">再下注 $'+(d.nextBet||0).toLocaleString()+' 即可升級</div>';
-    innerHtml += '<button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:#333;border:none;border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">返回選單</button>';
-    innerHtml += '</div>';
-    modal.innerHTML = '<div style="max-width:420px;width:95%;">'+innerHtml+'</div>';
-    modal.classList.add('show');
+    var html = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">🏆</div>';
+    html += '<div style="color:#ffd700;font-size:1.8rem;font-weight:bold;">Lv.'+d.level+' '+d.title+'</div>';
+    html += '<div style="color:#aaa;margin:5px 0;">'+d.tier+' | 本週下注: '+(d.weeklyBet||0)+'</div>';
+    html += '<div style="margin:15px 0;"><div style="background:#333;border-radius:10px;height:20px;overflow:hidden;"><div style="width:'+(d.progress||0)+'%;height:100%;background:linear-gradient(90deg,#ffd700,#ff6600);"></div></div></div>';
+    html += '<div style="color:#888;font-size:0.85rem;">'+(d.neededBet||0)+' 金幣後可升級</div>';
+    html += '<div style="margin-top:15px;padding:10px;background:#12122a;border-radius:10px;text-align:left;">';
+    html += '<div style="color:#aaa;font-size:0.8rem;margin-bottom:5px;">各等級所需下注量：</div>';
+    html += '<div style="font-size:0.75rem;color:#888;">青銅 0 | 白銀 1000 | 黃金 5000 | 白金 30000 | 鑽石 100000</div>';
+    html += '</div>';
+    document.getElementById('pokerLevelContent').innerHTML = html;
+    document.getElementById('pokerLevelModal').classList.add('show');
   }).catch(()=>{alert('載入失敗');});
 }
+function closePokerLevelModal(){document.getElementById('pokerLevelModal').classList.remove('show');}
 
 function showPokerTasks() {
   if(!currentUser){alert('請先登入');return;}
-  var modal = document.getElementById('playerMenuModal');
   fetch('/api/poker/daily-tasks',{headers:{'Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
-    var taskItems = d.tasks.map(function(t){
-      var pct = Math.min(100, Math.round((t.progress/t.target)*100));
-      return '<div style="background:#12122a;border-radius:12px;padding:12px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-weight:bold;">'+t.name+'</span><span style="color:#ffd700;">+'+t.reward+'</span></div><div style="background:#333;border-radius:4px;height:6px;margin-bottom:5px;"><div style="width:'+pct+'%;height:100%;background:#ffd700;"></div></div><div style="color:#888;font-size:0.75rem;">'+t.progress+' / '+t.target+' | '+(t.completed?'<span style="color:#4f4;">已完成</span>':(t.alreadyClaimed?'<span style="color:#aaa;">已領取</span>':'<span style="color:#ff6b6b;">未完成</span>'))+'</div></div>';
-    }).join('');
-    var innerHtml = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;color:#fff;max-width:380px;">';
-    innerHtml += '<h2 style="color:#ffd700;margin-bottom:15px;text-align:center;">📋 每日任務</h2>';
-    innerHtml += '<div style="margin-bottom:15px;text-align:center;color:#aaa;">🔥 連續 '+d.streak+' 天 | 今日已完成 '+(d.tasks.filter(function(t){return t.completed;}).length)+'/'+d.tasks.length+' 任務</div>';
-    innerHtml += '<div style="max-height:300px;overflow-y:auto;">'+taskItems+'</div>';
-    innerHtml += '<button onclick="showPlayerMenu()" style="width:100%;padding:12px;background:#333;border:none;border-radius:12px;font-size:1rem;cursor:pointer;color:#fff;margin-top:15px;">返回選單</button>';
-    innerHtml += '</div>';
-    modal.innerHTML = '<div style="max-width:420px;width:95%;">'+innerHtml+'</div>';
-    modal.classList.add('show');
+    if(!d.success){alert(d.message||'載入失敗');return;}
+    var html = '<div style="margin-bottom:10px;text-align:center;color:#ffd700;font-size:0.9rem;">🔥 今日任務 | 連續 '+d.streak+' 天</div>';
+    html += '<div style="text-align:left;">';
+    d.tasks.forEach(function(t){
+      var prog = t.progress||0;
+      var tgt = t.target||1;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#12122a;border-radius:10px;margin-bottom:8px;">';
+      html += '<div style="flex:1;"><div style="font-weight:bold;">'+t.name+'</div><div style="color:#888;font-size:0.8rem;">'+t.desc+'</div>';
+      html += '<div style="margin-top:4px;background:#333;border-radius:4px;height:6px;overflow:hidden;"><div style="width:'+Math.min(100,Math.round(prog/tgt*100))+'%;height:100%;background:#ffd700;"></div></div>';
+      html += '<div style="color:#666;font-size:0.7rem;margin-top:2px;">'+prog+'/'+tgt+'</div></div>';
+      html += '<div style="text-align:right;margin-left:10px;"><div style="color:#ffd700;">+'+t.reward+'</div>';
+      if(t.alreadyClaimed){html += '<div style="color:#4f4;font-size:0.75rem;">已領取</div>';}
+      else if(t.completed){html += '<button onclick="claimPokerTask(\''+t.id+'\')" style="padding:5px 10px;background:#ffd700;border:none;border-radius:8px;font-size:0.8rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">領取</button>';}
+      else {html += '<div style="color:#666;font-size:0.75rem;">未完成</div>';}
+      html += '</div></div>';
+    });
+    html += '</div>';
+    document.getElementById('pokerTasksContent').innerHTML = html;
+    document.getElementById('pokerTasksModal').classList.add('show');
   }).catch(()=>{alert('載入失敗');});
 }
-
+function closePokerTasksModal(){document.getElementById('pokerTasksModal').classList.remove('show');}
 function claimPokerTask(taskId){
   fetch('/api/poker/claim-task',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({taskId:taskId})}).then(r=>r.json()).then(d=>{
-    if(d.success){alert('任務完成！獲得 '+d.reward+' 金幣');currentUser.score=(currentUser.score||0)+d.reward;localStorage.setItem('pokerUser',JSON.stringify(currentUser));showPokerTasks();}
-    else {alert(d.message||'領取失敗');}
+    if(d.success){
+      alert('任務完成！獲得 '+d.reward+' 金幣');
+      currentUser.score = (currentUser.score||0) + (d.reward||0);
+      localStorage.setItem('pokerUser',JSON.stringify(currentUser));
+      showPokerTasks();
+    } else { alert(d.message||'領取失敗'); }
   }).catch(()=>{alert('網路錯誤');});
 }
 
+function showPokerHelp() {
+  document.getElementById('pokerHelpModal').classList.add('show');
+  document.getElementById('pokerHelpPage1').style.display='block';
+  document.getElementById('pokerHelpPage2').style.display='none';
+}
+function showPokerHelpPage(page){
+  document.getElementById('pokerHelpPage1').style.display=page===1?'block':'none';
+  document.getElementById('pokerHelpPage2').style.display=page===2?'block':'none';
+}
+function closePokerHelpModal(){document.getElementById('pokerHelpModal').classList.remove('show');}
 
+function showPokerFeedback() {
+  document.getElementById('pokerFeedbackModal').classList.add('show');
+  document.getElementById('pokerFeedbackStatus').textContent='';
+}
+function closePokerFeedbackModal(){document.getElementById('pokerFeedbackModal').classList.remove('show');}
+function submitPokerFeedback(){
+  var fb = document.getElementById('pokerFeedbackText').value.trim();
+  if(!fb){alert('請輸入內容');return;}
+  document.getElementById('pokerFeedbackStatus').textContent='送出中...';
+  fetch('/api/poker/feedback',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({feedback:fb})}).then(r=>r.json()).then(d=>{
+    if(d.success){
+      document.getElementById('pokerFeedbackStatus').textContent='✅ 送出成功！';
+      document.getElementById('pokerFeedbackText').value='';
+      setTimeout(closePokerFeedbackModal,1500);
+    } else { document.getElementById('pokerFeedbackStatus').textContent='❌ 送出失敗'; }
+  }).catch(()=>{document.getElementById('pokerFeedbackStatus').textContent='❌ 網路錯誤';});
+}
+function editPokerProfile(){
+  alert('個人資料編輯功能即將推出！');
+}
+function showPokerHistory() {
+  if(!currentUser){alert('請先登入');return;}
+  fetch('/api/poker/history/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
+    var html = '';
+    if(d.history && d.history.length > 0){
+      d.history.slice(0,20).forEach(function(h){
+        var cls = h.result === 'win' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
+        var badge = h.result === 'win' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
+        var name = h.result === 'win' ? '你' : h.result === 'tie' ? '平手' : '電腦';
+        html += '<div class="history-item '+cls+'">';
+        html += '<div class="history-badge">'+badge+'</div>';
+        html += '<div class="history-info">';
+        html += '<div class="result-name">'+name+'</div>';
+        html += '<div class="result-detail">'+h.hand_name+' | '+h.pot+' 金幣</div>';
+        html += '<div class="result-detail">'+String(h.time||'').substring(0,16)+'</div>';
+        html += '</div></div>';
+      });
+    } else {
+      html = '<div style="text-align:center;color:#555;padding:2rem">還沒有記錄</div>';
+    }
+    document.getElementById('historyList').innerHTML = html;
+    document.getElementById('gameScreen').style.display='none';
+    document.getElementById('historyScreen').style.display='block';
+    document.getElementById('startScreen').style.display='none';
+  }).catch(function(){
+    // fallback to local history
+    showHistory();
+  });
+}
 
 </script>
