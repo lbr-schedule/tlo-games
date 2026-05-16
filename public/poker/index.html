@@ -250,10 +250,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     </div>
 
 <div class="modal-overlay" id="pokerProfileModal" onclick="if(event.target===this)closePokerProfileModal()">
-  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
-    <h3 style="color:#ffd700;margin:0 0 16px;">個人資料</h3>
+  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:380px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+    <h3 style="color:#ffd700;margin:0 0 16px;">👤 個人資料</h3>
     <div id="pokerProfileContent" style="color:#fff;"></div>
-    <button onclick="closePokerProfileModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:16px;">關閉</button>
   </div>
 </div>
 
@@ -1212,31 +1211,198 @@ function showPlayerMenu() {
 function closePlayerMenu() {
   document.getElementById('playerMenuModal').classList.remove('show');
 }
+var _pokerProfileCache = null;
+var _pokerProfileCacheTime = 0;
+
 function showPokerProfile() {
   if(!currentUser){alert('請先登入');return;}
-  fetch('/api/poker/profile/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
-    if(d.success){
-      var p = d.profile;
-      var s = d.stats || {};
-      var html = '<div style="text-align:center;margin-bottom:15px;"><div style="font-size:3rem;margin-bottom:5px;">👤</div>';
-      html += '<div style="color:#ffd700;font-weight:bold;font-size:1.1rem;">'+currentUser.username+'</div>';
-      html += '<div style="color:#aaa;font-size:0.85rem;">Lv.'+(p.level||1)+' | '+(p.tier||'青銅')+' | '+(p.title||'菜鳥')+'</div></div>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+p.games_played+'</div><div style="color:#888;font-size:0.75rem;">遊戲次數</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#4f4;font-size:1.2rem;font-weight:bold;">'+p.games_won+'</div><div style="color:#888;font-size:0.75rem;">獲勝次數</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#aaa;font-size:1.2rem;font-weight:bold;">'+(p.win_rate||0)+'%</div><div style="color:#888;font-size:0.75rem;">勝率</div></div>';
-      html += '<div style="background:#12122a;padding:8px;border-radius:8px;text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">'+p.score+'</div><div style="color:#888;font-size:0.75rem;">金幣</div></div>';
-      html += '</div>';
-      html += '<div style="text-align:left;margin-top:10px;"><div style="margin-bottom:8px;"><span style="color:#888;">📊 總下注：</span><span>'+(p.total_bet||0)+'</span></div>';
-      html += '<div style="margin-bottom:8px;"><span style="color:#888;">🏆 總贏額：</span><span>'+(p.total_won||0)+'</span></div>';
-      html += '<div style="margin-bottom:8px;"><span style="color:#888;">🔥 登入連續：</span><span>'+(s.login_streak||0)+' 天 '+(s.streak_title||'')+'</span></div>';
-      html += '<div style="margin-bottom:8px;"><span style="color:#888;">📅 加入日期：</span><span>'+(p.member_since||'未知').substring(0,10)+'</span></div></div>';
-      html += '<button onclick="editPokerProfile()" style="width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">編輯資料</button>';
-      document.getElementById('pokerProfileContent').innerHTML = html;
-      document.getElementById('pokerProfileModal').classList.add('show');
-    }
-  }).catch(()=>{alert('載入失敗');});
+  var modal = document.getElementById('pokerProfileModal');
+  modal.style.display = 'flex';
+  
+  // Show cached data if fresh (<5 min)
+  if(_pokerProfileCache && _pokerProfileCache.profile && _pokerProfileCache.profile.username === currentUser.username && Date.now() - _pokerProfileCacheTime < 300000) {
+    renderPokerProfile(_pokerProfileCache);
+  } else {
+    loadPokerProfile(false);
+  }
 }
+
+async function loadPokerProfile(silent) {
+  var cont = document.getElementById('pokerProfileContent');
+  if(!cont) return;
+  if(!silent) cont.innerHTML = '<div style="padding:20px;color:#ffd700;text-align:center;">⚙️ 載入中...</div>';
+  if(!currentUser) return;
+  
+  try {
+    var r = await fetch('/api/poker/profile/'+encodeURIComponent(currentUser.username));
+    var d = await r.json();
+    if(!d.success) { cont.innerHTML = '<p style="color:#ff6b6b;">'+d.message+'</p>'; return; }
+    _pokerProfileCache = d;
+    _pokerProfileCacheTime = Date.now();
+    renderPokerProfile(d);
+  } catch(e) { cont.innerHTML = '<p style="color:#ff6b6b;">載入失敗: '+e.message+'</p>'; }
+}
+
+function renderPokerProfile(d) {
+  var cont = document.getElementById('pokerProfileContent');
+  if(!cont) return;
+  var p = d.profile || {};
+  var tc = '#ffd700'; // tier color
+  var av = p.avatar_url || '/poker/avatar1.jpg';
+  
+  var html = '';
+  // Avatar with edit icon
+  html += '<div style="position:relative;display:inline-block;margin:10px auto;cursor:pointer;" onclick="openPokerAvatarModal()">';
+  html += '<img src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;" />';
+  html += '<div style="position:absolute;bottom:-4px;right:-4px;background:'+tc+';color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;">Lv.'+(p.level||1)+'</div>';
+  html += '<div style="position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;">✏️</div>';
+  html += '</div>';
+  
+  html += '<div style="font-size:1.1rem;font-weight:bold;color:#fff;margin-top:8px;">'+currentUser.username+'</div>';
+  html += '<div style="color:'+tc+';font-size:0.85rem;margin-bottom:12px;">'+(p.tier||'青銅')+'</div>';
+  
+  // Birthday
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">生日</div>';
+  if(p.birthday) { html += '<div style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;">'+p.birthday+'</div>'; }
+  else { html += '<div onclick="openPokerBirthdayModal()" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;cursor:pointer;font-size:0.9rem;">點擊設定</div>'; }
+  html += '</div>';
+  
+  // Gender
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">性別</div>';
+  if(p.gender) { html += '<div style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;font-size:0.9rem;">'+p.gender+'</div>'; }
+  else { html += '<div onclick="openPokerGenderModal()" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:#ffd700;cursor:pointer;font-size:0.9rem;">點擊設定</div>'; }
+  html += '</div>';
+  
+  // Personality
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">個性</div>';
+  html += '<div onclick="openPokerTagModal(\'personality\',\'性格\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.personality_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.personality_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '</div>';
+  
+  // Interest
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">興趣</div>';
+  html += '<div onclick="openPokerTagModal(\'interest\',\'興趣\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.interest_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.interest_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '</div>';
+  
+  // Badge
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">身份徽章</div>';
+  html += '<div onclick="openPokerTagModal(\'badge\',\'徽章\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.badge_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.badge_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '</div>';
+  
+  // Mood
+  html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">心情小語</div>';
+  html += '<div onclick="openPokerTagModal(\'mood\',\'心情\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.mood?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.mood||'點擊設定')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '</div>';
+  
+  html += '<div style="margin-top:16px;font-size:0.8rem;color:#666;">💰 金幣: '+(p.score||0)+' | 遊戲: '+(p.games_played||0)+'勝'+(p.games_won||0)+'</div>';
+  
+  cont.innerHTML = html;
+}
+
+function closePokerProfileModal() {
+  document.getElementById('pokerProfileModal').style.display = 'none';
+}
+
+function openPokerAvatarModal() {
+  document.getElementById('pokerAvatarModal').style.display = 'flex';
+  updatePokerAvatarSelection();
+}
+function closePokerAvatarModal() { document.getElementById('pokerAvatarModal').style.display = 'none'; }
+function updatePokerAvatarSelection() {
+  if(!_pokerProfileCache || !_pokerProfileCache.profile) return;
+  var current = _pokerProfileCache.profile.avatar_url || '/poker/avatar1.jpg';
+  document.querySelectorAll('#pokerAvatarModal img').forEach(function(img) {
+    img.parentElement.style.border = img.src.includes(current) ? '3px solid #ffd700' : '3px solid transparent';
+  });
+}
+function selectPokerAvatar(el, path) {
+  document.querySelectorAll('#pokerAvatarModal img').forEach(function(img) { img.parentElement.style.border = '3px solid transparent'; });
+  el.style.border = '3px solid #ffd700';
+  window._selectedPokerAvatar = path;
+}
+function savePokerAvatar() {
+  if(!window._selectedPokerAvatar || !currentUser) return;
+  fetch('/api/poker/profile', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
+    body:JSON.stringify({username:currentUser.username, avatar_url:window._selectedPokerAvatar})
+  }).then(r=>r.json()).then(function(d) {
+    if(d.success) {
+      closePokerAvatarModal();
+      loadPokerProfile(true);
+    } else { alert(d.message||'儲存失敗'); }
+  });
+}
+
+function openPokerGenderModal() { document.getElementById('pokerGenderModal').style.display = 'flex'; window._selectedPokerGender = ''; }
+function closePokerGenderModal() { document.getElementById('pokerGenderModal').style.display = 'none'; }
+function selectPokerGender(el, g) {
+  document.querySelectorAll('#pokerGenderModal button').forEach(function(b){b.style.border='1px solid #555';b.style.background='#333';});
+  el.style.border = '2px solid #ffd700';
+  el.style.background = '#555';
+  window._selectedPokerGender = g;
+}
+function confirmPokerGender() {
+  if(!window._selectedPokerGender) { alert('請選擇性別'); return; }
+  fetch('/api/poker/profile', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
+    body:JSON.stringify({username:currentUser.username, gender:window._selectedPokerGender})
+  }).then(r=>r.json()).then(function(d) {
+    if(d.success) { closePokerGenderModal(); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+  });
+}
+
+function openPokerBirthdayModal() { document.getElementById('pokerBirthdayModal').style.display = 'flex'; }
+function closePokerBirthdayModal() { document.getElementById('pokerBirthdayModal').style.display = 'none'; }
+function submitPokerBirthday() {
+  var bd = document.getElementById('pokerBirthdayInput').value;
+  if(!bd) { alert('請選擇生日'); return; }
+  fetch('/api/poker/profile', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
+    body:JSON.stringify({username:currentUser.username, birthday:bd})
+  }).then(r=>r.json()).then(function(d) {
+    if(d.success) { closePokerBirthdayModal(); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+  });
+}
+
+var POKER_TAG_OPTIONS = {
+  personality:['內向','外向','樂觀','沉穩','活潑','理性','感性','幽默','細心','果斷'],
+  interest:['音樂','運動','旅遊','美食','電影','閱讀','遊戲','攝影','設計','程式'],
+  badge:['🌟 新人','💪 活躍','🔥 忠誠','🏆 冠軍','🎯 精準','💰 富豪','🎲 賭神','📖 求知'],
+  mood:['開心','難過','生氣','興奮','平靜','疲憊','期待','滿足']
+};
+function openPokerTagModal(type, title) {
+  window._pokerTagType = type;
+  window._pokerTagValue = '';
+  document.getElementById('pokerTagModalTitle').textContent = title;
+  var html = '';
+  (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt) {
+    html += '<button onclick="selectPokerTag(this,''+opt+'')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">'+opt+'</button>';
+  });
+  document.getElementById('pokerTagModalContent').innerHTML = html;
+  document.getElementById('pokerTagModal').style.display = 'flex';
+}
+function selectPokerTag(el, v) {
+  document.querySelectorAll('#pokerTagModalContent button').forEach(function(b){b.style.border='1px solid #555';});
+  el.style.border = '2px solid #ffd700';
+  el.style.background = '#555';
+  window._pokerTagValue = v;
+}
+function confirmPokerTag() {
+  if(!window._pokerTagValue) { alert('請選擇'); return; }
+  var data = {username:currentUser.username};
+  data[window._pokerTagType] = window._pokerTagValue;
+  fetch('/api/poker/profile', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
+    body:JSON.stringify(data)
+  }).then(r=>r.json()).then(function(d) {
+    if(d.success) { document.getElementById('pokerTagModal').style.display = 'none'; loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+  });
+}
+
+function editPokerProfile() { showPokerProfile(); }
 function closePokerProfileModal(){document.getElementById('pokerProfileModal').classList.remove('show');}
 
 function showPokerLoginReward() {
