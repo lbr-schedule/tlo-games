@@ -854,4 +854,31 @@ function getLevelInfo(weeklyBet) {
 
 // 確保模組匯出前的初始化工
 
+// ============ 反饋 ============
+router.post('/feedback', async (req, res) => {
+    try {
+        if (!currentUser) return res.json({ success: false, message: '請先登入' });
+        const { feedback } = req.body;
+        if (!feedback || feedback.trim().length < 5) {
+            return res.json({ success: false, message: '反饋內容至少5個字' });
+        }
+        // 建立反饋表格（如果不存在）
+        await req.app.locals.pokerDb.execute(`
+            CREATE TABLE IF NOT EXISTS poker_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                feedback TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await req.app.locals.pokerDb.execute(
+            'INSERT INTO poker_feedback (username, feedback) VALUES (?, ?)',
+            [currentUser.username, feedback.trim()]
+        );
+        res.json({ success: true, message: '送出成功！感謝您的意見！' });
+    } catch(e) {
+        res.json({ success: false, message: '送出失敗: ' + e.message });
+    }
+});
+
 module.exports = router;
