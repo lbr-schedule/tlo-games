@@ -1848,6 +1848,7 @@ app.post('/api/roulette/save-history', async (req, res) => {
     }
 });
 
+<<<<<<< Updated upstream
 // 輪盤遊戲 - 玩家反饋（發送到 Discord）
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1491323033952473098/OYa经营活动/PhCXZ4K_gREhKGjd1YPaXp0nGdCXa4xYqJqJ8SpW7Y1lvNM3sMh-FqLGRm3Z4qZq';
 
@@ -1935,6 +1936,8 @@ app.get('/api/roulette/admin/feedback', async (req, res) => {
     }
 });
 
+=======
+>>>>>>> Stashed changes
 // 輪盤遊戲 - 清理過多歷史（最多保留1000筆）
 async function cleanupOldHistory() {
     if (!rouletteDbAvailable) return;
