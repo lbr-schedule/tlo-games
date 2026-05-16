@@ -137,6 +137,13 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 }
 .card-shuffle { animation: shuffleMove 0.4s ease-in-out; }
 
+
+.video-popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+.video-popup.show { display: flex; }
+.video-popup iframe { width: 90%; max-width: 500px; height: 280px; border-radius: 12px; margin: 10px 0; }
+.video-popup .close-btn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+.video-popup .claim-btn { width: 90%; max-width: 300px; padding: 14px; background: linear-gradient(135deg,#ffd700,#ffaa00); border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 10px; }
+.video-popup .claim-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -1462,19 +1469,37 @@ function claimPokerDaily(){
   }).catch(()=>{alert('網路錯誤');});
 }
 
+var pokerVideoWatched = false;
+
 function showPokerVideo() {
   if(!currentUser){alert('請先登入');return;}
-  document.getElementById('pokerVideoModal').classList.add('show');
-  document.getElementById('pokerVideoStatus').innerHTML = '<a href="https://www.youtube.com/watch?v=9mmqyYwuSbg" target="_blank" style="color:#ffd700;font-size:0.9rem;">📺 點我看影片</a><br><button onclick="confirmPokerVideo()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">確認完成觀看</button>';
+  pokerVideoWatched = false;
+  document.getElementById('pokerVideoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
+  document.getElementById('pokerVideoPopup').classList.add('show');
+  document.getElementById('pokerVideoClaimSubmit').disabled = true;
+  document.getElementById('pokerVideoClaimSubmit').textContent = '請等待...';
+  // 30秒後可領取
+  setTimeout(() => {
+    pokerVideoWatched = true;
+    document.getElementById('pokerVideoClaimSubmit').disabled = false;
+    document.getElementById('pokerVideoClaimSubmit').textContent = '✅ 領取 1000 金幣';
+  }, 30000);
 }
-function closePokerVideoModal(){document.getElementById('pokerVideoModal').classList.remove('show');}
-function confirmPokerVideo(){
+
+function closePokerVideoPopup() {
+  document.getElementById('pokerVideoPopup').classList.remove('show');
+  document.getElementById('pokerVideoFrame').src = '';
+}
+
+function claimPokerVideoReward() {
+  if(!currentUser){alert('請先登入');return;}
+  if(!pokerVideoWatched){alert('請先看完影片');return;}
   fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({})}).then(r=>r.json()).then(d=>{
     if(d.success){
       alert('觀看完成！獲得 '+d.reward+' 金幣');
       currentUser.score = (currentUser.score||0) + (d.reward||1000);
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
-      closePokerVideoModal();
+      closePokerVideoPopup();
     } else { alert(d.message||'領取失敗'); }
   }).catch(()=>{alert('網路錯誤');});
 }
