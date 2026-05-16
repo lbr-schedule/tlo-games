@@ -245,6 +245,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 <!-- 玩家專區選單 -->
 <div class="modal-overlay" id="playerMenuModal" onclick="if(event.target===this)closePlayerMenu()">
+  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;" onclick="event.stopPropagation()">
   <div class="modal">
     <h2>☰ 玩家專區</h2>
     <div style="display:flex;flex-direction:column;gap:8px;">
@@ -324,10 +325,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   </div>
 </div>
 
-    <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
-  </div>
-</div>
-
 <!-- 連續登入 Modal -->
 <div class="modal-overlay" id="pokerLoginRewardModal">
   <div class="modal" style="max-width:360px;">
@@ -337,18 +334,27 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   </div>
 </div>
 
-<!-- 看影片 Modal -->
+<!-- 看影片 Modal (old modal - kept for compatibility) -->
 <div class="modal-overlay" id="pokerVideoModal">
   <div class="modal" style="max-width:360px;">
     <h2>🎬 看影片領獎勵</h2>
     <div style="color:#fff;text-align:center;margin:15px 0;">
       <p style="margin-bottom:15px;">觀看影片即可獲得</p>
       <div style="font-size:2rem;margin-bottom:15px;">💰 1,000 金幣</div>
-      <button onclick="claimPokerVideo()" id="pokerVideoClaimBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#ff4444,#cc0000);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#fff;margin-bottom:10px;">領取獎勵</button>
+      <button onclick="showPokerVideo()" id="pokerVideoClaimBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-bottom:10px;">觀看影片</button>
       <p id="pokerVideoStatus" style="color:#aaa;font-size:0.85rem;"></p>
     </div>
     <button onclick="closePokerVideoModal()" style="width:100%;padding:12px;background:#333;color:#fff;border:none;border-radius:10px;cursor:pointer;">關閉</button>
   </div>
+</div>
+
+<!-- 看片彈窗 (new youtube popup) -->
+<div class="video-popup" id="pokerVideoPopup">
+    <button class="close-btn" onclick="closePokerVideoPopup()">✕</button>
+    <h3 style="color: #ffd700; margin-bottom: 10px;">🎬 觀看影片領取1000金幣</h3>
+    <iframe id="pokerVideoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
+    <button class="claim-btn" id="pokerVideoClaimSubmit" onclick="claimPokerVideoReward()" disabled>請等待...</button>
 </div>
 
 <!-- 等級 Modal -->
@@ -416,7 +422,14 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   </div>
 </div>
 
-<div class="result-overlay" id="resultOverlay">
+<!-- 歷史紀錄 Modal -->
+<div class="modal-overlay" id="pokerHistoryModal">
+  <div class="modal" style="max-width:380px;">
+    <h2>📜 遊戲紀錄</h2>
+    <div id="pokerHistoryContent" style="color:#fff;text-align:left;margin-top:10px;max-height:400px;overflow-y:auto;"></div>
+    <button onclick="closePokerHistoryModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div><div class="result-overlay" id="resultOverlay">
   <div class="result-box" style="max-width:380px;text-align:center">
     <div id="resultImg" style="margin-bottom:0.5rem;text-align:center"></div>
     <h2 id="resultTitle" style="margin-bottom:0.3rem">結算</h2>
@@ -1483,19 +1496,26 @@ function claimPokerDaily(){
 
 var pokerVideoWatched = false;
 
+function closePokerVideoModal(){document.getElementById("pokerVideoModal").classList.remove("show");}
 function showPokerVideo() {
   if(!currentUser){alert('請先登入');return;}
-  pokerVideoWatched = false;
-  document.getElementById('pokerVideoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
-  document.getElementById('pokerVideoPopup').classList.add('show');
-  document.getElementById('pokerVideoClaimSubmit').disabled = true;
-  document.getElementById('pokerVideoClaimSubmit').textContent = '請等待...';
-  // 30秒後可領取
-  setTimeout(() => {
-    pokerVideoWatched = true;
-    document.getElementById('pokerVideoClaimSubmit').disabled = false;
-    document.getElementById('pokerVideoClaimSubmit').textContent = '✅ 領取 1000 金幣';
-  }, 30000);
+  // Use new popup if exists, else fallback to old modal
+  var popup = document.getElementById('pokerVideoPopup');
+  if(popup) {
+    pokerVideoWatched = false;
+    document.getElementById('pokerVideoFrame').src = 'https://www.youtube.com/embed/9mmqyYwuSbg?autoplay=1';
+    popup.classList.add('show');
+    var btn = document.getElementById('pokerVideoClaimSubmit');
+    if(btn) { btn.disabled = true; btn.textContent = '請等待...'; }
+    setTimeout(() => {
+      pokerVideoWatched = true;
+      var b = document.getElementById('pokerVideoClaimSubmit');
+      if(b) { b.disabled = false; b.textContent = '✅ 領取 1000 金幣'; }
+    }, 30000);
+  } else {
+    // Fallback to old modal
+    document.getElementById('pokerVideoModal').classList.add('show');
+  }
 }
 
 function closePokerVideoPopup() {
@@ -1534,6 +1554,8 @@ function showPokerLevel() {
 }
 function closePokerLevelModal(){document.getElementById('pokerLevelModal').classList.remove('show');}
 
+
+function closePokerHistoryModal(){document.getElementById("pokerHistoryModal").classList.remove("show");}
 function showPokerTasks() {
   if(!currentUser){alert('請先登入');return;}
   fetch('/api/poker/daily-tasks',{headers:{'Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
@@ -1603,6 +1625,7 @@ function editPokerProfile(){
 }
 function showPokerHistory() {
   if(!currentUser){alert('請先登入');return;}
+  document.getElementById('pokerHistoryModal').classList.add('show');
   fetch('/api/poker/history/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
     var html = '';
     if(d.history && d.history.length > 0){
