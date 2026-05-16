@@ -1000,9 +1000,13 @@ function showResult(winner,pHand,aHand) {
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
   if(history.length>50) history=history.slice(0,50);
 
-  // Sync to backend
+  // Sync to backend - update score AND save history
   if(currentUser && typeof updateScoreBackend === 'function'){
     updateScoreBackend(currentUser.username, winner === 'player' ? G.pot : winner === 'ai' ? -G.pot : 0, winner, G.pot, pHand.name || '一般');
+  }
+  // Also save history entry
+  if(currentUser){
+    savePokerHistory(winner, G.pot, pHand.name || '一般', '電腦');
   }
 
   document.getElementById('resultTitle').textContent=title;
