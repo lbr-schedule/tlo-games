@@ -159,6 +159,8 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <div id="registerForm" style="display:none;flex-direction:column;gap:6px;align-items:center">
       <input class="name-input" id="regUsername" placeholder="帳號" style="width:180px">
       <input class="name-input" id="regPassword" type="password" placeholder="密碼" style="width:180px">
+      <input class="name-input" id="regPhone" placeholder="電話（必填）" style="width:180px">
+      <input class="name-input" id="regEmail" placeholder="電子郵件（必填）" style="width:180px">
       <input class="name-input" id="regInviteCode" placeholder="邀請碼（選填）" style="width:180px">
       <button class="btn btn-primary" onclick="doBackendRegister()" style="padding:8px 24px">註冊</button>
       <div id="regMsg" style="color:#f44;font-size:0.85rem"></div>
@@ -173,6 +175,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <button onclick="toggleSound()" id="soundBtn" title="音效" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🔊</button>
     <button onclick="toggleBgMusic()" id="musicBtn" title="背景音樂" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🎵</button>
     <button onclick="showHistory()" title="歷史紀錄" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">📜</button>
+    <button onclick="showPlayerMenu()" title="玩家專區" style="background:#1a1a3a;border:2px solid #ffd700;border-radius:10px;color:#ffd700;font-size:1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">☰</button>
     <button onclick="logoutPoker()" title="離開遊戲" style="background:#8B0000;border:2px solid #ff4444;border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🚪</button>
   </div>
     <div class="top-bar">
@@ -220,7 +223,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <div class="to-call-info" id="toCallInfo">需要跟注: <b id="toCallAmount">0</b></div>
     <div class="action-row" id="actionRow"></div>
   </div>
-  <div class="waiting-hint" id="waitingHint" style="display:none">對手行動中...</div>
+  <div class="waiting-hint" id="waitingHint" style="display:none">電腦思考中...</div>
 </div>
 
 <div id="historyScreen">
@@ -228,6 +231,20 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   <div class="history-list" id="historyList"></div>
   <div class="history-back">
     <button class="btn btn-primary" onclick="backToGame()">返回遊戲</button>
+  </div>
+</div>
+
+<!-- 玩家專區選單 -->
+<div class="modal-overlay" id="playerMenuModal" style="display:none;z-index:1001;">
+  <div class="modal" style="max-width:320px;background:#1a1a3a;border-radius:16px;padding:20px;text-align:center;">
+    <h2 style="color:#ffd700;margin-bottom:15px;">☰ 玩家專區</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
+      <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲歷史</button>
+      <button onclick="showPokerHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">❓ 遊戲說明</button>
+      <button onclick="showPokerFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📝 提供反饋</button>
+    </div>
+    <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
   </div>
 </div>
 
@@ -943,12 +960,17 @@ async function doBackendLogin() {
 async function doBackendRegister() {
   const u = document.getElementById('regUsername').value.trim();
   const p = document.getElementById('regPassword').value;
+  const phone = document.getElementById('regPhone').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
   const inv = document.getElementById('regInviteCode').value.trim();
   if(!u||!p){document.getElementById('regMsg').textContent='請填寫帳號和密碼';return;}
   if(u.length<3||u.length>20){document.getElementById('regMsg').textContent='帳號需要3-20字';return;}
   if(p.length<4){document.getElementById('regMsg').textContent='密碼需要至少4字';return;}
+  if(!phone){document.getElementById('regMsg').textContent='請填寫電話';return;}
+  if(!email){document.getElementById('regMsg').textContent='請填寫電子郵件';return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){document.getElementById('regMsg').textContent='電子郵件格式錯誤';return;}
   try {
-    const res = await fetch('/api/poker/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,invitedBy:inv})});
+    const res = await fetch('/api/poker/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,phone:phone,email:email,invitedBy:inv})});
     const d = await res.json();
     if(d.success){
       document.getElementById('regMsg').style.color='#4f4';
@@ -1022,5 +1044,28 @@ function loadHistoryFromBackend() {
 
 // Start: check login
 checkPokerLogin();
+
+// ===== 玩家專區 function =====
+function showPlayerMenu() {
+  document.getElementById('playerMenuModal').style.display='flex';
+}
+function closePlayerMenu() {
+  document.getElementById('playerMenuModal').style.display='none';
+}
+function showPokerProfile() {
+  alert('👤 個人資料功能即將推出！');
+}
+function showPokerHelp() {
+  alert('❓ 遊戲說明：\n\n🎯 德州撲克基本規則：\n• 發牌後可選擇跟注、加注或蓋牌\n• 三張公共牌後可再次行動\n• 第五張牌後攤牌比大小\n\n💰 贏取更多金幣！');
+}
+function showPokerFeedback() {
+  var fb = prompt('請輸入您的建議或問題：');
+  if(fb && fb.trim()) {
+    alert('感謝您的反饋！');
+  }
+}
+function showPokerHistory() {
+  showHistory();
+}
 
 </script>
