@@ -1378,7 +1378,7 @@ function openPokerTagModal(type, title) {
   document.getElementById('pokerTagModalTitle').textContent = title;
   var html = '';
   (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt) {
-    html += '<button onclick="selectPokerTag(this,\'+opt+\')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">'+opt+'</button>';
+    html += '<button onclick="selectPokerTag(this,''+opt+''')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">'+opt+'</button>';
   });
   document.getElementById('pokerTagModalContent').innerHTML = html;
   document.getElementById('pokerTagModal').style.display = 'flex';
