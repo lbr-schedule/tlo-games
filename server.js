@@ -1848,7 +1848,6 @@ app.post('/api/roulette/save-history', async (req, res) => {
     }
 });
 
-<<<<<<< Updated upstream
 // 輪盤遊戲 - 玩家反饋（發送到 Discord）
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1491323033952473098/OYa经营活动/PhCXZ4K_gREhKGjd1YPaXp0nGdCXa4xYqJqJ8SpW7Y1lvNM3sMh-FqLGRm3Z4qZq';
 
@@ -1936,8 +1935,6 @@ app.get('/api/roulette/admin/feedback', async (req, res) => {
     }
 });
 
-=======
->>>>>>> Stashed changes
 // 輪盤遊戲 - 清理過多歷史（最多保留1000筆）
 async function cleanupOldHistory() {
     if (!rouletteDbAvailable) return;
@@ -2586,12 +2583,8 @@ async function initPokerTables() {
     if (!pokerDbAvailable || !pokerDb) return;
     try {
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_users (username TEXT PRIMARY KEY, password TEXT NOT NULL, score INTEGER DEFAULT 10000, games_played INTEGER DEFAULT 0, games_won INTEGER DEFAULT 0, games_tied INTEGER DEFAULT 0, total_bet INTEGER DEFAULT 0, total_won INTEGER DEFAULT 0, last_login TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP, player_cards TEXT, ai_cards TEXT, community_cards TEXT, betting_rounds TEXT)` });
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_player_stats (username TEXT PRIMARY KEY, level INTEGER DEFAULT 1, experience INTEGER DEFAULT 0, login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', completed_tasks TEXT DEFAULT '{}')` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_profile (username TEXT PRIMARY KEY, avatar_url TEXT DEFAULT '', realname TEXT DEFAULT '', phone TEXT DEFAULT '', email TEXT DEFAULT '', birthday TEXT DEFAULT '', gender TEXT DEFAULT '', personality_tag TEXT DEFAULT '', interest_tag TEXT DEFAULT '', badge_tag TEXT DEFAULT '', mood TEXT DEFAULT '')` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, feedback TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_video_bonus (username TEXT PRIMARY KEY, last_claim TEXT, count INTEGER DEFAULT 0)` });
         console.log('撲克資料庫初始化完成');
     } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
 }
