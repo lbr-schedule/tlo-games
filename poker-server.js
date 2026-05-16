@@ -410,9 +410,14 @@ router.get('/profile/:username', async (req, res) => {
                     COALESCE(s.login_streak, 0) as login_streak, COALESCE(s.streak_title, '') as streak_title,
                     COALESCE(s.weekly_bet, 0) as weekly_bet, COALESCE(s.total_bets, 0) as total_bets,
                     COALESCE(s.total_wins, 0) as total_wins, COALESCE(s.total_losses, 0) as total_losses,
-                    COALESCE(s.total_win_amount, 0) as total_win_amount, COALESCE(s.total_lose_amount, 0) as total_lose_amount
+                    COALESCE(s.total_win_amount, 0) as total_win_amount, COALESCE(s.total_lose_amount, 0) as total_lose_amount,
+                    COALESCE(p.avatar_url, '') as avatar_url, COALESCE(p.birthday, '') as birthday,
+                    COALESCE(p.gender, '') as gender, COALESCE(p.personality_tag, '') as personality_tag,
+                    COALESCE(p.interest_tag, '') as interest_tag, COALESCE(p.badge_tag, '') as badge_tag,
+                    COALESCE(p.mood, '') as mood
              FROM poker_users u
              LEFT JOIN poker_player_stats s ON u.username = s.username
+             LEFT JOIN poker_profile p ON u.username = p.username
              WHERE u.username = ?`,
             [username]
         );
@@ -440,7 +445,14 @@ router.get('/profile/:username', async (req, res) => {
                 member_since: user.created_at,
                 level: statsLevel,
                 title: statsTitle,
-                tier: statsTier
+                tier: statsTier,
+                avatar_url: user.avatar_url,
+                birthday: user.birthday,
+                gender: user.gender,
+                personality_tag: user.personality_tag,
+                interest_tag: user.interest_tag,
+                badge_tag: user.badge_tag,
+                mood: user.mood
             },
             stats: {
                 login_streak: user.login_streak,
