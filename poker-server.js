@@ -311,7 +311,7 @@ router.post('/update-score', async (req, res) => {
     try {
         const { username, score_change, result, pot, hand_name, opponent } = req.body;
         
-        // 更新分數
+        // 更新 poker_users 分數
         await req.app.locals.pokerDb.execute(
             'UPDATE poker_users SET score = score + ?, games_played = games_played + 1 WHERE username = ?',
             [score_change, username]
@@ -335,6 +335,20 @@ router.post('/update-score', async (req, res) => {
             'INSERT INTO poker_history (username, result, pot, hand_name, opponent) VALUES (?, ?, ?, ?, ?)',
             [username, result, pot, hand_name || '無', opponent || '電腦']
         );
+        
+        // 更新每日任務統計 (bet_count_today, wins_today)
+        const today = new Date().toISOString().split('T')[0];
+        await req.app.locals.pokerDb.execute(
+            'INSERT INTO poker_player_stats (username, bet_count_today, wins_today, last_task_reset) VALUES (?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET bet_count_today = bet_count_today + 1, last_task_reset = ?',
+            [username, today, today]
+        );
+        
+        if (result === 'win') {
+            await req.app.locals.pokerDb.execute(
+                'UPDATE poker_player_stats SET wins_today = wins_today + 1 WHERE username = ?',
+                [username]
+            );
+        }
         
         res.json({ success: true });
     } catch (e) {

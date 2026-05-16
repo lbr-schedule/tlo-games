@@ -1468,12 +1468,24 @@ function confirmPokerTag() {
   if(!window._pokerTagSelected || window._pokerTagSelected.length === 0) { alert('請至少選擇一項'); return; }
   var data = {username:currentUser.username};
   data[window._pokerTagType] = window._pokerTagSelected.join('、');
+  document.getElementById('pokerTagModalContent').innerHTML = '<div style="color:#ffd700;text-align:center;padding:30px;">儲存中...</div>';
   fetch('/api/poker/profile', {
     method:'PUT',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
     body:JSON.stringify(data)
   }).then(r=>r.json()).then(function(d) {
-    if(d.success) { closePokerTagModal(); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+    if(d.success) { 
+      closePokerTagModal();
+      // Clear cache to force reload
+      _pokerProfileCache = null;
+      loadPokerProfile(false);
+    } else { 
+      alert(d.message||'儲存失敗');
+      document.getElementById('pokerTagModalContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">儲存失敗，請重試</div>';
+    }
+  }).catch(function(e){
+    alert('網路錯誤');
+    console.log(e);
   });
 }
 function closePokerTagModal() { document.getElementById('pokerTagModal').classList.remove('show'); }
