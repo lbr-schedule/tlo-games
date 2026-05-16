@@ -108,8 +108,8 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 // 發牌動畫：從左滑入
 @keyframes cardDeal {
-  0% { transform: translateX(-80px) rotate(-15deg) scale(0.6); opacity: 0; }
-  60% { transform: translateX(10px) rotate(5deg) scale(1.05); opacity: 1; }
+  0% { transform: translateX(-30px) rotate(-8deg) scale(0.8); opacity: 0; }
+  70% { transform: translateX(5px) rotate(3deg) scale(1.02); opacity: 1; }
   100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
 }
 // 翻牌動畫：3D翻轉
@@ -123,7 +123,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   0%,100% { box-shadow: 0 3px 10px rgba(0,0,0,0.6); }
   50% { box-shadow: 0 0 30px rgba(245,197,24,0.8), 0 3px 10px rgba(0,0,0,0.6); }
 }
-.card.dealing { animation: cardDeal 0.08s ease-out forwards; }
+.card.dealing { animation: cardDeal 0.4s ease-out forwards; }
 .card.flip-anim { animation: cardFlip 0.3s ease-in-out; }
 .card.winner-glow { animation: winGlow 0.8s ease-in-out 3; }
 
