@@ -257,7 +257,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 頭像選擇 Modal -->
-<div class="modal-overlay" id="pokerAvatarModal" style="display:none;z-index:1003;" onclick="closePokerAvatarModal()">
+<div class="modal-overlay" id="pokerAvatarModal"  onclick="closePokerAvatarModal()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="color:#ffd700;margin:0 0 16px;">選擇頭像</h3>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
@@ -282,7 +282,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 性別選擇 Modal -->
-<div class="modal-overlay" id="pokerGenderModal" style="display:none;z-index:1003;" onclick="closePokerGenderModal()">
+<div class="modal-overlay" id="pokerGenderModal"  onclick="closePokerGenderModal()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:300px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="color:#ffd700;margin:0 0 16px;">選擇性別</h3>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
@@ -296,7 +296,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 生日設定 Modal -->
-<div class="modal-overlay" id="pokerBirthdayModal" style="display:none;z-index:1003;" onclick="closePokerBirthdayModal()">
+<div class="modal-overlay" id="pokerBirthdayModal"  onclick="closePokerBirthdayModal()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:300px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="color:#ffd700;margin:0 0 16px;">設定生日</h3>
     <input type="date" id="pokerBirthdayInput" style="width:100%;padding:12px;border-radius:8px;background:#222;color:#fff;border:1px solid #444;box-sizing:border-box;margin-bottom:16px;" />
@@ -306,7 +306,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 標籤選擇 Modal -->
-<div class="modal-overlay" id="pokerTagModal" style="display:none;z-index:1003;">
+<div class="modal-overlay" id="pokerTagModal" >
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;">
     <h3 id="pokerTagModalTitle" style="color:#ffd700;margin:0 0 16px;">選擇標籤</h3>
     <div id="pokerTagModalContent" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px;"></div>
@@ -315,15 +315,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
     <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
-  </div>
-</div>
-
-<!-- 個人資料 Modal -->
-<div class="modal-overlay" id="pokerProfileModal">
-  <div class="modal" style="max-width:360px;">
-    <h2>👤 個人資料</h2>
-    <div id="pokerProfileContent" style="color:#fff;text-align:left;margin-top:10px;"></div>
-    <button onclick="closePokerProfileModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
   </div>
 </div>
 
@@ -1226,7 +1217,7 @@ var _pokerProfileCacheTime = 0;
 function showPokerProfile() {
   if(!currentUser){alert('請先登入');return;}
   var modal = document.getElementById('pokerProfileModal');
-  modal.style.display = 'flex';
+  modal.classList.add('show');
   
   // Show cached data if fresh (<5 min)
   if(_pokerProfileCache && _pokerProfileCache.profile && _pokerProfileCache.profile.username === currentUser.username && Date.now() - _pokerProfileCacheTime < 300000) {
@@ -1308,14 +1299,14 @@ function renderPokerProfile(d) {
 }
 
 function closePokerProfileModal() {
-  document.getElementById('pokerProfileModal').style.display = 'none';
+  document.getElementById('pokerProfileModal').classList.remove('show');
 }
 
 function openPokerAvatarModal() {
-  document.getElementById('pokerAvatarModal').style.display = 'flex';
+  document.getElementById('pokerAvatarModal').classList.add('show');
   updatePokerAvatarSelection();
 }
-function closePokerAvatarModal() { document.getElementById('pokerAvatarModal').style.display = 'none'; }
+function closePokerAvatarModal() { document.getElementById('pokerAvatarModal').classList.remove('show'); }
 function updatePokerAvatarSelection() {
   if(!_pokerProfileCache || !_pokerProfileCache.profile) return;
   var current = _pokerProfileCache.profile.avatar_url || '/poker/avatar1.jpg';
@@ -1370,8 +1361,8 @@ function savePokerCustomAvatar() {
   }).catch(function(){ alert('上傳失敗'); });
 }
 
-function openPokerGenderModal() { document.getElementById('pokerGenderModal').style.display = 'flex'; window._selectedPokerGender = ''; }
-function closePokerGenderModal() { document.getElementById('pokerGenderModal').style.display = 'none'; }
+function openPokerGenderModal() { document.getElementById('pokerGenderModal').classList.add('show'); window._selectedPokerGender = ''; }
+function closePokerGenderModal() { document.getElementById('pokerGenderModal').classList.remove('show'); }
 function selectPokerGender(el, g) {
   document.querySelectorAll('#pokerGenderModal button').forEach(function(b){b.style.border='1px solid #555';b.style.background='#333';});
   el.style.border = '2px solid #ffd700';
@@ -1389,8 +1380,8 @@ function confirmPokerGender() {
   });
 }
 
-function openPokerBirthdayModal() { document.getElementById('pokerBirthdayModal').style.display = 'flex'; }
-function closePokerBirthdayModal() { document.getElementById('pokerBirthdayModal').style.display = 'none'; }
+function openPokerBirthdayModal() { document.getElementById('pokerBirthdayModal').classList.add('show'); }
+function closePokerBirthdayModal() { document.getElementById('pokerBirthdayModal').classList.remove('show'); }
 function submitPokerBirthday() {
   var bd = document.getElementById('pokerBirthdayInput').value;
   if(!bd) { alert('請選擇生日'); return; }
@@ -1418,7 +1409,7 @@ function openPokerTagModal(type, title) {
     html += `<button onclick="selectPokerTag(this,'${opt}')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">${opt}</button>`;
   });
   document.getElementById('pokerTagModalContent').innerHTML = html;
-  document.getElementById('pokerTagModal').style.display = 'flex';
+  document.getElementById('pokerTagModal').classList.add('show');
 }
 function selectPokerTag(el, v) {
   document.querySelectorAll('#pokerTagModalContent button').forEach(function(b){b.style.border='1px solid #555';});
@@ -1435,7 +1426,7 @@ function confirmPokerTag() {
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
     body:JSON.stringify(data)
   }).then(r=>r.json()).then(function(d) {
-    if(d.success) { document.getElementById('pokerTagModal').style.display = 'none'; loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+    if(d.success) { document.getElementById('pokerTagModal').classList.remove('show'); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
   });
 }
 
