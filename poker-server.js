@@ -247,20 +247,6 @@ router.post('/history', async (req, res) => {
             [username, result || 'unknown', pot || 0, hand_name || '普通', opponent || '電腦']
         );
         
-        // 更新玩家統計
-        const stats = await db.execute('SELECT * FROM poker_player_stats WHERE username = ?', [username]);
-        if (stats.rows.length === 0) {
-            await db.execute('INSERT INTO poker_player_stats (username) VALUES (?)', [username]);
-        }
-        
-        if (result === 'win') {
-            await db.execute('UPDATE poker_player_stats SET games_played = games_played + 1, wins = wins + 1, total_win = total_win + ? WHERE username = ?', [pot || 0, username]);
-        } else if (result === 'ai') {
-            await db.execute('UPDATE poker_player_stats SET games_played = games_played + 1, losses = losses + 1 WHERE username = ?', [username]);
-        } else if (result === 'tie') {
-            await db.execute('UPDATE poker_player_stats SET games_played = games_played + 1, ties = ties + 1 WHERE username = ?', [username]);
-        }
-        
         res.json({ success: true });
     } catch (e) {
         res.json({ success: false, message: e.message });
