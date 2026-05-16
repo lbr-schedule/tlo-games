@@ -2,8 +2,10 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { createClient } = require('@libsql/client');
+const compression = require('compression');
 
 const app = express();
+app.use(compression());
 const server = http.createServer(app);
 
 // 骰子遊戲資料庫（Turso）
