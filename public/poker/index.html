@@ -252,6 +252,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:380px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="color:#ffd700;margin:0 0 16px;">👤 個人資料</h3>
     <div id="pokerProfileContent" style="color:#fff;"></div>
+    <button onclick="closePokerProfileModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:16px;">關閉</button>
   </div>
 </div>
 
@@ -917,8 +918,7 @@ function advancePhase() {
 }
 
 function revealNextCommunity() {
-  // Reveal community cards one at a time with sound
-  const revealCount = G.community.length;
+  // Reveal community cards ONE AT A TIME with sound - real poker style
   const showN = {flop: 3, turn: 4, river: 5};
   const target = showN[G.phase] || 0;
   
@@ -932,13 +932,15 @@ function revealNextCommunity() {
     let ch='';
     for(let i=0;i<5;i++){
       if(i<n && G.community[i]) ch+=cardHTML(G.community[i],false,i,'','dealing');
-      else if(i<target) ch+='<div class="hidden-card"></div>';
       else ch+='<div class="hidden-card"></div>';
     }
     document.getElementById('communityCards').innerHTML=ch;
-    setTimeout(revealNextCommunity, 150);
-  } else {
-    setTimeout(() => { enablePlayerActions(); }, 200);
+    // Reveal next card after 600ms delay (real poker pacing)
+    if(G.community.length < target){
+      setTimeout(revealNextCommunity, 600);
+    } else {
+      setTimeout(() => { enablePlayerActions(); }, 400);
+    }
   }
 }
 
