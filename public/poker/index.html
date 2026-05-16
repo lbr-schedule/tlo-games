@@ -888,7 +888,8 @@ var shuffleSound = 'shuffle_sound.mp3';
 var bgMusic = null;
 function playBgMusic() {
   if (!bgMusic) {
-    bgMusic = new Audio('chonklap.mp4');
+    bgMusic = new Audio();
+    bgMusic.src = 'chonklap.mp4';
     bgMusic.loop = true;
     bgMusic.volume = 0.25;
   }
