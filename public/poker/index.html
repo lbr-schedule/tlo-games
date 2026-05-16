@@ -245,16 +245,19 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 <!-- 玩家專區選單 -->
 <div class="modal-overlay" id="playerMenuModal" onclick="if(event.target===this)closePlayerMenu()">
-  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;" onclick="event.stopPropagation()">
-  <div class="modal">
-    <h2>☰ 玩家專區</h2>
+  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+    <h2 style="color:#ffd700;margin:0 0 16px;">☰ 玩家專區</h2>
     <div style="display:flex;flex-direction:column;gap:8px;">
-      <button onclick="showPokerProfile();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
+      <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
       <button onclick="showPokerLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🔥 連續登入</button>
       <button onclick="showPokerVideo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎬 看影片</button>
       <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級</button>
       <button onclick="showPokerTasks();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📋 每日任務</button>
+      <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲紀錄</button>
     </div>
+    <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
+  </div>
+</div>
 
 <div class="modal-overlay" id="pokerProfileModal" onclick="if(event.target===this)closePokerProfileModal()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:380px;width:90%;text-align:center;" onclick="event.stopPropagation()">
@@ -1228,6 +1231,15 @@ function loadHistoryFromBackend() {
 checkPokerLogin();
 
 // ===== 玩家專區 function =====
+
+function savePokerHistory(result, pot, handName, opponent) {
+  if(!currentUser) return;
+  fetch('/api/poker/history', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
+    body:JSON.stringify({result:result, pot:pot, handName:handName, opponent:opponent||'電腦'})
+  }).catch(()=>{});
+}
 function showPlayerMenu() {
   document.getElementById('playerMenuModal').classList.add('show');
 }
