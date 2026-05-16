@@ -681,10 +681,10 @@ function playShuffleAnimAndDeal() {
   // Play shuffle sound
   playSound('shuffle');
   // Start dealing after shuffle animation
-  setTimeout(() => { dealCard('player', 0, true); }, 500);
-  setTimeout(() => { dealCard('ai', 0, true); }, 900);
-  setTimeout(() => { dealCard('player', 1, true); }, 1300);
-  setTimeout(() => { dealCard('ai', 1, true); render(); }, 1700);
+  setTimeout(() => { dealCard('player', 0, true); }, 100);
+  setTimeout(() => { dealCard('ai', 0, true); }, 300);
+  setTimeout(() => { dealCard('player', 1, true); }, 500);
+  setTimeout(() => { dealCard('ai', 1, true); render(); }, 700);
 }
 
 function dealCard(who, idx, withSound) {
@@ -852,7 +852,7 @@ function doAITurn() {
       }
     }
     endBettingRound();
-  }, 700);
+  }, 400);
 }
 
 function aiDoCall() {
@@ -937,9 +937,9 @@ function revealNextCommunity() {
       else ch+='<div class="hidden-card"></div>';
     }
     document.getElementById('communityCards').innerHTML=ch;
-    setTimeout(revealNextCommunity, 300);
+    setTimeout(revealNextCommunity, 150);
   } else {
-    setTimeout(() => { enablePlayerActions(); }, 400);
+    setTimeout(() => { enablePlayerActions(); }, 200);
   }
 }
 
