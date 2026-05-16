@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
 <title>T-LO 德州撲克</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -140,29 +139,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 
 <div id="startScreen">
   <img src="card_back.png" style="width:56px;height:auto;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.4);margin-bottom:0.5rem">
-
-  <!-- 登入/註冊（直接顯示在首頁，跟輪盤一样） -->
-  <div id="authSection" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:1rem;width:100%">
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-secondary" onclick="showAuthTab('login')" id="loginTabBtn" style="padding:6px 16px;font-size:0.9rem">登入</button>
-      <button class="btn btn-secondary" onclick="showAuthTab('register')" id="registerTabBtn" style="padding:6px 16px;font-size:0.9rem">註冊</button>
-    </div>
-    <div id="loginForm" style="display:flex;flex-direction:column;gap:6px;align-items:center">
-      <input class="name-input" id="loginUsername" placeholder="帳號" style="width:180px">
-      <input class="name-input" id="loginPassword" type="password" placeholder="密碼" style="width:180px">
-      <button class="btn btn-primary" onclick="doBackendLogin()" style="padding:8px 24px">登入</button>
-      <div id="loginMsg" style="color:#f44;font-size:0.85rem"></div>
-    </div>
-    <div id="registerForm" style="display:none;flex-direction:column;gap:6px;align-items:center">
-      <input class="name-input" id="regUsername" placeholder="帳號" style="width:180px">
-      <input class="name-input" id="regPassword" type="password" placeholder="密碼" style="width:180px">
-      <input class="name-input" id="regInviteCode" placeholder="邀請碼（選填）" style="width:180px">
-      <button class="btn btn-primary" onclick="doBackendRegister()" style="padding:8px 24px">註冊</button>
-      <div id="regMsg" style="color:#f44;font-size:0.85rem"></div>
-    </div>
-  </div>
-
-
+  <input class="name-input" id="playerNameInput" value="老闆" placeholder="你的名字">
+  <button class="btn btn-primary" onclick="startGame()">開始遊戲</button>
+  <button class="btn btn-secondary" onclick="showHistory()">📜 歷史紀錄</button>
 </div>
 
 <div id="gameScreen">
@@ -170,7 +149,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <button onclick="toggleSound()" id="soundBtn" title="音效" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🔊</button>
     <button onclick="toggleBgMusic()" id="musicBtn" title="背景音樂" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🎵</button>
     <button onclick="showHistory()" title="歷史紀錄" style="background:#1a1a3a;border:2px solid #555;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">📜</button>
-    <button onclick="logoutPoker()" title="離開遊戲" style="background:#8B0000;border:2px solid #ff4444;border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🚪</button>
   </div>
     <div class="top-bar">
     <span>局次: <span id="handNum">1</span></span>
@@ -795,11 +773,6 @@ function showResult(winner,pHand,aHand) {
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
   if(history.length>50) history=history.slice(0,50);
 
-  // Sync to backend
-  if(currentUser && typeof updateScoreBackend === 'function'){
-    updateScoreBackend(currentUser.username, winner === 'player' ? G.pot : winner === 'ai' ? -G.pot : 0, winner, G.pot, pHand.name || '一般');
-  }
-
   document.getElementById('resultTitle').textContent=title;
   document.getElementById('resultAmount').textContent=amount;
 
@@ -879,10 +852,6 @@ function startGame() {
 }
 
 // ===== 背景音樂 =====
-
-var dealSound = 'deal_sound.mp3';
-var shuffleSound = 'shuffle_sound.mp3';
-
 var bgMusic = null;
 function playBgMusic() {
   if (!bgMusic) {
@@ -904,113 +873,6 @@ function toggleBgMusic() {
   }
 }
 document.addEventListener('click', playBgMusic, { once: true });
-
-// ===== 後端登入/註冊 =====
-
-async function updateScoreBackend(username, scoreChange, result, pot, handName) {
-  try {
-    await fetch('/api/poker/update-score', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username, score_change: scoreChange, result, pot, hand_name: handName || '一般', opponent: '電腦'})
-    });
-    if(currentUser) {
-      currentUser.score += scoreChange;
-      localStorage.setItem('pokerUser', JSON.stringify(currentUser));
-    }
-  } catch(e){ console.log(e); }
-}
-
-async function doBackendLogin() {
-  const u = document.getElementById('loginUsername').value.trim();
-  const p = document.getElementById('loginPassword').value;
-  if(!u||!p){document.getElementById('loginMsg').textContent='請填寫帳號和密碼';return;}
-  try {
-    const res = await fetch('/api/poker/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
-    const d = await res.json();
-    if(d.success){
-      localStorage.setItem('pokerUser',JSON.stringify(d));
-      showLoggedIn(d);
-    } else { document.getElementById('loginMsg').textContent=d.message; }
-  } catch(e){ document.getElementById('loginMsg').textContent='網路錯誤'; }
-}
-async function doBackendRegister() {
-  const u = document.getElementById('regUsername').value.trim();
-  const p = document.getElementById('regPassword').value;
-  const inv = document.getElementById('regInviteCode').value.trim();
-  if(!u||!p){document.getElementById('regMsg').textContent='請填寫帳號和密碼';return;}
-  if(u.length<3||u.length>20){document.getElementById('regMsg').textContent='帳號需要3-20字';return;}
-  if(p.length<4){document.getElementById('regMsg').textContent='密碼需要至少4字';return;}
-  try {
-    const res = await fetch('/api/poker/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,invitedBy:inv})});
-    const d = await res.json();
-    if(d.success){
-      document.getElementById('regMsg').style.color='#4f4';
-      document.getElementById('regMsg').textContent=d.message;
-      setTimeout(()=>{showAuthTab('login');document.getElementById('loginUsername').value=u;},1200);
-    } else { document.getElementById('regMsg').textContent=d.message; }
-  } catch(e){ document.getElementById('regMsg').textContent='網路錯誤'; }
-}
-function showAuthTab(tab) {
-  document.getElementById('loginForm').style.display=tab==='login'?'flex':'none';
-  document.getElementById('registerForm').style.display=tab==='register'?'flex':'none';
-  document.getElementById('loginTabBtn').className=tab==='login'?'btn btn-primary':'btn btn-secondary';
-  document.getElementById('registerTabBtn').className=tab==='register'?'btn btn-primary':'btn btn-secondary';
-}
-function showLoggedIn(user) {
-  document.getElementById('authSection').style.display='none';
-  document.getElementById('startScreen').style.display='none';
-  document.getElementById('gameScreen').style.display='block';
-  document.getElementById('playerNameDisplay').textContent=user.username;
-  document.getElementById('playerChips').textContent=user.chips || user.score || 1000;
-  currentUser = user;
-}
-function enterGame() {
-  document.getElementById('startScreen').style.display='none';
-  document.getElementById('gameScreen').style.display='block';
-  newGame(currentUser.username);
-  newHand();
-}
-function logoutPoker() {
-  localStorage.removeItem('pokerUser');
-  currentUser = null;
-  document.getElementById('startScreen').style.display='flex';
-  document.getElementById('gameScreen').style.display='none';
-  showAuthTab('login');
-}
-function checkPokerLogin() {
-  const saved = localStorage.getItem('pokerUser');
-  if(saved){
-    const user = JSON.parse(saved);
-    currentUser = user;
-    showLoggedIn(user);
-  } else {
-    document.getElementById('authSection').style.display='flex';
-  }
-}
-var currentUser = null;
-
-// Override updateScore to sync with backend
-var origShowResult = typeof showResult === 'function' ? showResult : null;
-
-// Connect history to backend
-function loadHistoryFromBackend() {
-  if(!currentUser) return;
-  fetch('/api/poker/history/'+encodeURIComponent(currentUser.username))
-    .then(r=>r.json()).then(d=>{
-      if(d.success){
-        history = d.history.map(h=>({
-          winner:h.result==='win'?'player':h.result==='lose'?'ai':'tie',
-          badge:h.result==='win'?'🎉':h.result==='tie'?'🤝':'💀',
-          desc:h.hand_name||'一般',
-          amount:'+'+h.pot,
-          handNum:1,time:h.time
-        }));
-      }
-    }).catch(()=>{});
-}
-
-// Start: check login
-checkPokerLogin();
-
 </script>
+</body>
+</html>
