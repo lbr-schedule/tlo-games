@@ -1483,31 +1483,62 @@ function closePokerProfileModal(){document.getElementById('pokerProfileModal').c
 
 function showPokerLoginReward() {
   if(!currentUser){alert('請先登入');return;}
+  document.getElementById('pokerLoginRewardModal').classList.add('show');
+  document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#ffd700;text-align:center;padding:30px;font-size:1.2rem;">載入中...</div>';
   fetch('/api/poker/daily-bonus',{headers:{'Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
-    var html = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">'+(d.streak>=3?'🔥':'⭐')+'</div>';
-    html += '<div style="color:#ffd700;font-size:1.5rem;font-weight:bold;">連續登入 '+d.streak+' 天</div>';
-    html += '<div style="color:#aaa;margin:10px 0;">'+(d.canClaim?'✅ 今日可領取！':'⏰ 明日再来')+'</div>';
-    html += '<div style="font-size:2rem;margin:15px 0;">💰 '+d.reward+' 金幣</div>';
-    if(d.canClaim){
-      html += '<button onclick="claimPokerDaily()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">領取獎勵</button>';
-    } else {
-      html += '<div style="color:#888;font-size:0.85rem;">已領取</div>';
+    var streak = d.streak || 0;
+    var reward = d.reward || 100;
+    var canClaim = d.canClaim;
+    var alreadyClaimed = d.alreadyClaimed;
+    
+    var html = '<div style="text-align:center;">';
+    html += '<div style="font-size:3.5rem;margin-bottom:15px;">'+(streak>=3?'🔥':'⭐')+'</div>';
+    html += '<div style="color:#ffd700;font-size:1.5rem;font-weight:bold;margin-bottom:5px;">連續登入 '+streak+' 天</div>';
+    html += '<div style="font-size:2rem;margin:15px 0;">💰 '+reward+' 金幣</div>';
+    
+    // 7天進度條
+    html += '<div style="display:flex;justify-content:center;gap:6px;margin:15px 0;">';
+    for(var day=1;day<=7;day++){
+      var active = day<=streak;
+      html += '<div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:bold;'+(active?'background:#ffd700;color:#1a1a2e;':'background:#333;color:#666;')+'">'+day+'</div>';
     }
-    html += '<div style="margin-top:15px;color:#666;font-size:0.8rem;">連續登入獎勵：1天100/3天300/7天1000</div>';
+    html += '</div>';
+    
+    // 領取狀態
+    if(alreadyClaimed){
+      html += '<div style="background:#1a4a1a;padding:12px;border-radius:10px;color:#4f4;font-size:1rem;font-weight:bold;margin:10px 0;">✅ 今日已領取</div>';
+    } else if(canClaim){
+      html += '<button onclick="claimPokerDaily()" style="width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">領取 '+reward+' 金幣</button>';
+    } else {
+      html += '<div style="background:#333;padding:12px;border-radius:10px;color:#888;font-size:1rem;margin:10px 0;">⏰ 明日再來</div>';
+    }
+    
+    html += '<div style="color:#888;font-size:0.75rem;margin-top:15px;">每天登入可領取，連續7天加成更高</div>';
+    html += '</div>';
     document.getElementById('pokerLoginRewardContent').innerHTML = html;
-    document.getElementById('pokerLoginRewardModal').classList.add('show');
-  }).catch(()=>{alert('載入失敗');});
+  }).catch(function(){
+    document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">載入失敗，請重試</div>';
+  });
 }
 function closePokerLoginRewardModal(){document.getElementById('pokerLoginRewardModal').classList.remove('show');}
 function claimPokerDaily(){
+  document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#ffd700;text-align:center;padding:30px;font-size:1.2rem;">領取中...</div>';
   fetch('/api/poker/claim-daily-bonus',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
     if(d.success){
-      alert('領取成功！獲得 '+d.reward+' 金幣');
-      currentUser.score = (currentUser.score||0) + d.reward;
+      currentUser.score = (currentUser.score||0) + (d.reward||0);
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
-      showPokerLoginReward();
-    } else { alert(d.message||'領取失敗'); }
-  }).catch(()=>{alert('網路錯誤');});
+      // 更新顯示
+      document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">🎉</div><div style="color:#4f4;font-size:1.5rem;font-weight:bold;">領取成功！</div><div style="color:#ffd700;font-size:2rem;margin:15px 0;">+'+(d.reward||0)+' 金幣</div><div style="color:#888;">連續 '+d.streak+' 天</div></div>';
+      setTimeout(function(){
+        closePokerLoginRewardModal();
+        showPokerLoginReward();
+      }, 1500);
+    } else { 
+      document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">'+(d.message||'領取失敗')+'</div>';
+    }
+  }).catch(function(){
+    document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">網路錯誤，請重試</div>';
+  });
 }
 
 var pokerVideoWatched = false;
