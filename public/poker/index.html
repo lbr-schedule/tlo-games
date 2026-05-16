@@ -313,11 +313,14 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 </div>
 
 <!-- 標籤選擇 Modal -->
-<div class="modal-overlay" id="pokerTagModal" >
-  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;">
+<div class="modal-overlay" id="pokerTagModal" onclick="if(event.target===this)closePokerTagModal()">
+  <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 id="pokerTagModalTitle" style="color:#ffd700;margin:0 0 16px;">選擇標籤</h3>
     <div id="pokerTagModalContent" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px;"></div>
-    <button onclick="confirmPokerTag()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;">確認</button>
+    <button onclick="confirmPokerTag()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;margin-bottom:8px;">確認</button>
+    <button onclick="closePokerTagModal()" style="width:100%;padding:10px;background:#333;color:#fff;border:none;border-radius:8px;cursor:pointer;">取消</button>
+  </div>
+</div>
   </div>
 </div>
 
@@ -1409,7 +1412,7 @@ var POKER_TAG_OPTIONS = {
 };
 function openPokerTagModal(type, title) {
   window._pokerTagType = type;
-  window._pokerTagValue = '';
+  window._pokerTagSelected = [];
   document.getElementById('pokerTagModalTitle').textContent = title;
   var html = '';
   (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt) {
@@ -1419,23 +1422,32 @@ function openPokerTagModal(type, title) {
   document.getElementById('pokerTagModal').classList.add('show');
 }
 function selectPokerTag(el, v) {
-  document.querySelectorAll('#pokerTagModalContent button').forEach(function(b){b.style.border='1px solid #555';});
-  el.style.border = '2px solid #ffd700';
-  el.style.background = '#555';
-  window._pokerTagValue = v;
+  // Multi-select: toggle selection and update array
+  if(!window._pokerTagSelected) window._pokerTagSelected = [];
+  var idx = window._pokerTagSelected.indexOf(v);
+  if(idx > -1) {
+    window._pokerTagSelected.splice(idx, 1);
+    el.style.border = '1px solid #555';
+    el.style.background = '#333';
+  } else {
+    window._pokerTagSelected.push(v);
+    el.style.border = '2px solid #ffd700';
+    el.style.background = '#555';
+  }
 }
 function confirmPokerTag() {
-  if(!window._pokerTagValue) { alert('請選擇'); return; }
+  if(!window._pokerTagSelected || window._pokerTagSelected.length === 0) { alert('請至少選擇一項'); return; }
   var data = {username:currentUser.username};
-  data[window._pokerTagType] = window._pokerTagValue;
+  data[window._pokerTagType] = window._pokerTagSelected.join('、');
   fetch('/api/poker/profile', {
     method:'PUT',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},
     body:JSON.stringify(data)
   }).then(r=>r.json()).then(function(d) {
-    if(d.success) { document.getElementById('pokerTagModal').classList.remove('show'); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
+    if(d.success) { closePokerTagModal(); loadPokerProfile(true); } else { alert(d.message||'儲存失敗'); }
   });
 }
+function closePokerTagModal() { document.getElementById('pokerTagModal').classList.remove('show'); }
 
 function editPokerProfile() { showPokerProfile(); }
 function closePokerProfileModal(){document.getElementById('pokerProfileModal').classList.remove('show');}
