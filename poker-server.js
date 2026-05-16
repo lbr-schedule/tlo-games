@@ -582,26 +582,32 @@ async function processPokerLoginStreak(db, username) {
     return { streak: newStreak, bonus, title, alreadyClaimed };
 }
 
+// 從 Authorization header 或 query/body 取得 username
+function getUsernameFromReq(req) {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ')) {
+        return auth.slice(7);
+    }
+    return req.query.username || req.body.username || null;
+}
+
 // 取得每日 bonus 狀態
 router.get('/daily-bonus', async (req, res) => {
     try {
-        const { username } = req.query;
+        const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '缺少帳號' });
         
         const db = req.app.locals.pokerDb;
         await checkPokerDailyTasks(db, username);
         const result = await processPokerLoginStreak(db, username);
         
-        if (result.alreadyClaimed) {
-            return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
-        }
-        
         res.json({
             success: true,
-            message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`,
             streak: result.streak,
-            bonus: result.bonus,
-            title: result.title
+            reward: result.bonus,
+            title: result.title,
+            canClaim: !result.alreadyClaimed,
+            alreadyClaimed: result.alreadyClaimed
         });
     } catch (e) {
         res.json({ success: false, message: e.message });
@@ -611,7 +617,7 @@ router.get('/daily-bonus', async (req, res) => {
 // 領取每日登入獎勵
 router.post('/claim-daily-bonus', async (req, res) => {
     try {
-        const { username } = req.body;
+        const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '缺少帳號' });
         
         const db = req.app.locals.pokerDb;
@@ -619,7 +625,7 @@ router.post('/claim-daily-bonus', async (req, res) => {
         const result = await processPokerLoginStreak(db, username);
         
         if (result.alreadyClaimed) {
-            return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
+            return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, reward: 0 });
         }
         
         // 發放獎勵
@@ -632,7 +638,7 @@ router.post('/claim-daily-bonus', async (req, res) => {
             success: true,
             message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`,
             streak: result.streak,
-            bonus: result.bonus,
+            reward: result.bonus,
             title: result.title,
             newScore
         });
@@ -652,7 +658,7 @@ const POKER_DAILY_TASKS = [
 // 取得每日任務
 router.get('/daily-tasks', async (req, res) => {
     try {
-        const { username } = req.query;
+        const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '缺少帳號' });
         
         const db = req.app.locals.pokerDb;
@@ -674,16 +680,28 @@ router.get('/daily-tasks', async (req, res) => {
         const todayClaims = completedTasks[today] || [];
         
         const tasks = POKER_DAILY_TASKS.map(t => ({
-            ...t,
+            id: t.id,
+            name: t.name,
+            desc: t.desc,
+            reward: t.reward,
+            progress: t.id.includes('bet') ? (playerStats.bet_count_today || 0) : (playerStats.wins_today || 0),
+            target: t.id.includes('bet1') || t.id.includes('win1') ? 1 : 3,
             completed: t.condition(playerStats),
             alreadyClaimed: todayClaims.includes(t.id)
         }));
+        
+        // 統計資訊
+        const stats = {
+            betCount: playerStats.bet_count_today || 0,
+            winsCount: playerStats.wins_today || 0,
+            mysteryBets: playerStats.mystery_bets_today || 0
+        };
         
         res.json({
             success: true,
             tasks,
             streak: playerStats.login_streak || 0,
-            streakTitle: playerStats.streak_title || ''
+            stats
         });
     } catch (e) {
         res.json({ success: false, message: e.message });
@@ -693,7 +711,8 @@ router.get('/daily-tasks', async (req, res) => {
 // 領取任務獎勵
 router.post('/claim-task', async (req, res) => {
     try {
-        const { username, taskId } = req.body;
+        const username = getUsernameFromReq(req);
+        const { taskId } = req.body;
         if (!username || !taskId) return res.json({ success: false, message: '缺少資料' });
         
         const db = req.app.locals.pokerDb;
@@ -750,7 +769,7 @@ router.post('/claim-task', async (req, res) => {
 // 看影片領取獎勵
 router.post('/claim-video', async (req, res) => {
     try {
-        const { username } = req.body;
+        const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '請先登入' });
         
         const db = req.app.locals.pokerDb;
@@ -758,7 +777,7 @@ router.post('/claim-video', async (req, res) => {
         
         const check = await db.execute({ sql: 'SELECT lastVideoClaim FROM poker_users WHERE username = ?', args: [username] });
         if (check.rows && check.rows.length > 0 && check.rows[0].lastVideoClaim === today) {
-            return res.json({ success: false, message: '今天已領過了，明天再來！' });
+            return res.json({ success: false, message: '今天已領過了，明天再來！', alreadyClaimed: true });
         }
         
         await db.execute({ sql: 'UPDATE poker_users SET score = score + 1000, lastVideoClaim = ? WHERE username = ?', args: [today, username] });
@@ -766,7 +785,7 @@ router.post('/claim-video', async (req, res) => {
         const scoreResult = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
         const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
         
-        res.json({ success: true, amount: 1000, newScore });
+        res.json({ success: true, reward: 1000, amount: 1000, newScore });
     } catch (e) {
         res.json({ success: false, message: '領取失敗，請稍後再試' });
     }
