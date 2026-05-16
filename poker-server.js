@@ -70,6 +70,10 @@ async function initPokerDb(client) {
             hand_name TEXT,
             opponent TEXT,
             time TEXT DEFAULT CURRENT_TIMESTAMP,
+            player_cards TEXT,
+            ai_cards TEXT,
+            community_cards TEXT,
+            betting_rounds TEXT,
             FOREIGN KEY (username) REFERENCES poker_users(username)
         )
     `);

@@ -848,10 +848,12 @@ function showHistory() {
   document.getElementById('historyScreen').style.display='block';
   document.getElementById('startScreen').style.display='none';
   let html='';
-  if(history.length===0){
+  // Show only last 10 records
+  const displayHistory = history.slice(0, 10);
+  if(displayHistory.length===0){
     html='<div style="text-align:center;color:#555;padding:2rem">還沒有記錄</div>';
   } else {
-    for(const h of history){
+    for(const h of displayHistory){
       const cls=h.winner==='player'?'win':h.winner==='ai'?'lose':'tie';
       html+='<div class="history-item '+cls+'">';
       html+='<div class="history-badge">'+h.badge+'</div>';
