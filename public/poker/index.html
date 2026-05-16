@@ -966,6 +966,8 @@ function showLoggedIn(user) {
   document.getElementById('playerNameDisplay').textContent=user.username;
   document.getElementById('playerChips').textContent=user.chips || user.score || 1000;
   currentUser = user;
+  newGame(user.username);
+  newHand();
 }
 function enterGame() {
   document.getElementById('startScreen').style.display='none';
