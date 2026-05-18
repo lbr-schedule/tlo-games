@@ -832,6 +832,7 @@ router.post('/claim-video', async (req, res) => {
         
         res.json({ success: true, reward: 1000, amount: 1000, newScore });
     } catch (e) {
+        console.error('claim-video error:', e);
         res.json({ success: false, message: '領取失敗，請稍後再試' });
     }
 });

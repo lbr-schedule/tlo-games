@@ -1607,13 +1607,14 @@ function claimPokerVideoReward() {
   if(!currentUser){alert('請先登入');return;}
   if(!pokerVideoWatched){alert('請先看完影片');return;}
   fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username})}).then(r=>r.json()).then(d=>{
+    console.log('claim-video response:', d);
     if(d.success){
       alert('觀看完成！獲得 '+d.reward+' 金幣');
       currentUser.score = (currentUser.score||0) + (d.reward||1000);
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
       closePokerVideoPopup();
     } else { alert(d.message||'領取失敗'); }
-  }).catch(()=>{alert('網路錯誤');});
+  }).catch(e=>{ console.error('claim-video fetch error:', e); alert('網路錯誤'); });
 }
 
 function showPokerLevel() {
