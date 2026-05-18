@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="favicon.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 
 
 
@@ -55,10 +55,10 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .card.s-cyan { background: linear-gradient(135deg,#1abc9c,#16a085); color: #fff; }
 .card.s-yellow { background: linear-gradient(135deg,#f1c40f,#d4ac0d); color: #000; }
 
-.card.back { background: linear-gradient(135deg,#1a3a7a,#0a1f50); border: 2px solid #3a6aaa; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-.card.back::before { content: ''; position: absolute; inset: 8px; border: 2px solid rgba(245,197,24,0.25); border-radius: 6px; }
-.card.back::after { content: '♠'; position: absolute; font-size: 2rem; color: rgba(245,197,24,0.15); }
-.hidden-card { width: 64px; height: 86px; background: linear-gradient(135deg,#1a3a7a,#0a1f50); border-radius: 10px; flex-shrink: 0; border: 2px solid #3a6aaa; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; }
+.card.back { background: linear-gradient(135deg,#c0392b,#8e2819); border: 2px solid #e74c3c; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.card.back::before { content: ''; position: absolute; inset: 8px; border: 2px solid rgba(255,215,0,0.3); border-radius: 6px; }
+.card.back::after { content: 'T-LO'; position: absolute; font-size: 1.1rem; font-weight: bold; font-family: 'Segoe UI',Arial,sans-serif; color: rgba(255,215,0,0.4); letter-spacing: 1px; }
+.hidden-card { width: 64px; height: 86px; background: linear-gradient(135deg,#c0392b,#8e2819); border-radius: 10px; flex-shrink: 0; border: 2px solid #e74c3c; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size: 1.1rem; font-weight: bold; font-family: 'Segoe UI',Arial,sans-serif; color: rgba(255,215,0,0.4); letter-spacing: 1px; }
 
 .community-section { margin: 0.8rem 0; text-align: center; }
 .community-label { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-bottom: 0.3rem; letter-spacing: 2px; }
@@ -190,9 +190,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <button onclick="logoutPoker()" title="離開遊戲" style="background:#8B0000;border:2px solid #ff4444;border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">🚪</button>
   </div>
     <div class="top-bar">
-    <span>局次: <span id="handNum">1</span></span>
-    <span class="phase-tag" id="phaseTag">發牌</span>
     <span>底池: <span class="pot-display" id="potNum">0</span></span>
+    <span class="phase-tag" id="phaseTag">發牌</span>
+    <span>局次: <span id="handNum">1</span></span>
   </div>
 
   <div class="table-bg">
@@ -1604,17 +1604,17 @@ function closePokerVideoPopup() {
 }
 
 function claimPokerVideoReward() {
-  if(!currentUser){alert('請先登入');return;}
-  if(!pokerVideoWatched){alert('請先看完影片');return;}
+  if(!currentUser){showToast('請先登入');return;}
+  if(!pokerVideoWatched){showToast('請先看完影片');return;}
   fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username})}).then(r=>r.json()).then(d=>{
     console.log('claim-video response:', d);
     if(d.success){
-      alert('觀看完成！獲得 '+d.reward+' 金幣');
+      showToast('觀看完成！獲得 '+d.reward+' 金幣', 'success');
       currentUser.score = (currentUser.score||0) + (d.reward||1000);
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
       closePokerVideoPopup();
-    } else { alert(d.message||'領取失敗'); }
-  }).catch(e=>{ console.error('claim-video fetch error:', e); alert('網路錯誤'); });
+    } else { showToast(d.message||'領取失敗'); }
+  }).catch(e=>{ console.error('claim-video fetch error:', e); showToast('網路錯誤'); });
 }
 
 function showPokerLevel() {
@@ -1733,6 +1733,27 @@ function showPokerHistory() {
     // fallback to local history
     showHistory();
   });
+}
+
+// Toast 提示功能
+function showToast(msg, type = 'error') {
+    let toast = document.getElementById('pokerToastMsg');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'pokerToastMsg';
+        toast.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: ${type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)'};
+            color: white; padding: 15px 25px; border-radius: 10px;
+            font-size: 1rem; z-index: 9999; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-width: 80%;
+        `;
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.background = type === 'success' ? 'rgba(0,180,0,0.9)' : 'rgba(200,50,50,0.9)';
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
 </script>

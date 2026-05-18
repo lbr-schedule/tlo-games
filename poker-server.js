@@ -599,17 +599,19 @@ async function processPokerLoginStreak(db, username) {
     let alreadyClaimed = false;
     
     try {
-        const r = await db.execute({ sql: 'SELECT login_streak, last_login_date FROM poker_player_stats WHERE username = ?', args: [username] });
+        const r = await db.execute({ sql: 'SELECT login_streak, last_login_date, last_claim FROM poker_player_stats p LEFT JOIN poker_daily_bonus d ON p.username = d.username WHERE p.username = ?', args: [username] });
         if (r.rows && r.rows.length > 0) {
             const row = r.rows[0];
-            if (row.last_login_date === today) {
+            // Check if daily bonus was already claimed today using poker_daily_bonus
+            if (row.last_claim && row.last_claim.startsWith(today)) {
                 alreadyClaimed = true;
             } else {
                 if (row.last_login_date === yesterdayStr) {
                     newStreak = (row.login_streak || 0) + 1;
-                } else {
+                } else if (row.last_login_date !== today) {
                     newStreak = 1;
                 }
+                // else: same day login but not yet claimed, keep streak from before
             }
         }
         
