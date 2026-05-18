@@ -1445,11 +1445,20 @@ var POKER_TAG_OPTIONS = {
 };
 function openPokerTagModal(type, title) {
   window._pokerTagType = type;
-  window._pokerTagSelected = [];
+  // Pre-select previously saved tags
+  var profile = _pokerProfileCache && _pokerProfileCache.profile;
+  var savedValue = '';
+  if(type === 'personality') savedValue = profile && profile.personality_tag || '';
+  else if(type === 'interest') savedValue = profile && profile.interest_tag || '';
+  else if(type === 'badge') savedValue = profile && profile.badge_tag || '';
+  else if(type === 'mood') savedValue = profile && profile.mood || '';
+  window._pokerTagSelected = savedValue ? savedValue.split('、') : [];
+  
   document.getElementById('pokerTagModalTitle').textContent = title;
   var html = '';
   (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt) {
-    html += `<button onclick="selectPokerTag(this,'${opt}')" style="padding:8px 16px;background:#333;color:#fff;border:1px solid #555;border-radius:20px;cursor:pointer;font-size:0.9rem;">${opt}</button>`;
+    var isSelected = window._pokerTagSelected.indexOf(opt) > -1;
+    html += '<button onclick="selectPokerTag(this,\'\''+opt+'\'')"' + "' style='padding:8px 16px;background:"+(isSelected?'#555':'#333')+";color:#fff;border:"+(isSelected?'2px solid #ffd700':'1px solid #555')+";border-radius:20px;cursor:pointer;font-size:0.9rem;'>"+opt+'</button>';
   });
   document.getElementById('pokerTagModalContent').innerHTML = html;
   document.getElementById('pokerTagModal').classList.add('show');
@@ -1480,9 +1489,17 @@ function confirmPokerTag() {
   }).then(r=>r.json()).then(function(d) {
     if(d.success) { 
       closePokerTagModal();
-      // Clear cache to force reload
+      // Update cache directly without refetch
       _pokerProfileCache = null;
-      loadPokerProfile(false);
+      fetch('/api/poker/profile/'+encodeURIComponent(currentUser.username))
+        .then(r=>r.json())
+        .then(function(d2) {
+          if(d2.success) {
+            _pokerProfileCache = d2;
+            _pokerProfileCacheTime = Date.now();
+            renderPokerProfile(d2);
+          }
+        });
     } else { 
       alert(d.message||'儲存失敗');
       document.getElementById('pokerTagModalContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">儲存失敗，請重試</div>';
