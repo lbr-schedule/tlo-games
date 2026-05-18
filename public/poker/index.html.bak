@@ -1458,7 +1458,7 @@ function openPokerTagModal(type, title) {
   var html = '';
   (POKER_TAG_OPTIONS[type]||[]).forEach(function(opt) {
     var isSelected = window._pokerTagSelected.indexOf(opt) > -1;
-    html += `<button onclick="selectPokerTag(this,'${opt}')" style="padding:8px 16px;background:${isSelected?'#555':'#333'};color:#fff;border:${isSelected?'2px solid #ffd700':'1px solid #555'};border-radius:20px;cursor:pointer;font-size:0.9rem;">${opt}</button>`;
+    html += '<button onclick="selectPokerTag(this,\'\''+opt+'\'')" style="padding:8px 16px;background:'+(isSelected?'#555':'#333')+';color:#fff;border:'+(isSelected?'2px solid #ffd700':'1px solid #555')+';border-radius:20px;cursor:pointer;font-size:0.9rem;">'+opt+'</button>';
   });
   document.getElementById('pokerTagModalContent').innerHTML = html;
   document.getElementById('pokerTagModal').classList.add('show');
