@@ -165,10 +165,16 @@ router.post('/register', async (req, res) => {
         }
         
         // 註冊
+        // Generate invite code
+        const inviteCode = username.toLowerCase() + '_' + Math.random().toString(36).substr(2, 6);
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_users (username, password, score, phone, email, invite_code) VALUES (?, ?, 10000, ?, ?, ?)',
-            [username, password, phone || '', email || '', username.toLowerCase() + '_' + Math.random().toString(36).substr(2, 6)]
+            'INSERT INTO poker_users (username, password, score) VALUES (?, ?, 10000)',
+            [username, password]
         );
+        // Update optional fields one by one to avoid missing column errors
+        try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET phone = ? WHERE username = ?', [phone || '', username]); } catch(e) {}
+        try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET email = ? WHERE username = ?', [email || '', username]); } catch(e) {}
+        try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET invite_code = ? WHERE username = ?', [inviteCode, username]); } catch(e) {}
         
         // 邀請人獎勵
         if (invitedBy) {

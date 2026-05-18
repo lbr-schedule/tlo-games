@@ -360,7 +360,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
       <button onclick="document.getElementById('pokerCustomAvatarInput').click()" style="width:100%;padding:10px;background:#333;color:#ffd700;border:1px solid #ffd700;border-radius:8px;font-size:0.9rem;cursor:pointer;">📷 上傳自訂圖片</button>
       <div id="pokerCustomAvatarPreview" style="margin-top:10px;display:none;">
         <img id="pokerCustomAvatarImg" style="width:80px;height:80px;border-radius:50%;border:3px solid #ffd700;object-fit:cover;" />
-        <button onclick="savePokerCustomAvatar()" style="margin-left:10px;padding:8px 16px;background:#4f4;color:#000;border:none;border-radius:8px;font-size:0.85rem;font-weight:bold;cursor:pointer;">✅ 設為頭像</button>
+        
       </div>
     </div>
     <button onclick="savePokerAvatar()" style="width:100%;padding:12px;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;margin-top:12px;">確認</button>
@@ -409,6 +409,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   <div class="modal" style="max-width:320px;">
     <h2>🎟️ 我的邀請碼</h2>
     <div id="pokerInviteCodeDisplay" style="color:#ffd700;font-size:1.5rem;font-weight:bold;text-align:center;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;margin:15px 0;letter-spacing:3px;"></div>
+    <button onclick="copyPokerInviteCode()" style="width:100%;padding:12px;background:#D4AF37;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-bottom:10px;">📋 一鍵複製邀請碼</button>
     <p style="color:#888;font-size:0.85rem;text-align:center;">邀請好友雙方都可獲得金幣獎勵</p>
     <button onclick="closePokerInviteModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
   </div>
@@ -569,7 +570,7 @@ function playSound(type) {
     if (type === 'deal') {
       if (dealSound) {
         const d = new Audio(dealSound);
-        d.volume = 0.85;
+        d.volume = 01.0;
         d.play().catch(()=>{});
       } else {
         // Fallback to crisp snap
@@ -590,7 +591,7 @@ function playSound(type) {
     } else if (type === 'shuffle') {
       if (shuffleSound) {
         const s = new Audio(shuffleSound);
-        s.volume = 0.85;
+        s.volume = 01.0;
         s.play().catch(()=>{});
       } else {
         // Fallback to crisp sound
@@ -1007,7 +1008,7 @@ function advancePhase() {
     G.phase='turn';
     G.community.push(G.deck.pop());
     var ca = new Audio(dealSound);
-    ca.volume = 0.85;
+    ca.volume = 1.0;
     ca.play().catch(()=>{});
     setTimeout(() => { render(); enablePlayerActions(); }, 400);
     return;
@@ -1015,7 +1016,7 @@ function advancePhase() {
     G.phase='river';
     G.community.push(G.deck.pop());
     var ca = new Audio(dealSound);
-    ca.volume = 0.85;
+    ca.volume = 1.0;
     ca.play().catch(()=>{});
     setTimeout(() => { render(); enablePlayerActions(); }, 400);
     return;
@@ -1076,12 +1077,12 @@ function showResult(winner,pHand,aHand) {
     scoreChange = G.pot - playerBetThisRound;
     G.player.chips += G.pot;
     title='🎉 你贏了！'; badge='🏆'; playSound('win');
-    desc='你的: '+pHand.name; amount='+'+scoreChange;
+    desc='你的: '+pHand.name; amount=(scoreChange >= 0 ? '獲得 '+scoreChange : '失去 '+Math.abs(scoreChange));
   } else if(winner==='ai'){
     scoreChange = -playerBetThisRound;
     G.ai.chips+=G.pot;
     title='💀 對手獲勝'; badge='💀'; playSound('lose');
-    desc='電腦: '+aHand.name; amount=scoreChange;
+    desc='電腦: '+aHand.name; amount=(scoreChange < 0 ? '失去 '+Math.abs(scoreChange) : scoreChange);
   } else {
     const half=Math.floor(G.pot/2);
     G.player.chips+=half; G.ai.chips+=half;
@@ -1089,7 +1090,8 @@ function showResult(winner,pHand,aHand) {
     desc='各拿 '+half; amount='各拿 '+half;
     scoreChange = half - playerBetThisRound;
   }
-  G.handNum++;
+  G.handNum = (parseInt(localStorage.getItem('pokerHandNum')) || 0) + 1;
+  localStorage.setItem('pokerHandNum', G.handNum);
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
   if(history.length>50) history=history.slice(0,50);
 
@@ -1141,12 +1143,12 @@ function showResult(winner,pHand,aHand) {
 
         function showAdPopup() {
             const adImages = [
-                'https://picsum.photos/seed/tlo1/300/200',
-                'https://picsum.photos/seed/tlo2/300/200',
-                'https://picsum.photos/seed/tlo3/300/200',
-                'https://picsum.photos/seed/tlo4/300/200',
-                'https://picsum.photos/seed/tlo5/300/200',
-                'https://picsum.photos/seed/tlo6/300/200'
+                'https://picsum.photos/seed/ad1/300/200',
+                'https://picsum.photos/seed/ad2/300/200',
+                'https://picsum.photos/seed/ad3/300/200',
+                'https://picsum.photos/seed/ad4/300/200',
+                'https://picsum.photos/seed/ad5/300/200',
+                'https://picsum.photos/seed/ad6/300/200'
             ];
             const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
             let modal = document.getElementById('pokerAdModal');
@@ -1471,7 +1473,7 @@ function renderPokerProfile(d) {
   var html = '';
   // Avatar with edit icon - use data attributes like roulette
   html += '<div style="position:relative;display:inline-block;margin:10px auto;cursor:pointer;" data-profile-action="open-avatar" onclick="openPokerAvatarModal()">';
-  html += '<img src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;" />';
+  html += '<img id="pokerAvatarImg" src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;" onerror="this.src=\'/poker/avatar1.jpg\'" />';
   html += '<div style="position:absolute;bottom:-4px;right:-4px;background:'+tc+';color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;">Lv.'+(p.level||1)+'</div>';
   html += '<div style="position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;">✏️</div>';
   html += '</div>';
@@ -1806,6 +1808,18 @@ function showPokerVideo() {
   } else {
     // Fallback to old modal
     document.getElementById('pokerVideoModal').classList.add('show');
+  }
+}
+
+function copyPokerInviteCode() {
+  var code = document.getElementById('pokerInviteCodeDisplay').textContent;
+  if(code) {
+    navigator.clipboard.writeText(code).then(() => {
+      var btn = document.querySelector('button[onclick="copyPokerInviteCode()"]');
+      if(btn) { btn.textContent = '已複製！'; setTimeout(() => btn.textContent = '📋 一鍵複製邀請碼', 1500); }
+    }).catch(() => {
+      showToast('複製失敗');
+    });
   }
 }
 
