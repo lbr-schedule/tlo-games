@@ -524,7 +524,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <div id="resultImg" style="margin-bottom:0.5rem;text-align:center"></div>
     <h2 id="resultTitle" style="margin-bottom:0.3rem">結算</h2>
     <div id="resultCards" style="margin:0.5rem 0;text-align:left"></div>
-    <div style="font-size:1.4rem;font-weight:bold;margin:0.5rem 0" id="resultAmount"></div>
+    <div style="font-size:1.6rem;font-weight:bold;margin:0.5rem 0;color:#ffd700;text-shadow:0 2px 8px rgba(0,0,0,0.5);letter-spacing:2px;" id="resultAmount"></div>
     <button class="btn btn-primary" onclick="nextHand()">下一局</button>
   </div>
 </div>
@@ -750,7 +750,7 @@ function newGame(name, chips) {
   G={deck:[],community:[],phase:'preflop',stage:'player',playerActed:false,pot:0,lastRaise:0,
     player:{hole:[],chips:chips||1000,bet:0,folded:false},
     ai:{hole:[],chips:1000,bet:0,folded:false},
-    handNum:1,dealerIdx:0};
+    handNum:parseInt(localStorage.getItem('pokerHandNum')||'0')||1,dealerIdx:0};
   document.getElementById('playerChips').textContent=G.player.chips;
 }
 
@@ -1090,7 +1090,7 @@ function showResult(winner,pHand,aHand) {
     desc='各拿 '+half; amount='各拿 '+half;
     scoreChange = half - playerBetThisRound;
   }
-  G.handNum = (parseInt(localStorage.getItem('pokerHandNum')) || 0) + 1;
+  G.handNum = parseInt(localStorage.getItem('pokerHandNum') || '0') + 1;
   localStorage.setItem('pokerHandNum', G.handNum);
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
   if(history.length>50) history=history.slice(0,50);
@@ -1228,7 +1228,7 @@ function playBgMusic() {
     bgMusic = new Audio();
     bgMusic.src = 'chonklap.mp4';
     bgMusic.loop = true;
-    bgMusic.volume = 0.25;
+    bgMusic.volume = 1.0;
   }
   bgMusic.play().catch(()=>{});
 }
@@ -1375,7 +1375,7 @@ function loadHistoryFromBackend() {
           badge:h.result==='win'?'🎉':h.result==='tie'?'🤝':'💀',
           desc:h.hand_name||'一般',
           amount:'+'+h.pot,
-          handNum:1,time:h.time
+          handNum:parseInt(localStorage.getItem('pokerHandNum')||'0')||1,time:h.time
         }));
       }
     }).catch(()=>{});
@@ -1468,12 +1468,12 @@ function renderPokerProfile(d) {
   var av = p.avatar_url || '/poker/avatar1.jpg';
   
   // Preload avatar immediately like roulette does - prevents slow load flicker
-  var avImg = new Image(); avImg.src = av;
+  var avImg = new Image(); avImg.src = av; avImg.onload = function() { document.getElementById('pokerAvatarImg').style.opacity = '1'; };
   
   var html = '';
   // Avatar with edit icon - use data attributes like roulette
   html += '<div style="position:relative;display:inline-block;margin:10px auto;cursor:pointer;" data-profile-action="open-avatar" onclick="openPokerAvatarModal()">';
-  html += '<img id="pokerAvatarImg" src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;" onerror="this.src=\'/poker/avatar1.jpg\'" />';
+  html += '<img id="pokerAvatarImg" src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;opacity:0;transition:opacity 0.3s;" onerror="this.src=\'/poker/avatar1.jpg\';this.style.opacity=\'1\'" onload="this.style.opacity=\'1\'" />';
   html += '<div style="position:absolute;bottom:-4px;right:-4px;background:'+tc+';color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;">Lv.'+(p.level||1)+'</div>';
   html += '<div style="position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;">✏️</div>';
   html += '</div>';
@@ -1542,6 +1542,10 @@ function selectPokerAvatar(el, path) {
   window._selectedPokerAvatar = path;
 }
 function savePokerAvatar() {
+  // Check if there's a custom uploaded avatar first
+  if(window._pokerCustomAvatarData) {
+    window._selectedPokerAvatar = window._pokerCustomAvatarData;
+  }
   if(!window._selectedPokerAvatar || !currentUser) return;
   fetch('/api/poker/profile', {
     method:'PUT',
@@ -1563,6 +1567,7 @@ function previewPokerCustomAvatar(event) {
     document.getElementById('pokerCustomAvatarImg').src = e.target.result;
     document.getElementById('pokerCustomAvatarPreview').style.display = 'block';
     window._pokerCustomAvatarData = e.target.result;
+    window._selectedPokerAvatar = e.target.result; // Mark as custom upload
   };
   reader.readAsDataURL(file);
 }
@@ -1995,7 +2000,7 @@ function showPokerHistory() {
         var cls = h.result === 'player' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
         var badge = h.result === 'player' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
         var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
-        var t = h.time ? new Date(h.time.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit'}) : '';
+        var t = h.time ? new Date(h.time.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}) : '';
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';
