@@ -622,6 +622,12 @@ async function processPokerLoginStreak(db, username) {
             sql: `INSERT INTO poker_player_stats (username, login_streak, last_login_date) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET login_streak = ?, last_login_date = ?`,
             args: [username, newStreak, today, newStreak, today]
         });
+        
+        // Also ensure poker_daily_bonus row exists for this user
+        await db.execute({
+            sql: `INSERT INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, '', 0) ON CONFLICT(username) DO UPDATE SET username = username`,
+            args: [username]
+        });
     } catch (e) {
         console.log('processPokerLoginStreak error:', e.message);
     }
@@ -677,6 +683,9 @@ router.post('/claim-daily-bonus', async (req, res) => {
         
         // 發放獎勵
         await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [result.bonus, username]);
+        
+        // Update last_claim in poker_daily_bonus
+        await db.execute({ sql: 'UPDATE poker_daily_bonus SET last_claim = ?, streak = ? WHERE username = ?', args: [today, result.streak, username] });
         
         const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
         const newScore = r.rows ? r.rows[0].score : 0;
