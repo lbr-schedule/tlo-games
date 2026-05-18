@@ -55,9 +55,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .card.s-cyan { background: linear-gradient(135deg,#1abc9c,#16a085); color: #fff; }
 .card.s-yellow { background: linear-gradient(135deg,#f1c40f,#d4ac0d); color: #000; }
 
-.card.back { background: radial-gradient(ellipse at center, #9B1B35 0%, #7B112C 40%, #4a0a1a 100%); border: 2px solid #D4AF37; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-.card.back::before { content: ''; position: absolute; inset: 8px; border: 2px solid rgba(212,175,55,0.6); border-radius: 8px; }
-.card.back::after { content: 'T-LO'; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: bold; font-family: "Georgia", "Bookman Old Style", "Palatino Linotype", serif; color: #D4AF37; letter-spacing: 5px; text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(212,175,55,0.3); white-space: nowrap; }
+.card.back { background: radial-gradient(ellipse at center, #9B1B35 0%, #7B112C 40%, #4a0a1a 100%); border: 2px solid #D4AF37; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.card.back::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 30%, rgba(212,175,55,0.15) 0%, transparent 60%); pointer-events: none; }
+.card.back::after { content: 'T-LO'; font-size: 0.7rem; font-weight: bold; font-family: "Georgia", "Palatino Linotype", serif; color: #D4AF37; letter-spacing: 5px; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
 .hidden-card { width: 64px; height: 86px; background: linear-gradient(135deg,#7B112C,#4a0a1a); border-radius: 10px; flex-shrink: 0; border: 2px solid #D4AF37; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size: 1.1rem; font-weight: bold; font-family: Trajan,'Segoe UI',Arial,sans-serif; color: #D4AF37; letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
 
 .community-section { margin: 0.8rem 0; text-align: center; }
@@ -79,6 +79,12 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .check-btn { background: linear-gradient(135deg,#27ae60,#1a7a3a); color: #fff; }
 .raise-btn { background: linear-gradient(135deg,#e67e22,#c0392b); color: #fff; }
 .allin-btn { background: linear-gradient(135deg,#8e44ad,#6c3483); color: #fff; }
+.title-shine { position: relative; overflow: hidden; display: inline-block; }
+.title-shine::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent); animation: title-shine-slide 1.5s linear infinite; }
+@keyframes title-shine-slide {
+    0% { left: -50%; }
+    100% { left: 150%; }
+}
 .raise-input { padding: 0.4rem; width: 65px; border-radius: 6px; border: 1px solid #333; background: #1a1a3a; color: #fff; text-align: center; font-size: 0.85rem; }
 
 .waiting-hint { text-align: center; font-size: 0.85rem; color: #888; margin: 0.4rem 0; animation: pulse 1.5s ease-in-out infinite; }
@@ -725,13 +731,13 @@ function renderEmptyDeal() {
 }
 
 function render() {
-  document.getElementById('handNum').textContent=G.handNum;
+  var handNumEl=document.getElementById('handNum'); if(handNumEl) handNumEl.textContent=G.handNum;
   const pn={preflop:'發牌',flop:'翻牌',turn:'轉牌',river:'河牌',showdown:'結算'};
-  document.getElementById('phaseTag').textContent=pn[G.phase]||G.phase;
-  document.getElementById('potNum').textContent=G.pot;
-  document.getElementById('dealerInfo').textContent='莊家: '+(G.dealerIdx===0?'玩家':'電腦');
-  document.getElementById('aiDealerChip').style.display=G.dealerIdx===1?'flex':'none';
-  document.getElementById('playerDealerChip').style.display=G.dealerIdx===0?'flex':'none';
+  var phaseTagEl=document.getElementById('phaseTag'); if(phaseTagEl) phaseTagEl.textContent=pn[G.phase]||G.phase;
+  var potNumEl=document.getElementById('potNum'); if(potNumEl) potNumEl.textContent=G.pot;
+  var dealerInfoEl=document.getElementById('dealerInfo'); if(dealerInfoEl) dealerInfoEl.textContent='莊家: '+(G.dealerIdx===0?'玩家':'電腦');
+  var aiDelEl=document.getElementById('aiDealerChip'); if(aiDelEl) aiDelEl.style.display=G.dealerIdx===1?'flex':'none';
+  var playerDelEl=document.getElementById('playerDealerChip'); if(playerDelEl) playerDelEl.style.display=G.dealerIdx===0?'flex':'none';
 
   document.getElementById('aiChips').textContent=G.ai.chips;
   document.getElementById('aiBet').textContent=G.ai.bet>0?'下注: '+G.ai.bet:'';
@@ -1270,7 +1276,7 @@ var _pokerProfileCache = null;
 var _pokerProfileCacheTime = 0;
 
 async function updatePokerPlayerNameDisplay() {
-  // Like roulette: show player name + title/稱號 in top-bar
+  // Like roulette: show player name + title/稱號 in top-bar (player name LEFT, title RIGHT)
   var nameEl = document.getElementById('pokerPlayerNameDisplay');
   if(!nameEl || !currentUser) return;
   try {
@@ -1287,7 +1293,8 @@ async function updatePokerPlayerNameDisplay() {
         '鑽石': 'linear-gradient(135deg,#B9F2FF,#00FFFF)'
       };
       var grad = tierGradients[tier] || tierGradients['青銅'];
-      nameEl.innerHTML = '<span style="background:'+grad+';padding:2px 10px;border-radius:10px;font-weight:bold;font-size:0.8rem;color:#fff;">'+title+'</span><span style="color:#fff;font-size:0.85rem;">'+currentUser.username+'</span>';
+      // Name LEFT, title RIGHT with shine animation (like roulette)
+      nameEl.innerHTML = '<span style="color:#fff;font-size:0.85rem;margin-right:6px;">'+currentUser.username+'</span><span class="title-shine" onclick="showPokerLevelInfo()" style="background:'+grad+';padding:2px 10px;border-radius:10px;font-weight:bold;font-size:0.8rem;color:#fff;position:relative;overflow:hidden;cursor:pointer;">'+title+'</span>';
     } else {
       nameEl.innerHTML = '<span style="color:#fff;font-size:0.85rem;">'+currentUser.username+'</span>';
     }
@@ -1486,14 +1493,17 @@ var POKER_TAG_OPTIONS = {
 };
 function openPokerTagModal(type, title) {
   window._pokerTagType = type;
-  // Pre-select previously saved tags
+  // Pre-select previously saved tags - guard against null profile
   var profile = _pokerProfileCache && _pokerProfileCache.profile;
   var savedValue = '';
-  if(type === 'personality') savedValue = profile && profile.personality_tag || '';
-  else if(type === 'interest') savedValue = profile && profile.interest_tag || '';
-  else if(type === 'badge') savedValue = profile && profile.badge_tag || '';
-  else if(type === 'mood') savedValue = profile && profile.mood || '';
-  window._pokerTagSelected = savedValue ? savedValue.split('、') : [];
+  if(!profile) {
+    window._pokerTagSelected = [];
+  } else if(type === 'personality') savedValue = profile.personality_tag || '';
+  else if(type === 'interest') savedValue = profile.interest_tag || '';
+  else if(type === 'badge') savedValue = profile.badge_tag || '';
+  else if(type === 'mood') savedValue = profile.mood || '';
+  if(savedValue) window._pokerTagSelected = savedValue.split('、');
+  else window._pokerTagSelected = [];
   
   document.getElementById('pokerTagModalTitle').textContent = title;
   var html = '';
@@ -1726,6 +1736,35 @@ function showPokerLevel() {
     document.getElementById('pokerLevelContent').innerHTML = html;
     document.getElementById('pokerLevelModal').classList.add('show');
   }).catch(()=>{alert('載入失敗');});
+}
+async function showPokerLevelInfo() {
+  if(!currentUser) return;
+  var modal = document.getElementById('pokerLevelModal');
+  var inner = document.getElementById('pokerLevelContent');
+  if(!modal || !inner) return;
+  modal.classList.add('show');
+  inner.innerHTML = '<div style="color:#ffd700;padding:30px;text-align:center;">載入中...</div>';
+  try {
+    var r = await fetch('/api/poker/player-level/'+encodeURIComponent(currentUser.username));
+    var d = await r.json();
+    var tier = d.tier || '青銅';
+    var tierColor = {青銅:'#CD7F32',白銀:'#C0C0C0',黃金:'#FFD700',白金:'#E5E4E2',鑽石:'#B9F2FF'}[tier] || '#ffd700';
+    var tiers = [
+      {name:'青銅',minLv:1,maxLv:10,minBet:0},
+      {name:'白銀',minLv:11,maxLv:20,minBet:1000},
+      {name:'黃金',minLv:21,maxLv:30,minBet:5000},
+      {name:'白金',minLv:31,maxLv:40,minBet:30000},
+      {name:'鑽石',minLv:41,maxLv:50,minBet:100000}
+    ];
+    var tierBars = tiers.map(t => {
+      var active = d.level >= t.minLv;
+      var pct = t.minBet === 0 ? 100 : Math.min(100, Math.round((d.weeklyBet / t.minBet) * 100));
+      return '<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><span style="color:'+t.color+';font-weight:bold;">'+t.name+'</span><span style="color:#888;">Lv.'+t.minLv+'-'+t.maxLv+'</span></div><div style="background:#333;border-radius:4px;height:8px;overflow:hidden;"><div style="width:'+(active?Math.min(100,pct):0)+'%;height:100%;background:'+t.color+';transition:width 0.3s;"></div></div><div style="font-size:0.75rem;color:#666;text-align:right;">門檻 $'+t.minBet.toLocaleString()+'</div></div>';
+    }).join('');
+    inner.innerHTML = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;"><div style="text-align:center;margin-bottom:20px;"><div style="font-size:2rem;font-weight:bold;color:'+tierColor+';">Lv.'+(d.level||1)+' '+tier+'</div><div style="font-size:1rem;color:#aaa;margin-top:5px;">稱號：'+(d.title||'菜鳥')+'</div></div><div style="margin-bottom:15px;">'+tierBars+'</div><div style="text-align:center;color:#888;font-size:0.85rem;">本週下注：$'+(d.weeklyBet||0).toLocaleString()+'</div></div>';
+  } catch(e) {
+    inner.innerHTML = '<div style="color:#f44;padding:20px;text-align:center;">載入失敗</div>';
+  }
 }
 function closePokerLevelModal(){document.getElementById('pokerLevelModal').classList.remove('show');}
 
