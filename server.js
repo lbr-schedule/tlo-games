@@ -2583,6 +2583,7 @@ async function initPokerTables() {
     if (!pokerDbAvailable || !pokerDb) return;
     try {
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_users (username TEXT PRIMARY KEY, password TEXT NOT NULL, score INTEGER DEFAULT 10000, games_played INTEGER DEFAULT 0, games_won INTEGER DEFAULT 0, games_tied INTEGER DEFAULT 0, total_bet INTEGER DEFAULT 0, total_won INTEGER DEFAULT 0, last_login TEXT, lastVideoClaim TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)` });
+        try { await pokerDb.execute({ sql: `ALTER TABLE poker_users ADD COLUMN lastVideoClaim TEXT DEFAULT ''` }); } catch(e) {}
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
         console.log('撲克資料庫初始化完成');
@@ -2607,7 +2608,7 @@ if (POKER_LOCAL_TEST_MODE) {
                 const username = args[0];
                 const user = pokerMemoryDb.users[username];
                 if (user) {
-                    return { rows: [{ username: user.username, score: user.score, games_played: user.games_played, games_won: user.games_won, games_tied: user.games_tied }], rowsAffected: 0 };
+                    return { rows: [{ username: user.username, score: user.score, games_played: user.games_played, games_won: user.games_won, games_tied: user.games_tied, lastVideoClaim: user.lastVideoClaim || '' }], rowsAffected: 0 };
                 }
                 return { rows: [], rowsAffected: 0 };
             }
@@ -2635,6 +2636,9 @@ if (POKER_LOCAL_TEST_MODE) {
                 if (pokerMemoryDb.users[username]) {
                     if (sql.includes('score = score +')) {
                         pokerMemoryDb.users[username].score += args[0];
+                    }
+                    if (sql.includes('lastVideoClaim')) {
+                        pokerMemoryDb.users[username].lastVideoClaim = args[0];
                     }
                     if (sql.includes('games_won')) {
                         pokerMemoryDb.users[username].games_won = (pokerMemoryDb.users[username].games_won || 0) + 1;
