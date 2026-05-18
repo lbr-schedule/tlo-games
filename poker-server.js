@@ -73,6 +73,9 @@ async function initPokerDb(client) {
     try {
         await client.execute('ALTER TABLE poker_users ADD COLUMN email TEXT DEFAULT ""');
     } catch(e) {}
+    try {
+        await client.execute('ALTER TABLE poker_users ADD COLUMN invite_code TEXT DEFAULT ""');
+    } catch(e) {}
     await client.execute(`
         CREATE TABLE IF NOT EXISTS poker_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

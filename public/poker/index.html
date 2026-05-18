@@ -703,13 +703,14 @@ function rankHand(cards) {
   return{rank:0,name:'高牌',hi:Math.max(...vals)};
 }
 function cmpHands(a,b){
-  if(a.rank!==b.rank) return a.rank-b.rank;
-  if(a.hi!==b.hi) return b.hi-a.hi;
-  if(a.lo!==undefined&&b.lo!==undefined&&a.lo!==b.lo) return a.lo-b.lo;
-  if(a.kicker!==undefined&&b.kicker!==undefined) return b.kicker-a.kicker;
-  if(a.kicker!==undefined&&b.kicker===undefined) return 1;
-  if(a.kicker===undefined&&b.kicker!==undefined) return -1;
-  return 0;
+  const result = (a.rank!==b.rank) ? a.rank-b.rank :
+                 (a.hi!==b.hi) ? b.hi-a.hi :
+                 (a.lo!==undefined&&b.lo!==undefined&&a.lo!==b.lo) ? a.lo-b.lo :
+                 (a.kicker!==undefined&&b.kicker!==undefined) ? b.kicker-a.kicker :
+                 (a.kicker!==undefined&&b.kicker===undefined) ? 1 :
+                 (a.kicker===undefined&&b.kicker!==undefined) ? -1 : 0;
+  console.log('cmpHands:', JSON.stringify(a), 'vs', JSON.stringify(b), '=', result);
+  return result;
 }
 function best5(hole,comm){
   const all=[...hole,...comm];
@@ -1031,9 +1032,7 @@ function revealNextCommunity() {
   
   if(G.community.length < target){
     G.community.push(G.deck.pop());
-    var ca = new Audio(dealSound);
-    ca.volume = 0.85;
-    ca.play().catch(()=>{});
+    playSound('deal');
     // Re-render to show newly revealed card
     const n = G.community.length;
     let ch='';
@@ -1068,23 +1067,27 @@ function showdown() {
 function showResult(winner,pHand,aHand) {
   pHand=pHand||best5(G.player.hole,G.community);
   aHand=aHand||best5(G.ai.hole,G.community);
-  let title='',desc='',amount='',badge='';
+  // DEBUG: log hand comparison
+  console.log('SHOWRESULT: winner='+winner, 'pHand='+JSON.stringify(pHand), 'aHand='+JSON.stringify(aHand));
+  console.log('Player cards:', G.player.hole, '  Board:', G.community);
+  let title='',desc='',amount='',badge='',scoreChange=0;
+  const playerBetThisRound = G.player.bet || 0;
   if(winner==='player'){
-    G.player.chips+=G.pot;
-    title='🎉 你贏了！'; badge='🏆';
-    desc='你的: '+pHand.name; amount='+'+G.pot;
-    playSound('win');
+    scoreChange = G.pot - playerBetThisRound;
+    G.player.chips += G.pot;
+    title='🎉 你贏了！'; badge='🏆'; playSound('win');
+    desc='你的: '+pHand.name; amount='+'+scoreChange;
   } else if(winner==='ai'){
+    scoreChange = -playerBetThisRound;
     G.ai.chips+=G.pot;
-    title='💀 對手獲勝'; badge='💀';
-    desc='電腦: '+aHand.name; amount='-'+G.pot;
-    playSound('lose');
+    title='💀 對手獲勝'; badge='💀'; playSound('lose');
+    desc='電腦: '+aHand.name; amount=scoreChange;
   } else {
     const half=Math.floor(G.pot/2);
     G.player.chips+=half; G.ai.chips+=half;
-    title='🤝 平手！'; badge='🤝';
+    title='🤝 平手！'; badge='🤝'; playSound('tie');
     desc='各拿 '+half; amount='各拿 '+half;
-    playSound('tie');
+    scoreChange = half - playerBetThisRound;
   }
   G.handNum++;
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
@@ -1092,7 +1095,7 @@ function showResult(winner,pHand,aHand) {
 
   // Sync to backend - update score AND save history
   if(currentUser && typeof updateScoreBackend === 'function'){
-    updateScoreBackend(currentUser.username, winner === 'player' ? G.pot : winner === 'ai' ? -G.pot : 0, winner, G.pot, pHand.name || '一般');
+    updateScoreBackend(currentUser.username, scoreChange, winner, G.pot, pHand.name || '一般');
   }
   // Also save history entry
   if(currentUser){
@@ -1137,7 +1140,14 @@ function showResult(winner,pHand,aHand) {
 }
 
         function showAdPopup() {
-            const adImages = ['/poker/ad1.jpg', '/poker/ad2.jpg', '/poker/ad3.jpg', '/poker/ad4.png', '/poker/ad5.jpg', '/poker/ad6.png'];
+            const adImages = [
+                'https://picsum.photos/seed/tlo1/300/200',
+                'https://picsum.photos/seed/tlo2/300/200',
+                'https://picsum.photos/seed/tlo3/300/200',
+                'https://picsum.photos/seed/tlo4/300/200',
+                'https://picsum.photos/seed/tlo5/300/200',
+                'https://picsum.photos/seed/tlo6/300/200'
+            ];
             const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
             let modal = document.getElementById('pokerAdModal');
             if (!modal) {
@@ -1971,7 +1981,7 @@ function showPokerHistory() {
         var cls = h.result === 'player' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
         var badge = h.result === 'player' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
         var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
-        var t = h.time ? new Date(h.time).toLocaleString('zh-TW') : '';
+        var t = h.time ? new Date(h.time.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit'}) : '';
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';
