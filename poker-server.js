@@ -130,7 +130,7 @@ async function initPokerDb(client) {
 
 router.post('/register', async (req, res) => {
     try {
-        const { username, password, invitedBy } = req.body;
+        const { username, password, phone, email, invitedBy } = req.body;
         if (!username || !password) {
             return res.json({ success: false, message: '請填寫帳號和密碼' });
         }
@@ -152,16 +152,16 @@ router.post('/register', async (req, res) => {
         
         // 註冊
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_users (username, password, score) VALUES (?, ?, 10000)',
-            [username, password]
+            'INSERT INTO poker_users (username, password, score, phone, email) VALUES (?, ?, 10000, ?, ?)',
+            [username, password, phone || '', email || '']
         );
         
         // 邀請人獎勵
         if (invitedBy) {
             const inviter = await req.app.locals.pokerDb.execute(
                 'SELECT score FROM poker_users WHERE username = ?',
-                [invitedBy
-            ]);
+                [invitedBy]
+            );
             if (inviter.rows.length > 0) {
                 await req.app.locals.pokerDb.execute(
                     'UPDATE poker_users SET score = score + 500 WHERE username = ?',
@@ -311,6 +311,18 @@ router.post('/update-score', async (req, res) => {
     try {
         const { username, score_change, result, pot, hand_name, opponent } = req.body;
         
+        // 檢查是否需要重置每週下注（每週一凌晨）
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon
+        const hours = now.getHours();
+        // 每週一凌晨00:00-01:00檢查並重置
+        if (dayOfWeek === 1 && hours < 1) {
+            await req.app.locals.pokerDb.execute(
+                'UPDATE poker_player_stats SET weekly_bet = 0 WHERE username = ?',
+                [username]
+            );
+        }
+        
         // 更新 poker_users 分數
         await req.app.locals.pokerDb.execute(
             'UPDATE poker_users SET score = score + ?, games_played = games_played + 1 WHERE username = ?',
@@ -336,11 +348,12 @@ router.post('/update-score', async (req, res) => {
             [username, result, pot, hand_name || '無', opponent || '電腦']
         );
         
-        // 更新每日任務統計 (bet_count_today, wins_today)
+        // 更新每週下注（使用絕對值，不論輸贏）
+        const absBet = Math.abs(score_change);
         const today = new Date().toISOString().split('T')[0];
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_player_stats (username, bet_count_today, wins_today, last_task_reset) VALUES (?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET bet_count_today = bet_count_today + 1, last_task_reset = ?',
-            [username, today, today]
+            'INSERT INTO poker_player_stats (username, weekly_bet, bet_count_today, wins_today, last_task_reset) VALUES (?, ?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET weekly_bet = weekly_bet + ?, bet_count_today = bet_count_today + 1, last_task_reset = ?',
+            [username, absBet, today, absBet, today]
         );
         
         if (result === 'win') {
