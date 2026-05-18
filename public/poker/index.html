@@ -1555,7 +1555,10 @@ function selectPokerTag(el, v) {
 function confirmPokerTag() {
   if(!window._pokerTagSelected || window._pokerTagSelected.length === 0) { alert('請至少選擇一項'); return; }
   var data = {username:currentUser.username};
-  data[window._pokerTagType] = window._pokerTagSelected.join('、');
+  // Map type to the exact field name the server expects
+  var fieldMap = {personality:'personality_tag', interest:'interest_tag', badge:'badge_tag', mood:'mood'};
+  var field = fieldMap[window._pokerTagType];
+  if(field) data[field] = window._pokerTagSelected.join('、');
   // Show saving state in modal title area
   var titleEl = document.getElementById('pokerTagModalTitle');
   var origTitle = titleEl ? titleEl.textContent : '';
@@ -1863,7 +1866,9 @@ function editPokerProfile(){
 }
 function showPokerHistory() {
   if(!currentUser){alert('請先登入');return;}
-  document.getElementById('pokerHistoryModal').classList.add('show');
+  closePlayerMenu();
+  document.getElementById('gameScreen').style.display='none';
+  document.getElementById('historyScreen').style.display='block';
   fetch('/api/poker/history/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
     var html = '';
     if(d.history && d.history.length > 0){
@@ -1871,12 +1876,13 @@ function showPokerHistory() {
         var cls = h.result === 'win' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
         var badge = h.result === 'win' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
         var name = h.result === 'win' ? '你' : h.result === 'tie' ? '平手' : '電腦';
+        var t = h.time ? new Date(h.time).toLocaleString('zh-TW') : '';
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';
         html += '<div class="result-name">'+name+'</div>';
         html += '<div class="result-detail">'+h.hand_name+' | '+h.pot+' 金幣</div>';
-        html += '<div class="result-detail">'+String(h.time||'').substring(0,16)+'</div>';
+        html += '<div class="result-detail">'+t+'</div>';
         html += '</div></div>';
       });
     } else {

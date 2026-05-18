@@ -59,9 +59,19 @@ async function initPokerDb(client) {
             total_won INTEGER DEFAULT 0,
             last_login TEXT,
             lastVideoClaim TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            email TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    
+    // Add phone/email columns if they don't exist (for existing databases)
+    try {
+        await client.execute('ALTER TABLE poker_users ADD COLUMN phone TEXT DEFAULT ""');
+    } catch(e) {}
+    try {
+        await client.execute('ALTER TABLE poker_users ADD COLUMN email TEXT DEFAULT ""');
+    } catch(e) {}
     await client.execute(`
         CREATE TABLE IF NOT EXISTS poker_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -329,8 +339,8 @@ router.post('/update-score', async (req, res) => {
             [score_change, username]
         );
         
-        // 更新勝負
-        if (result === 'win') {
+        // 更新勝負 (前端發來 'player'/'ai'/'tie')
+        if (result === 'player') {
             await req.app.locals.pokerDb.execute(
                 'UPDATE poker_users SET games_won = games_won + 1, total_won = total_won + ? WHERE username = ?',
                 [pot, username]
@@ -356,7 +366,7 @@ router.post('/update-score', async (req, res) => {
             [username, absBet, today, absBet, today]
         );
         
-        if (result === 'win') {
+        if (result === 'player') {
             await req.app.locals.pokerDb.execute(
                 'UPDATE poker_player_stats SET wins_today = wins_today + 1 WHERE username = ?',
                 [username]
