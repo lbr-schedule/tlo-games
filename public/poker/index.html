@@ -197,7 +197,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
   </div>
     <div class="top-bar" style="display:flex;align-items:center;gap:8px;">
     <span id="pokerPlayerNameDisplay" style="display:flex;align-items:center;gap:6px;"></span>
-    <span class="phase-tag" id="phaseTag" style="margin-left:auto;">發牌</span>
+    <span class="phase-tag" id="phaseTag" style="margin:0 auto;">發牌</span>
     <span style="color:#aaa;font-size:0.8rem;">局次:<span id="handNum">1</span></span>
   </div>
 
@@ -404,30 +404,30 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <h2>❓ 德州撲克說明</h2>
     <div id="pokerHelpPage1" style="color:#fff;text-align:left;padding:10px 0;">
       <h3 style="color:#ffd700;margin-bottom:10px;">🎴 基本規則</h3>
-      <p style="margin-bottom:8px;">1. 發給每位玩家 2 張底牌</p>
-      <p style="margin-bottom:8px;">2. 公共牌分三階段發出（3/1/1）</p>
+      <p style="margin-bottom:8px;">1. 發給每位玩家 2 張底牌，只有自己能看</p>
+      <p style="margin-bottom:8px;">2. 公共牌分三階段發出：翻牌（3張）、轉牌（1張）、河牌（1張）</p>
       <p style="margin-bottom:8px;">3. 玩家可選擇：過牌、加注、跟注、棄牌</p>
       <p style="margin-bottom:15px;">4. 最後比大小，大的贏得底池</p>
-      <h3 style="color:#ffd700;margin-bottom:10px;">🃏 牌型大小</h3>
+      <h3 style="color:#ffd700;margin-bottom:10px;">🃏 牌型大小（由大到小）</h3>
       <p style="margin-bottom:6px;">皇家同花順 > 同花順 > 四條</p>
-      <p style="margin-bottom:6px;">full house > 同花 > 順子</p>
+      <p style="margin-bottom:6px;">滿堂紅 > 同花 > 順子</p>
       <p style="margin-bottom:6px;">三條 > 兩對 > 一對 > 高牌</p>
       <button onclick="showPokerHelpPage(2)" style="width:100%;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">下一頁 →</button>
     </div>
     <div id="pokerHelpPage2" style="display:none;color:#fff;text-align:left;padding:10px 0;">
       <h3 style="color:#ffd700;margin-bottom:10px;">💰 下注選項</h3>
-      <p style="margin-bottom:8px;">• 過牌：不通過，不下注</p>
-      <p style="margin-bottom:8px;">• 跟注：跟隨對手下注</p>
-      <p style="margin-bottom:8px;">• 加注：增加下注金額</p>
-      <p style="margin-bottom:15px;">• 棄牌：放棄此局</p>
-      <h3 style="color:#ffd700;margin-bottom:10px;">💡 技巧提示</h3>
-      <p style="margin-bottom:8px;">• 不要每次都加注</p>
-      <p style="margin-bottom:8px;">• 注意對手下注模式</p>
-      <p style="margin-bottom:8px;">• 適時棄牌保存籌碼</p>
-      <div style="display:flex;gap:10px;margin-top:15px;">
-        <button onclick="showPokerHelpPage(1)" style="flex:1;padding:10px;background:#444;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#fff;">← 上一頁</button>
-        <button onclick="closePokerHelpModal()" style="flex:1;padding:10px;background:#ffd700;border:none;border-radius:10px;font-size:0.9rem;font-weight:bold;cursor:pointer;color:#1a1a2e;">知道了</button>
-      </div>
+      <p style="margin-bottom:8px;">• 過牌：不投入金幣，讓下一家繼續</p>
+      <p style="margin-bottom:8px;">• 跟注：投入與對手相同的金額</p>
+      <p style="margin-bottom:8px;">• 加注：投入比對手更多的金額</p>
+      <p style="margin-bottom:8px;">• 全下：投入手中全部金幣</p>
+      <p style="margin-bottom:15px;">• 棄牌：放棄此局，認輸</p>
+      <h3 style="color:#ffd700;margin-bottom:10px;">🎯 遊戲流程</h3>
+      <p style="margin-bottom:8px;">1. 小盲注、大盲注預設下注</p>
+      <p style="margin-bottom:8px;">2. 發底牌，進行第一輪下注</p>
+      <p style="margin-bottom:8px;">3. 發翻牌，進行第二輪下注</p>
+      <p style="margin-bottom:8px;">4. 發轉牌，進行第三輪下注</p>
+      <p style="margin-bottom:15px;">5. 發河牌，最後一輪下注後攤牌比大小</p>
+      <button onclick="closePokerHelpModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">知道了</button>
     </div>
   </div>
 </div>
@@ -677,12 +677,13 @@ function cardHTML(card, back, idx, strength, animClass) {
   return'<div class="card'+red+strCls+animCls+'"><span class="cr">'+card.rank+'</span><span class="cs">'+card.suit+'</span><span class="cm">'+card.suit+'</span></div>';
 }
 
-function newGame(name) {
+function newGame(name, chips) {
   playerName=name||'老闆';
   G={deck:[],community:[],phase:'preflop',stage:'player',playerActed:false,pot:0,lastRaise:0,
-    player:{hole:[],chips:1000,bet:0,folded:false},
+    player:{hole:[],chips:chips||1000,bet:0,folded:false},
     ai:{hole:[],chips:1000,bet:0,folded:false},
     handNum:1,dealerIdx:0};
+  document.getElementById('playerChips').textContent=G.player.chips;
 }
 
 function newHand() {
@@ -803,10 +804,10 @@ function render() {
   html+='<button class="btn fold-btn" onclick="playerFold()">棄牌</button>';
   if(toCall===0){
     html+='<button class="btn check-btn" onclick="playerCheck()">過牌</button>';
-    html+='<button class="btn raise-btn" onclick="playerRaise()">加注 <input class="raise-input" id="raiseAmt" value="'+Math.max(20,Math.floor(G.pot*0.5))+'" size="4"></button>';
+    html+='<button class="btn raise-btn" onclick="playerRaise()">加注 <input class="raise-input" id="raiseAmt" value="'+Math.max(20,Math.floor(G.pot*0.5))+'" size="4" onclick="event.stopPropagation()"></button>';
   } else {
     html+='<button class="btn call-btn" onclick="playerCall()">跟 '+toCall+'</button>';
-    html+='<button class="btn raise-btn" onclick="playerRaise()">加 <input class="raise-input" id="raiseAmt" value="'+Math.max(toCall*2,20)+'" size="4"></button>';
+    html+='<button class="btn raise-btn" onclick="playerRaise()">加 <input class="raise-input" id="raiseAmt" value="'+Math.max(toCall*2,20)+'" size="4" onclick="event.stopPropagation()"></button>';
     html+='<button class="btn allin-btn" onclick="playerAllIn()">全下 '+G.player.chips+'</button>';
   }
   document.getElementById('actionRow').innerHTML=html;
@@ -1200,28 +1201,31 @@ function showLoggedIn(user) {
   document.getElementById('gameScreen').style.display='block';
   document.getElementById('playerNameDisplay').textContent=user.username;
   currentUser = user;
-  // Update top-bar player name + title like roulette
   updatePokerPlayerNameDisplay();
-  // Fetch latest score from server to sync
+  // Fetch profile to get actual score and show guide
   fetch('/api/poker/profile/'+encodeURIComponent(user.username))
     .then(r=>r.json())
     .then(d=>{
-      if(d.success && d.profile && d.profile.score !== undefined) {
-        currentUser.score = d.profile.score;
-        localStorage.setItem('pokerUser', JSON.stringify(currentUser));
+      if(d.success && d.profile) {
+        if(d.profile.score !== undefined) {
+          currentUser.score = d.profile.score;
+          localStorage.setItem('pokerUser', JSON.stringify(currentUser));
+        }
+        document.getElementById('playerChips').textContent=currentUser.score || 0;
+        newGame(user.username, currentUser.score || 1000);
+        newHand();
+        // Guide check
+        var guideKey = 'pokerGuided_' + user.username;
+        if(!localStorage.getItem(guideKey)) {
+          setTimeout(() => { showPokerGuide(); localStorage.setItem(guideKey, 'true'); }, 500);
+        }
       }
-      document.getElementById('playerChips').textContent=currentUser.score || 0;
     })
     .catch(()=>{
       document.getElementById('playerChips').textContent=currentUser.score || currentUser.chips || 0;
+      newGame(user.username, currentUser.score || currentUser.chips || 1000);
+      newHand();
     });
-  newGame(user.username);
-  newHand();
-  // New user guide check
-  var guideKey = 'pokerGuided_' + user.username;
-  if (!localStorage.getItem(guideKey)) {
-    setTimeout(() => { showPokerGuide(); }, 500);
-  }
 }
 function enterGame() {
   document.getElementById('startScreen').style.display='none';
@@ -1832,7 +1836,10 @@ function showPokerHelpPage(page){
   document.getElementById('pokerHelpPage1').style.display=page===1?'block':'none';
   document.getElementById('pokerHelpPage2').style.display=page===2?'block':'none';
 }
-function closePokerHelpModal(){document.getElementById('pokerHelpModal').classList.remove('show');}
+function closePokerHelpModal(){
+  document.getElementById('pokerHelpModal').classList.remove('show');
+  if(currentUser) localStorage.setItem('pokerGuided_' + currentUser.username, 'true');
+}
 
 function showPokerFeedback() {
   document.getElementById('pokerFeedbackModal').classList.add('show');
