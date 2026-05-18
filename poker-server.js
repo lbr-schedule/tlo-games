@@ -61,6 +61,7 @@ async function initPokerDb(client) {
             lastVideoClaim TEXT DEFAULT '',
             phone TEXT DEFAULT '',
             email TEXT DEFAULT '',
+            invite_code TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -162,8 +163,8 @@ router.post('/register', async (req, res) => {
         
         // 註冊
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_users (username, password, score, phone, email) VALUES (?, ?, 10000, ?, ?)',
-            [username, password, phone || '', email || '']
+            'INSERT INTO poker_users (username, password, score, phone, email, invite_code) VALUES (?, ?, 10000, ?, ?, ?)',
+            [username, password, phone || '', email || '', username.toLowerCase() + '_' + Math.random().toString(36).substr(2, 6)]
         );
         
         // 邀請人獎勵

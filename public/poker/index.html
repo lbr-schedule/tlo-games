@@ -59,19 +59,59 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .card.s-yellow { background: linear-gradient(135deg,#f1c40f,#d4ac0d); color: #000; }
 
 .card.back {
-  background: radial-gradient(ellipse at 30% 30%, #a01830 0%, #7B112C 40%, #4a0a1a 100%);
-  border: 2px solid #D4AF37;
-  border-radius: 10px;
-  box-shadow: 0 0 0 2px #D4AF37, 0 0 20px rgba(212,175,55,0.3), 0 8px 32px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.3);
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(212,175,55,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(212,175,55,0.1) 0%, transparent 40%),
+    linear-gradient(145deg, #8a1535 0%, #7B112C 30%, #4a0a1a 70%, #2a0510 100%);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 
+    0 0 0 2px #D4AF37,
+    0 0 0 4px rgba(212,175,55,0.3),
+    0 0 30px rgba(212,175,55,0.2),
+    0 10px 40px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;
 }
-/* Inner border frame */
+/* Inner golden border */
 .card.back::before {
-  content: ''; position: absolute; inset: 5px; border: 1px solid rgba(212,175,55,0.5); border-radius: 8px; pointer-events: none; z-index: 2;
+  content: ''; position: absolute; inset: 6px; border: 1px solid rgba(212,175,55,0.6); border-radius: 9px; pointer-events: none; z-index: 2;
 }
-/* T-LO Monogram */
+/* Inner shadow depth */
 .card.back::after {
-  content: 'T-LO'; font-size: 0.7rem; font-weight: bold; font-family: 'Cinzel','Georgia','Palatino Linotype',serif; color: #D4AF37; letter-spacing: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(212,175,55,0.4), 0 0 40px rgba(212,175,55,0.15); white-space: nowrap; z-index: 3;
+  content: ''; position: absolute; inset: 0; border-radius: 12px; box-shadow: inset 0 0 20px rgba(0,0,0,0.4); pointer-events: none; z-index: 1;
+}
+/* Center emblem */
+.card.back .emblem {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 50px; height: 50px; border: 1px solid rgba(212,175,55,0.4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 15px rgba(212,175,55,0.2), inset 0 0 10px rgba(0,0,0,0.5);
+  z-index: 3;
+}
+.card.back .emblem::before {
+  content: ''; position: absolute; width: 36px; height: 36px; border: 1px solid rgba(212,175,55,0.25); border-radius: 50%;
+}
+/* T-LO text */
+.card.back .tlo-text {
+  font-family: 'Cinzel','Georgia','Palatino Linotype',serif; font-size: 0.65rem; font-weight: 700;
+  color: #D4AF37; letter-spacing: 4px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(212,175,55,0.5), 0 0 40px rgba(212,175,55,0.2);
+  z-index: 4; white-space: nowrap;
+}
+/* Corner ornaments */
+.card.back .corner-tl, .card.back .corner-tr, .card.back .corner-bl, .card.back .corner-br {
+  position: absolute; width: 8px; height: 8px; border: 1px solid rgba(212,175,55,0.5); z-index: 3;
+}
+.card.back .corner-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; border-radius: 3px 0 0 0; }
+.card.back .corner-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; border-radius: 0 3px 0 0; }
+.card.back .corner-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; border-radius: 0 0 0 3px; }
+.card.back .corner-br { bottom: 12px; right: 12px; border-left: none; border-top: none; border-radius: 0 0 3px 0; }
+/* Diamond center */
+.card.back .diamond {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(45deg);
+  width: 6px; height: 6px; background: rgba(212,175,55,0.6); z-index: 3;
 }
 .hidden-card {
   width: 64px; height: 86px;
@@ -696,7 +736,7 @@ function cardIMG(card) {
 }
 
 function cardHTML(card, back, idx, strength, animClass) {
-  if(back) return'<div class="card back"></div>';
+  if(back) return'<div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div>';
   const red=card.suit==='♥'||card.suit==='♦'?' red':' black';
   const strCls=strength?' '+strength:'';
   const animCls=animClass?' '+animClass:'';
@@ -759,8 +799,8 @@ function dealCard(who, idx, withSound) {
 
 function renderEmptyDeal() {
   // Show hole card slots as hidden/back
-  document.getElementById('playerHole').innerHTML='<div class="card back"></div><div class="card back"></div>';
-  document.getElementById('aiHole').innerHTML='<div class="card back"></div><div class="card back"></div>';
+  document.getElementById('playerHole').innerHTML='<div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div><div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div>';
+  document.getElementById('aiHole').innerHTML='<div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div><div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div>';
   // Show community as hidden
   let ch='';
   for(let i=0;i<5;i++) ch+='<div class="hidden-card"></div>';
@@ -783,7 +823,7 @@ function render() {
   document.getElementById('aiRow').className='player-row'+(G.ai.folded?' folded':'');
   const aiShow=G.phase==='showdown'||G.ai.folded;
   if(G.phase==='preflop') {
-    document.getElementById('aiHole').innerHTML='<div class="card back"></div><div class="card back"></div>';
+    document.getElementById('aiHole').innerHTML='<div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div><div class="card back"><div class="emblem"><div class="tlo-text">T-LO</div></div><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="diamond"></div></div>';
   } else {
     document.getElementById('aiHole').innerHTML=G.ai.hole.map((c,i)=>cardHTML(c,!aiShow,i,'','dealing')).join('');
   }
@@ -834,6 +874,9 @@ function render() {
   } else {
     html+='<button class="btn call-btn" onclick="playerCall()">跟 '+toCall+'</button>';
     html+='<button class="btn raise-btn" onclick="playerRaise()">加 <input class="raise-input" id="raiseAmt" value="'+Math.max(toCall*2,20)+'" size="4" onclick="event.stopPropagation()"></button>';
+  }
+  // All-in always shows if player has chips (regardless of toCall)
+  if(G.player.chips > 0) {
     html+='<button class="btn allin-btn" onclick="playerAllIn()">全下 '+G.player.chips+'</button>';
   }
   document.getElementById('actionRow').innerHTML=html;
@@ -1925,9 +1968,9 @@ function showPokerHistory() {
     var html = '';
     if(d.history && d.history.length > 0){
       d.history.slice(0,20).forEach(function(h){
-        var cls = h.result === 'win' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
-        var badge = h.result === 'win' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
-        var name = h.result === 'win' ? '你' : h.result === 'tie' ? '平手' : '電腦';
+        var cls = h.result === 'player' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
+        var badge = h.result === 'player' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
+        var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
         var t = h.time ? new Date(h.time).toLocaleString('zh-TW') : '';
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
