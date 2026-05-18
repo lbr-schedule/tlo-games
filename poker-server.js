@@ -685,7 +685,8 @@ router.post('/claim-daily-bonus', async (req, res) => {
         await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [result.bonus, username]);
         
         // Update last_claim in poker_daily_bonus
-        await db.execute({ sql: 'UPDATE poker_daily_bonus SET last_claim = ?, streak = ? WHERE username = ?', args: [today, result.streak, username] });
+        const today2 = new Date().toISOString().split('T')[0];
+        await db.execute({ sql: 'UPDATE poker_daily_bonus SET last_claim = ?, streak = ? WHERE username = ?', args: [today2, result.streak, username] });
         
         const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
         const newScore = r.rows ? r.rows[0].score : 0;
