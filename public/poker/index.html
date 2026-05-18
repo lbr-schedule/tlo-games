@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
 
@@ -55,10 +58,33 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .card.s-cyan { background: linear-gradient(135deg,#1abc9c,#16a085); color: #fff; }
 .card.s-yellow { background: linear-gradient(135deg,#f1c40f,#d4ac0d); color: #000; }
 
-.card.back { background: radial-gradient(ellipse at center, #9B1B35 0%, #7B112C 40%, #4a0a1a 100%); border: 2px solid #D4AF37; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.card.back::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 30%, rgba(212,175,55,0.15) 0%, transparent 60%); pointer-events: none; }
-.card.back::after { content: 'T-LO'; font-size: 0.7rem; font-weight: bold; font-family: "Georgia", "Palatino Linotype", serif; color: #D4AF37; letter-spacing: 5px; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
-.hidden-card { width: 64px; height: 86px; background: linear-gradient(135deg,#7B112C,#4a0a1a); border-radius: 10px; flex-shrink: 0; border: 2px solid #D4AF37; box-shadow: 0 3px 10px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size: 1.1rem; font-weight: bold; font-family: Trajan,'Segoe UI',Arial,sans-serif; color: #D4AF37; letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+.card.back {
+  background: radial-gradient(ellipse at 30% 30%, #a01830 0%, #7B112C 40%, #4a0a1a 100%);
+  border: 2px solid #D4AF37;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #D4AF37, 0 0 20px rgba(212,175,55,0.3), 0 8px 32px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;
+}
+/* Inner border frame */
+.card.back::before {
+  content: ''; position: absolute; inset: 5px; border: 1px solid rgba(212,175,55,0.5); border-radius: 8px; pointer-events: none; z-index: 2;
+}
+/* T-LO Monogram */
+.card.back::after {
+  content: 'T-LO'; font-size: 0.7rem; font-weight: bold; font-family: 'Cinzel','Georgia','Palatino Linotype',serif; color: #D4AF37; letter-spacing: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(212,175,55,0.4), 0 0 40px rgba(212,175,55,0.15); white-space: nowrap; z-index: 3;
+}
+.hidden-card {
+  width: 64px; height: 86px;
+  background: radial-gradient(ellipse at 30% 30%, #a01830 0%, #7B112C 40%, #4a0a1a 100%);
+  border-radius: 10px; flex-shrink: 0;
+  border: 2px solid #D4AF37;
+  box-shadow: 0 0 0 1px rgba(212,175,55,0.3), 0 3px 10px rgba(0,0,0,0.6);
+  display:flex; align-items:center; justify-content:center;
+  font-size: 0.65rem; font-weight: bold;
+  font-family: 'Cinzel','Georgia','Palatino Linotype',serif;
+  color: #D4AF37; letter-spacing: 3px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 10px rgba(212,175,55,0.3);
+}
 
 .community-section { margin: 0.8rem 0; text-align: center; }
 .community-label { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-bottom: 0.3rem; letter-spacing: 2px; }
