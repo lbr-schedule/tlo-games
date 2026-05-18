@@ -1339,9 +1339,12 @@ function renderPokerProfile(d) {
   var tc = '#ffd700'; // tier color
   var av = p.avatar_url || '/poker/avatar1.jpg';
   
+  // Preload avatar immediately like roulette does - prevents slow load flicker
+  var avImg = new Image(); avImg.src = av;
+  
   var html = '';
-  // Avatar with edit icon
-  html += '<div style="position:relative;display:inline-block;margin:10px auto;cursor:pointer;" onclick="openPokerAvatarModal()">';
+  // Avatar with edit icon - use data attributes like roulette
+  html += '<div style="position:relative;display:inline-block;margin:10px auto;cursor:pointer;" data-profile-action="open-avatar" onclick="openPokerAvatarModal()">';
   html += '<img src="'+av+'" style="width:80px;height:80px;border-radius:50%;border:3px solid '+tc+';object-fit:cover;" />';
   html += '<div style="position:absolute;bottom:-4px;right:-4px;background:'+tc+';color:#000;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:8px;">Lv.'+(p.level||1)+'</div>';
   html += '<div style="position:absolute;top:-4px;left:-4px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:8px;">✏️</div>';
@@ -1368,22 +1371,22 @@ function renderPokerProfile(d) {
   
   // Personality
   html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">個性</div>';
-  html += '<div onclick="openPokerTagModal(\'personality\',\'性格\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.personality_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.personality_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '<div data-profile-action="tag-personality" onclick="openPokerTagModal(\'personality\',\'性格\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.personality_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.personality_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
   html += '</div>';
   
   // Interest
   html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">興趣</div>';
-  html += '<div onclick="openPokerTagModal(\'interest\',\'興趣\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.interest_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.interest_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '<div data-profile-action="tag-interest" onclick="openPokerTagModal(\'interest\',\'興趣\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.interest_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.interest_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
   html += '</div>';
   
   // Badge
   html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">身份徽章</div>';
-  html += '<div onclick="openPokerTagModal(\'badge\',\'徽章\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.badge_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.badge_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '<div data-profile-action="tag-badge" onclick="openPokerTagModal(\'badge\',\'徽章\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.badge_tag?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.badge_tag||'點擊選擇')+' <span style="float:right;color:#666;">✏️</span></div>';
   html += '</div>';
   
   // Mood
   html += '<div style="text-align:left;margin-top:12px;"><div style="color:#aaa;font-size:0.75rem;margin-bottom:4px;">心情小語</div>';
-  html += '<div onclick="openPokerTagModal(\'mood\',\'心情\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.mood?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.mood||'點擊設定')+' <span style="float:right;color:#666;">✏️</span></div>';
+  html += '<div data-profile-action="open-mood" onclick="openPokerTagModal(\'mood\',\'心情\')" style="padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;color:'+(p.mood?'#ffd700':'#888')+';cursor:pointer;font-size:0.9rem;">'+(p.mood||'點擊設定')+' <span style="float:right;color:#666;">✏️</span></div>';
   html += '</div>';
   
   cont.innerHTML = html;
@@ -1566,39 +1569,19 @@ function confirmPokerTag() {
 }
 
 function updatePokerTagRow(type, value) {
-  // Find and update only the specific tag row in profile without re-rendering entire profile
-  var mapping = {personality:'personality_tag', interest:'interest_tag', badge:'badge_tag', mood:'mood'};
-  var field = mapping[type];
-  if(!field) return;
-  // The profile tags are rendered as rows with onclick that opens modal
-  // We need to find the row by looking for the div that calls openPokerTagModal with the right type
-  var rows = document.querySelectorAll('#pokerProfileContent > div');
-  rows.forEach(function(row) {
-    if(row && row.getAttribute('onclick') && row.getAttribute('onclick').indexOf('openPokerTagModal') > -1) {
-      // Check if this is the row for our type
-      var onclick = row.getAttribute('onclick');
-      if((type === 'personality' && onclick.indexOf("'personality'") > -1) ||
-         (type === 'interest' && onclick.indexOf("'interest'") > -1) ||
-         (type === 'badge' && onclick.indexOf("'badge'") > -1) ||
-         (type === 'mood' && onclick.indexOf("'mood'") > -1)) {
-        // Update this row's content in place
-        var displayValue = value || '點擊選擇';
-        row.style.color = value ? '#ffd700' : '#888';
-        // Keep the ✏️ edit icon, update the text
-        var editIcon = row.querySelector('span');
-        if(editIcon) {
-          row.firstChild.textContent = displayValue + ' ';
-        } else {
-          // text node + span
-          row.childNodes.forEach(function(node) {
-            if(node.nodeType === Node.TEXT_NODE) {
-              node.textContent = displayValue + ' ';
-            }
-          });
-        }
-      }
-    }
-  });
+  // Use data-profile-action like roulette - direct DOM update without re-render
+  var actionMap = {personality:'tag-personality', interest:'tag-interest', badge:'tag-badge', mood:'open-mood'};
+  var action = actionMap[type];
+  if(!action) return;
+  var el = document.querySelector('[data-profile-action="'+action+'"]');
+  if(!el) return;
+  var displayValue = value || (type === 'mood' ? '點擊設定' : '點擊選擇');
+  el.style.color = value ? '#ffd700' : '#888';
+  // Update text node before the span
+  var span = el.querySelector('span');
+  if(span) {
+    el.firstChild.textContent = displayValue + ' ';
+  }
 }
 function closePokerTagModal() { document.getElementById('pokerTagModal').classList.remove('show'); }
 
