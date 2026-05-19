@@ -524,7 +524,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
     <div id="resultImg" style="margin-bottom:0.5rem;text-align:center"></div>
     <h2 id="resultTitle" style="margin-bottom:0.3rem">結算</h2>
     <div id="resultCards" style="margin:0.5rem 0;text-align:left"></div>
-    <div id="resultScore" style="margin:0.5rem 0;font-size:1rem;color:#aaa;"></div>
     <div style="font-size:1.6rem;font-weight:bold;margin:0.5rem 0;color:#ffd700;text-shadow:0 2px 8px rgba(0,0,0,0.5);letter-spacing:2px;" id="resultAmount"></div>
     <button class="btn btn-primary" onclick="nextHand()">下一局</button>
   </div>
@@ -1106,16 +1105,11 @@ function showResult(winner,pHand,aHand) {
   }
 
   document.getElementById('resultTitle').textContent=title;
-  document.getElementById('resultAmount').textContent=amount;
-  // 顯示結算分數/金幣變化
-  var scoreEl = document.getElementById('resultScore');
-  if(scoreEl) {
-    var scoreLabel = '';
-    if(winner==='player') scoreLabel = '💰 結算：'+G.pot+' 金幣';
-    else if(winner==='ai') scoreLabel = '💸 結算：-'+playerBetThisRound+' 金幣';
-    else scoreLabel = '🤝 結算：各拿 '+Math.floor(G.pot/2)+' 金幣';
-    scoreEl.textContent = scoreLabel;
-  }
+  var scoreLabel = amount + "\n";
+  if(winner==="player") scoreLabel += "💰 結算："+G.pot+" 金幣";
+  else if(winner==="ai") scoreLabel += "💸 結算：-"+playerBetThisRound+" 金幣";
+  else scoreLabel += "🤝 結算：各拿 "+Math.floor(G.pot/2)+" 金幣";
+  document.getElementById("resultAmount").innerHTML = scoreLabel.replace("\n", "<br>");
 
   // 結算插圖（irasutoya.com 免費素材）
   let imgHTML='';
