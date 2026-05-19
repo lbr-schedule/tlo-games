@@ -929,6 +929,8 @@ function playerFold() {
   G.player.folded=true;
   G.phase='showdown';
   playSound('fold');
+  window._foldingPlayer=true;
+  window._foldingPlayerBet=G.player.bet||0; // 儲存fold前的下注金額
   showResult('ai');
 }
 
@@ -1072,14 +1074,14 @@ function showResult(winner,pHand,aHand) {
   console.log('SHOWRESULT: winner='+winner, 'pHand='+JSON.stringify(pHand), 'aHand='+JSON.stringify(aHand));
   console.log('Player cards:', G.player.hole, '  Board:', G.community);
   let title='',desc='',amount='',badge='',scoreChange=0;
-  const playerBetThisRound = G.player.bet || 0;
+  const playerBetThisRound = (window._foldingPlayer ? (window._foldingPlayerBet || 0) : G.player.bet) || 0;
   if(winner==='player'){
     scoreChange = G.pot - playerBetThisRound;
     G.player.chips += G.pot;
     title='🎉 你贏了！'; badge='🏆'; playSound('win');
     desc='你的: '+pHand.name; amount=(scoreChange >= 0 ? '獲得 '+scoreChange : '失去 '+Math.abs(scoreChange));
   } else if(winner==='ai'){
-    scoreChange = -playerBetThisRound;
+    scoreChange = window._foldingPlayer ? -(window._foldingPlayerBet || G.player.bet || 0) : -playerBetThisRound;
     G.ai.chips+=G.pot;
     title='💀 對手獲勝'; badge='💀'; playSound('lose');
     desc='電腦: '+aHand.name; amount=(scoreChange < 0 ? '失去 '+Math.abs(scoreChange) : scoreChange);
@@ -1090,6 +1092,9 @@ function showResult(winner,pHand,aHand) {
     desc='各拿 '+half; amount='各拿 '+half;
     scoreChange = half - playerBetThisRound;
   }
+  // fold 後清理
+  window._foldingPlayer=false;
+  window._foldingPlayerBet=0;
   G.handNum = parseInt(localStorage.getItem('pokerHandNum') || '0') + 1;
   localStorage.setItem('pokerHandNum', G.handNum);
   history.unshift({winner,desc,amount,badge,handNum:G.handNum-1,time:new Date().toLocaleTimeString()});
