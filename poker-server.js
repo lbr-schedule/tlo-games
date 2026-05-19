@@ -62,6 +62,7 @@ async function initPokerDb(client) {
             phone TEXT DEFAULT '',
             email TEXT DEFAULT '',
             invite_code TEXT DEFAULT '',
+            used_invite_code TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -176,21 +177,35 @@ router.post('/register', async (req, res) => {
         try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET email = ? WHERE username = ?', [email || '', username]); } catch(e) {}
         try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET invite_code = ? WHERE username = ?', [inviteCode, username]); } catch(e) {}
         
-        // 邀請人獎勵
+        // 記錄被使用的邀請碼（新用戶獲得bonus）
+        if (invitedBy) {
+            try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET used_invite_code = ? WHERE username = ?', [invitedBy, username]); } catch(e) {}
+        }
+        
+        // 邀請人獎勵（檢查是否已使用過邀請碼，防止重複）
         if (invitedBy) {
             const inviter = await req.app.locals.pokerDb.execute(
-                'SELECT score FROM poker_users WHERE username = ?',
+                'SELECT score, used_invite_code FROM poker_users WHERE username = ?',
                 [invitedBy]
             );
             if (inviter.rows.length > 0) {
-                await req.app.locals.pokerDb.execute(
-                    'UPDATE poker_users SET score = score + 500 WHERE username = ?',
-                    [invitedBy]
-                );
+                // 檢查是否已邀請過（每個帳號只能成功邀請一次）
+                const inviterUsed = inviter.rows[0].used_invite_code || '';
+                if (inviterUsed === '') {
+                    await req.app.locals.pokerDb.execute(
+                        'UPDATE poker_users SET score = score + 500 WHERE username = ?',
+                        [invitedBy]
+                    );
+                }
             }
+            // 新用戶使用邀請碼註冊，額外獲得 500 金幣
+            await req.app.locals.pokerDb.execute(
+                'UPDATE poker_users SET score = score + 500 WHERE username = ?',
+                [username]
+            );
         }
         
-        res.json({ success: true, message: '註冊成功！獲得 10,000 遊戲金' });
+        res.json({ success: true, message: '註冊成功！獲得 10,000 遊戲金' + (invitedBy ? '（含邀請獎勵 500 金幣）' : '') });
     } catch (e) {
         res.json({ success: false, message: '註冊失敗: ' + e.message });
     }
@@ -331,10 +346,11 @@ router.post('/update-score', async (req, res) => {
     try {
         const { username, score_change, result, pot, hand_name, opponent } = req.body;
         
-        // 檢查是否需要重置每週下注（每週一凌晨）
+        // 檢查是否需要重置每週下注（每週一凌晨，台灣時區）
         const now = new Date();
-        const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon
-        const hours = now.getHours();
+        const twNow = new Date(now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }));
+        const dayOfWeek = twNow.getDay(); // 0=Sun, 1=Mon
+        const hours = twNow.getHours();
         // 每週一凌晨00:00-01:00檢查並重置
         if (dayOfWeek === 1 && hours < 1) {
             await req.app.locals.pokerDb.execute(
@@ -343,10 +359,13 @@ router.post('/update-score', async (req, res) => {
             );
         }
         
-        // 更新 poker_users 分數
+        // 更新 poker_users 分數（確保不為負）
+        const userResult = await req.app.locals.pokerDb.execute('SELECT score FROM poker_users WHERE username = ?', [username]);
+        const currentScore = (userResult.rows && userResult.rows[0] && userResult.rows[0].score) || 0;
+        const newScore = Math.max(0, currentScore + score_change);
         await req.app.locals.pokerDb.execute(
-            'UPDATE poker_users SET score = score + ?, games_played = games_played + 1 WHERE username = ?',
-            [score_change, username]
+            'UPDATE poker_users SET score = ? WHERE username = ?',
+            [newScore, username]
         );
         
         // 更新勝負 (前端發來 'player'/'ai'/'tie')
@@ -370,7 +389,7 @@ router.post('/update-score', async (req, res) => {
         
         // 更新每週下注（使用絕對值，不論輸贏）
         const absBet = Math.abs(score_change);
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         await req.app.locals.pokerDb.execute(
             'INSERT INTO poker_player_stats (username, weekly_bet, bet_count_today, wins_today, last_task_reset) VALUES (?, ?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET weekly_bet = weekly_bet + ?, bet_count_today = bet_count_today + 1, last_task_reset = ?',
             [username, absBet, today, absBet, today]
@@ -394,8 +413,9 @@ router.post('/update-score', async (req, res) => {
 router.post('/daily-bonus', async (req, res) => {
     try {
         const { username } = req.body;
-        const now = new Date().toISOString();
-        const today = now.split('T')[0];
+        // 使用台灣時區計算日期
+        const now = new Date();
+        const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         
         const bonus_result = await req.app.locals.pokerDb.execute(
             'SELECT last_claim, streak FROM poker_daily_bonus WHERE username = ?',
@@ -413,7 +433,7 @@ router.post('/daily-bonus', async (req, res) => {
             
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
             
             if (lastClaim && lastClaim.startsWith(yesterdayStr)) {
                 newStreak = bonus_result.rows[0].streak + 1;
@@ -607,7 +627,9 @@ function getStreakTitle(streak) {
 
 // 檢查每日任務重置
 async function checkPokerDailyTasks(db, username) {
-    const today = new Date().toISOString().split('T')[0];
+    // 使用台灣時區計算日期
+    const now = new Date();
+    const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
     try {
         const r = await db.execute({ sql: 'SELECT last_task_reset FROM poker_player_stats WHERE username = ?', args: [username] });
         if (r.rows && r.rows.length > 0 && r.rows[0].last_task_reset === today) return;
@@ -621,10 +643,12 @@ async function checkPokerDailyTasks(db, username) {
 
 // 處理登入連續
 async function processPokerLoginStreak(db, username) {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date();
+    // 使用台灣時區計算日期
+    const now = new Date();
+    const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+    const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
     
     let newStreak = 1;
     let bonus = STREAK_BONUSES[1] || 100;
@@ -717,8 +741,8 @@ router.post('/claim-daily-bonus', async (req, res) => {
         // 發放獎勵
         await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [result.bonus, username]);
         
-        // Update last_claim in poker_daily_bonus
-        const today2 = new Date().toISOString().split('T')[0];
+        // Update last_claim in poker_daily_bonus（使用台灣時區）
+        const today2 = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         await db.execute({ sql: 'UPDATE poker_daily_bonus SET last_claim = ?, streak = ? WHERE username = ?', args: [today2, result.streak, username] });
         
         const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
@@ -766,7 +790,7 @@ router.get('/daily-tasks', async (req, res) => {
         
         let completedTasks = {};
         try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         const todayClaims = completedTasks[today] || [];
         
         const tasks = POKER_DAILY_TASKS.map(t => ({
@@ -818,7 +842,7 @@ router.post('/claim-task', async (req, res) => {
             playerStats = { ...playerStats, ...r.rows[0] };
         }
         
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         let completedTasks = {};
         try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
         const todayClaims = completedTasks[today] || [];
@@ -863,7 +887,7 @@ router.post('/claim-video', async (req, res) => {
         if (!username) return res.json({ success: false, message: '請先登入' });
         
         const db = req.app.locals.pokerDb;
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         
         const check = await db.execute({ sql: 'SELECT lastVideoClaim FROM poker_users WHERE username = ?', args: [username] });
         if (check.rows && check.rows.length > 0 && check.rows[0].lastVideoClaim === today) {
@@ -889,7 +913,7 @@ router.post('/update-stats', async (req, res) => {
         if (!username) return res.json({ success: false });
         
         const db = req.app.locals.pokerDb;
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
         
         // 確保統計資料列存在
         await db.execute(`INSERT OR IGNORE INTO poker_player_stats (username) VALUES (?)`, [username]);
