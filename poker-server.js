@@ -744,10 +744,11 @@ router.post('/claim-daily-bonus', async (req, res) => {
         
         // Update last_claim in poker_daily_bonus（使用台灣時區）
         const today2 = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
-        await db.execute({ sql: 'UPDATE poker_daily_bonus SET last_claim = ?, streak = ? WHERE username = ?', args: [today2, result.streak, username] });
+        // Use INSERT OR REPLACE to ensure row exists and last_claim is properly set
+        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)', args: [username, today2, result.streak] });
         
         const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
-        const newScore = r.rows ? r.rows[0].score : 0;
+        const newScore = (r.rows && r.rows[0] && r.rows[0].score) ? r.rows[0].score : 0;
         
         res.json({
             success: true,
