@@ -684,9 +684,9 @@ async function processPokerLoginStreak(db, username) {
             args: [username, newStreak, today, newStreak, today]
         });
         
-        // Also ensure poker_daily_bonus row exists for this user
+        // Ensure poker_daily_bonus row exists, but only INSERT (not update existing)
         await db.execute({
-            sql: `INSERT INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET last_claim = excluded.last_claim, streak = excluded.streak`,
+            sql: `INSERT OR IGNORE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)`,
             args: [username, '', newStreak]
         });
     } catch (e) {
