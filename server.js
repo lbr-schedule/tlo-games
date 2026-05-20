@@ -1662,6 +1662,29 @@ app.post('/api/roulette/admin/update-score', async (req, res) => {
     }
 });
 
+// 管理員設定寵物等級
+app.post('/api/roulette/admin/set-pet-level', async (req, res) => {
+    const { username, pet_level } = req.body;
+    if (!username || pet_level === undefined) {
+        return res.json({ success: false, message: '請提供 username 和 pet_level' });
+    }
+    
+    const level = parseInt(pet_level);
+    if (isNaN(level) || level < 1) {
+        return res.json({ success: false, message: 'pet_level 必須是大於 0 的數字' });
+    }
+    
+    try {
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_pets SET pet_level = ?, pet_xp = 0 WHERE username = ?`,
+            args: [level, username]
+        });
+        res.json({ success: true, message: `已將 ${username} 的寵物等級設為 ${level}` });
+    } catch(e) {
+        res.json({ success: false, message: '更新失敗: ' + e.message });
+    }
+});
+
 // 玩家上報中獎結果，伺服器廣播給所有人
 async function saveWinnerState() {
     if (LOCAL_TEST_MODE || !rouletteDb) return;
