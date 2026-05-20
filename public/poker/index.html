@@ -1081,7 +1081,7 @@ function showResult(winner,pHand,aHand) {
     title='🎉 你贏了！'; badge='🏆'; playSound('win');
     desc='你的: '+pHand.name; amount='你贏了！ +'+G.pot;
   } else if(winner==='ai'){
-    scoreChange = window._foldingPlayer ? -(window._foldingPlayerBet || G.player.bet || 0) : -playerBetThisRound;
+    scoreChange = window._foldingPlayer ? -(window._foldingPlayerBet || 0) : -(playerBetThisRound || G.pot);
     G.ai.chips+=G.pot;
     title='💀 對手獲勝'; badge='💀'; playSound('lose');
     desc='電腦: '+aHand.name; amount='失去 '+Math.abs(scoreChange);
@@ -1148,12 +1148,12 @@ function showResult(winner,pHand,aHand) {
 
         function showAdPopup() {
             const adImages = [
-                'https://picsum.photos/seed/ad1/300/200',
-                'https://picsum.photos/seed/ad2/300/200',
-                'https://picsum.photos/seed/ad3/300/200',
-                'https://picsum.photos/seed/ad4/300/200',
-                'https://picsum.photos/seed/ad5/300/200',
-                'https://picsum.photos/seed/ad6/300/200'
+                '/roulette/ad1.jpg',
+                '/roulette/ad2.jpg',
+                '/roulette/ad3.jpg',
+                '/roulette/ad4.png',
+                '/roulette/ad5.jpg',
+                '/roulette/ad6.png'
             ];
             const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
             let modal = document.getElementById('pokerAdModal');
@@ -1165,7 +1165,7 @@ function showResult(winner,pHand,aHand) {
                     <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #D4AF37;border-radius:20px;padding:20px;max-width:320px;width:90%;text-align:center;color:white;box-shadow:0 0 40px rgba(212,175,55,0.3);">
                         <img src="" id="pokerAdModalImg" style="width:100%;max-width:250px;border-radius:12px;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.5);" />
                         <div style="font-size:1.2rem;font-weight:bold;color:#D4AF37;margin-bottom:12px;">主播問你要來嗎?</div>
-                        <div style="font-size:1.2rem;color:#fff;margin-bottom:15px;">ID：<strong style="color:#00c864;">7788ryay</strong></div>
+                        <div style="font-size:1.2rem;color:#fff;margin-bottom:15px;">ID：<strong style="color:#00c864;">@778ryayw</strong></div>
                         <button onclick="window.open('https://line.me/ti/p/@778ryayw','_blank')" style="padding:12px 25px;background:#00c864;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:white;">💬 聯繫LINE</button>
                         <div onclick="document.getElementById('pokerAdModal').style.display='none'" style="margin-top:12px;color:#666;font-size:0.85rem;cursor:pointer;">稍後再說</div>
                     </div>
@@ -2016,9 +2016,7 @@ function showPokerHistory() {
         var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
         var t = h.time ? (function(){
           try {
-            // Handle formats like "2026/5/20 上午7:23:27" or "2026-05-20 07:23:27"
             var s = h.time.trim();
-            // If contains 上午/下午, convert to 24hr
             var hasAM = s.indexOf('上午') !== -1;
             var hasPM = s.indexOf('下午') !== -1;
             if(hasAM || hasPM) {
@@ -2027,12 +2025,12 @@ function showPokerHistory() {
               var hr = parseInt(parts[3]||'0', 10);
               if(hasPM && hr < 12) hr += 12;
               if(hasAM && hr === 12) hr = 0;
-              return parts[0]+'/'+parts[1]+'/'+parts[2]+' '+String(hr).padStart(2,'0')+':'+parts[4]+':'+parts[5];
+              s = parts[0]+'/'+parts[1]+'/'+parts[2]+' '+String(hr).padStart(2,'0')+':'+parts[4]+':'+parts[5];
             }
-            return s;
+            try { s = s.replace(/\//g, '-'); t = new Date(s.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){ t = h.time; }
+            return t;
           } catch(e){ return h.time; }
         }()) : '';
-        try { t = new Date(t.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){}
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';

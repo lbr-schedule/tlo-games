@@ -686,8 +686,8 @@ async function processPokerLoginStreak(db, username) {
         
         // Also ensure poker_daily_bonus row exists for this user
         await db.execute({
-            sql: `INSERT INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, '', 0) ON CONFLICT(username) DO UPDATE SET username = username`,
-            args: [username]
+            sql: `INSERT INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, 0) ON CONFLICT(username) DO UPDATE SET username = username`,
+            args: [username, '']
         });
     } catch (e) {
         console.log('processPokerLoginStreak error:', e.message);
