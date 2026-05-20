@@ -2020,14 +2020,15 @@ function showPokerHistory() {
             var hasAM = s.indexOf('上午') !== -1;
             var hasPM = s.indexOf('下午') !== -1;
             if(hasAM || hasPM) {
-              s = s.replace(/(上午|下午)/, '').trim();
-              var parts = s.split(/[\/ :]/);
+              s = s.replace(/(上午|下午)/, ' ').trim();
+              var parts = s.split(/[\/ :]+/);
               var hr = parseInt(parts[3]||'0', 10);
               if(hasPM && hr < 12) hr += 12;
               if(hasAM && hr === 12) hr = 0;
               s = parts[0]+'/'+parts[1]+'/'+parts[2]+' '+String(hr).padStart(2,'0')+':'+parts[4]+':'+parts[5];
             }
-            try { s = s.replace(/\//g, '-'); t = new Date(s.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){ t = h.time; }
+            var isoStr = s.replace(/\//g, '-').replace(' ', 'T');
+            try { t = new Date(isoStr).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){ t = h.time; }
             return t;
           } catch(e){ return h.time; }
         }()) : '';
