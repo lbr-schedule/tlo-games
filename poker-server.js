@@ -684,11 +684,8 @@ async function processPokerLoginStreak(db, username) {
             args: [username, newStreak, today, newStreak, today]
         });
         
-        // Ensure poker_daily_bonus row exists, but only INSERT (not update existing)
-        await db.execute({
-            sql: `INSERT OR IGNORE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)`,
-            args: [username, '', newStreak]
-        });
+        // Do NOT update poker_daily_bonus here - only the claim handler should update last_claim
+        // This prevents last_claim from being reset when users just check their status
     } catch (e) {
         console.log('processPokerLoginStreak error:', e.message);
     }
