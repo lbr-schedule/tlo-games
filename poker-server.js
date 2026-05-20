@@ -276,10 +276,13 @@ router.post('/history', async (req, res) => {
         const { result, pot, hand_name, opponent } = req.body;
         const db = req.app.locals.pokerDb;
         
+        // 使用台灣時區儲存時間
+        const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        
         // 寫入歷史
         await db.execute(
-            'INSERT INTO poker_history (username, result, pot, hand_name, opponent) VALUES (?, ?, ?, ?, ?)',
-            [username, result || 'unknown', pot || 0, hand_name || '普通', opponent || '電腦']
+            'INSERT INTO poker_history (username, result, pot, hand_name, opponent, time) VALUES (?, ?, ?, ?, ?, ?)',
+            [username, result || 'unknown', pot || 0, hand_name || '普通', opponent || '電腦', twTime]
         );
         
         res.json({ success: true });
@@ -381,10 +384,11 @@ router.post('/update-score', async (req, res) => {
             );
         }
         
-        // 記錄歷史
+        // 記錄歷史（使用台灣時區）
+        const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_history (username, result, pot, hand_name, opponent) VALUES (?, ?, ?, ?, ?)',
-            [username, result, pot, hand_name || '無', opponent || '電腦']
+            'INSERT INTO poker_history (username, result, pot, hand_name, opponent, time) VALUES (?, ?, ?, ?, ?, ?)',
+            [username, result, pot, hand_name || '無', opponent || '電腦', twTime]
         );
         
         // 更新每週下注（使用絕對值，不論輸贏）
@@ -946,14 +950,33 @@ router.post('/update-stats', async (req, res) => {
 function getLevelInfo(weeklyBet) {
     const thresholds = [
         { level: 1, title: '菜鳥', tier: '青銅', minBet: 0 },
-        { level: 5, title: '菜鳥', tier: '青銅', minBet: 1000 },
-        { level: 11, title: '新手', tier: '白銀', minBet: 5000 },
-        { level: 15, title: '新手', tier: '白銀', minBet: 15000 },
-        { level: 21, title: '老手', tier: '黃金', minBet: 30000 },
-        { level: 25, title: '老手', tier: '黃金', minBet: 50000 },
-        { level: 31, title: '大師', tier: '白金', minBet: 100000 },
-        { level: 35, title: '大師', tier: '白金', minBet: 200000 },
-        { level: 41, title: '傳說', tier: '鑽石', minBet: 500000 },
+        { level: 2, title: '菜鳥', tier: '青銅', minBet: 50 },
+        { level: 3, title: '新手', tier: '青銅', minBet: 200 },
+        { level: 4, title: '新手', tier: '青銅', minBet: 500 },
+        { level: 5, title: '新手', tier: '白銀', minBet: 1000 },
+        { level: 6, title: '新手', tier: '白銀', minBet: 1500 },
+        { level: 7, title: '老手', tier: '白銀', minBet: 2000 },
+        { level: 8, title: '老手', tier: '白銀', minBet: 3000 },
+        { level: 9, title: '老手', tier: '白銀', minBet: 4000 },
+        { level: 10, title: '老手', tier: '黃金', minBet: 5000 },
+        { level: 11, title: '老手', tier: '黃金', minBet: 6000 },
+        { level: 12, title: '老手', tier: '黃金', minBet: 8000 },
+        { level: 13, title: '老手', tier: '黃金', minBet: 10000 },
+        { level: 14, title: '老手', tier: '黃金', minBet: 15000 },
+        { level: 15, title: '大師', tier: '白金', minBet: 20000 },
+        { level: 16, title: '大師', tier: '白金', minBet: 25000 },
+        { level: 17, title: '大師', tier: '白金', minBet: 30000 },
+        { level: 18, title: '大師', tier: '白金', minBet: 40000 },
+        { level: 19, title: '大師', tier: '白金', minBet: 50000 },
+        { level: 20, title: '傳說', tier: '白金', minBet: 60000 },
+        { level: 21, title: '傳說', tier: '白金', minBet: 75000 },
+        { level: 22, title: '傳說', tier: '白金', minBet: 90000 },
+        { level: 23, title: '傳說', tier: '白金', minBet: 100000 },
+        { level: 24, title: '傳說', tier: '鑽石', minBet: 120000 },
+        { level: 25, title: '傳說', tier: '鑽石', minBet: 150000 },
+        { level: 30, title: '傳說', tier: '鑽石', minBet: 200000 },
+        { level: 35, title: '傳說', tier: '鑽石', minBet: 300000 },
+        { level: 40, title: '傳說', tier: '鑽石', minBet: 500000 },
         { level: 50, title: '傳說', tier: '鑽石', minBet: 1000000 },
     ];
     

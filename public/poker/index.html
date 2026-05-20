@@ -1084,7 +1084,7 @@ function showResult(winner,pHand,aHand) {
     scoreChange = window._foldingPlayer ? -(window._foldingPlayerBet || G.player.bet || 0) : -playerBetThisRound;
     G.ai.chips+=G.pot;
     title='💀 對手獲勝'; badge='💀'; playSound('lose');
-    desc='電腦: '+aHand.name; amount=(scoreChange < 0 ? '失去 '+Math.abs(scoreChange) : scoreChange);
+    desc='電腦: '+aHand.name; amount='失去 '+Math.abs(scoreChange);
   } else {
     const half=Math.floor(G.pot/2);
     G.player.chips+=half; G.ai.chips+=half;
@@ -1770,10 +1770,11 @@ function showPokerLoginReward() {
 }
 function closePokerLoginRewardModal(){document.getElementById('pokerLoginRewardModal').classList.remove('show');}
 function claimPokerDaily(){
+  var btn = document.querySelector('#pokerLoginRewardContent button[onclick="claimPokerDaily()"]');
+  if(btn) btn.disabled = true;
   document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#ffd700;text-align:center;padding:30px;font-size:1.2rem;">領取中...</div>';
   fetch('/api/poker/claim-daily-bonus',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username}}).then(r=>r.json()).then(d=>{
     if(d.success){
-      // Update score from server's authoritative newScore
       if(d.newScore !== undefined) {
         currentUser.score = d.newScore;
       } else {
@@ -1781,16 +1782,17 @@ function claimPokerDaily(){
       }
       localStorage.setItem('pokerUser',JSON.stringify(currentUser));
       document.getElementById('playerChips').textContent = currentUser.score || 0;
-      // 更新顯示
       showToast('連續 '+d.streak+' 天！獲得 '+d.reward+' 金幣', 'success');
       document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">🎉</div><div style="color:#4f4;font-size:1.5rem;font-weight:bold;">領取成功！</div><div style="color:#ffd700;font-size:2rem;margin:15px 0;">+'+(d.reward||0)+' 金幣</div><div style="color:#888;">連續 '+d.streak+' 天</div></div>';
-      setTimeout(function(){
-        closePokerLoginRewardModal();
-        showPokerLoginReward();
-      }, 1500);
-    } else { 
-      showToast(d.message||'領取失敗');
-      document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">'+(d.message||'領取失敗')+'</div>';
+      setTimeout(closePokerLoginRewardModal, 2500);
+    } else {
+      if(d.alreadyClaimed){
+        document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><div style="color:#4f4;font-size:1.2rem;font-weight:bold;">今日已領取</div><div style="color:#888;margin-top:10px;">明天再來領取吧！</div></div>';
+        setTimeout(closePokerLoginRewardModal, 2000);
+      } else {
+        showToast(d.message||'領取失敗');
+        document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">'+(d.message||'領取失敗')+'</div>';
+      }
     }
   }).catch(function(){
     document.getElementById('pokerLoginRewardContent').innerHTML = '<div style="color:#f44;text-align:center;padding:30px;">網路錯誤，請重試</div>';
@@ -1853,8 +1855,15 @@ function closePokerVideoPopup() {
 function claimPokerVideoReward() {
   if(!currentUser){showToast('請先登入');return;}
   if(!pokerVideoWatched){showToast('請先看完影片');return;}
+  var btn = document.getElementById('pokerVideoClaimSubmit');
+  if(btn && btn.disabled){return;}
+  if(btn) btn.disabled = true;
   fetch('/api/poker/claim-video',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({username:currentUser.username})}).then(r=>r.json()).then(d=>{
     console.log('claim-video response:', d);
+    if(d.alreadyClaimed || (!d.success && d.message)){
+      showToast(d.message||'今天已領過了', 'error');
+      return;
+    }
     if(d.success){
       showToast('觀看完成！獲得 '+d.reward+' 金幣', 'success');
       if(d.newScore !== undefined) {
@@ -1866,7 +1875,7 @@ function claimPokerVideoReward() {
       document.getElementById('playerChips').textContent = currentUser.score || 0;
       closePokerVideoPopup();
     } else { showToast(d.message||'領取失敗'); }
-  }).catch(e=>{ console.error('claim-video fetch error:', e); showToast('網路錯誤'); });
+  }).catch(e=>{ console.error('claim-video fetch error:', e); showToast('網路錯誤'); if(btn) btn.disabled = false; });
 }
 
 function showPokerLevel() {
@@ -2005,7 +2014,25 @@ function showPokerHistory() {
         var cls = h.result === 'player' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
         var badge = h.result === 'player' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
         var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
-        var t = h.time ? new Date(h.time.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}) : '';
+        var t = h.time ? (function(){
+          try {
+            // Handle formats like "2026/5/20 上午7:23:27" or "2026-05-20 07:23:27"
+            var s = h.time.trim();
+            // If contains 上午/下午, convert to 24hr
+            var hasAM = s.indexOf('上午') !== -1;
+            var hasPM = s.indexOf('下午') !== -1;
+            if(hasAM || hasPM) {
+              s = s.replace(/(上午|下午)/, '').trim();
+              var parts = s.split(/[\/ :]/);
+              var hr = parseInt(parts[3]||'0', 10);
+              if(hasPM && hr < 12) hr += 12;
+              if(hasAM && hr === 12) hr = 0;
+              return parts[0]+'/'+parts[1]+'/'+parts[2]+' '+String(hr).padStart(2,'0')+':'+parts[4]+':'+parts[5];
+            }
+            return s;
+          } catch(e){ return h.time; }
+        }()) : '';
+        try { t = new Date(t.replace(' ', 'T')).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){}
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';
