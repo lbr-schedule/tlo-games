@@ -332,7 +332,6 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
       <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲紀錄</button>
       <button onclick="showPokerInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎟️ 邀請碼</button>
       <button onclick="showPokerGuide();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">❓ 遊戲說明</button>
-      <button onclick="claimDailyLogin();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎁 每日登入</button>
       <button onclick="showPokerLeaderboard();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🏆 排行榜</button>
     </div>
     <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
@@ -1364,6 +1363,8 @@ function showLoggedIn(user) {
         if(!localStorage.getItem(guideKey)) {
           setTimeout(() => { showPokerGuide(); localStorage.setItem(guideKey, 'true'); }, 500);
         }
+        // 自動發放每日登入獎勵
+        checkAndClaimDailyLogin();
       }
     })
     .catch(()=>{
@@ -1893,13 +1894,9 @@ function showPokerInviteCode() {
 function closePokerInviteModal(){document.getElementById('pokerInviteModal').classList.remove('show');}
 
 
-function claimDailyLogin() {
-  if(!currentUser){alert('請先登入');return;}
+function checkAndClaimDailyLogin() {
+  if(!currentUser) return;
   fetch('/api/poker/claim-daily-login',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({})}).then(r=>r.json()).then(d=>{
-    if(d.alreadyClaimed){
-      showToast('今天已領過了，明天再來！', 'error');
-      return;
-    }
     if(d.success){
       // 顯示成功彈窗
       let modal = document.getElementById('dailyLoginModal');
@@ -1918,10 +1915,9 @@ function claimDailyLogin() {
         localStorage.setItem('pokerUser',JSON.stringify(currentUser));
         document.getElementById('playerChips').textContent = currentUser.score || 0;
       }
-    } else {
-      showToast(d.message||'領取失敗', 'error');
     }
-  }).catch(()=>{showToast('網路錯誤', 'error');});
+    // 已領過了就不顯示任何提示
+  }).catch(()=>{});
 }
 
 async function showPokerLeaderboard() {
