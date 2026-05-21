@@ -2069,24 +2069,8 @@ function showPokerHistory() {
         var cls = h.result === 'player' ? 'win' : h.result === 'ai' ? 'lose' : 'tie';
         var badge = h.result === 'player' ? '🏆' : h.result === 'tie' ? '🤝' : '💀';
         var name = h.result === 'player' ? '你' : h.result === 'tie' ? '平手' : '電腦';
-        var t = h.time ? (function(){
-          try {
-            var s = h.time.trim();
-            var hasAM = s.indexOf('上午') !== -1;
-            var hasPM = s.indexOf('下午') !== -1;
-            if(hasAM || hasPM) {
-              s = s.replace(/(上午|下午)/, ' ').trim();
-              var parts = s.split(/[\/ :]+/);
-              var hr = parseInt(parts[3]||'0', 10);
-              if(hasPM && hr < 12) hr += 12;
-              if(hasAM && hr === 12) hr = 0;
-              s = parts[0]+'/'+parts[1]+'/'+parts[2]+' '+String(hr).padStart(2,'0')+':'+parts[4]+':'+parts[5];
-            }
-            var isoStr = s.replace(/\//g, '-').replace(' ', 'T');
-            try { t = new Date(isoStr).toLocaleString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Taipei'}); } catch(e){ t = h.time; }
-            return t;
-          } catch(e){ return h.time; }
-        }()) : '';
+        // 顯示 server 回傳的 GMT+8 時間（格式已經是正確的）
+        var t = h.time || '';
         html += '<div class="history-item '+cls+'">';
         html += '<div class="history-badge">'+badge+'</div>';
         html += '<div class="history-info">';
