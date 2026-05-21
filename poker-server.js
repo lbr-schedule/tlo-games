@@ -793,7 +793,8 @@ router.get('/daily-tasks', async (req, res) => {
         
         let completedTasks = {};
         try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
-        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        const now7 = new Date(Date.now() + 8*60*60*1000);
+        const today = now7.toISOString().split('T')[0];
         const todayClaims = completedTasks[today] || [];
         
         const tasks = POKER_DAILY_TASKS.map(t => ({
@@ -845,7 +846,8 @@ router.post('/claim-task', async (req, res) => {
             playerStats = { ...playerStats, ...r.rows[0] };
         }
         
-        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        const now5 = new Date(Date.now() + 8*60*60*1000);
+        const today = now5.toISOString().split('T')[0];
         let completedTasks = {};
         try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
         const todayClaims = completedTasks[today] || [];
@@ -917,7 +919,8 @@ router.post('/update-stats', async (req, res) => {
         if (!username) return res.json({ success: false });
         
         const db = req.app.locals.pokerDb;
-        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        const now6 = new Date(Date.now() + 8*60*60*1000);
+        const today = now6.toISOString().split('T')[0];
         
         // 確保統計資料列存在
         await db.execute(`INSERT OR IGNORE INTO poker_player_stats (username) VALUES (?)`, [username]);
