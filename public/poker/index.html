@@ -602,7 +602,7 @@ function playSound(type) {
         const ctx = getAudio();
         const src = ctx.createMediaElementSource(s);
         const gain = ctx.createGain();
-        gain.gain.value = 2.5;
+        gain.gain.value = 0.5; // 洗牌聲音小一點
         src.connect(gain);
         gain.connect(ctx.destination);
         s.play().catch(()=>{});
