@@ -1106,24 +1106,17 @@ router.post('/claim-daily-login', async (req, res) => {
     if (!username) return res.json({ success: false, message: '缺少帳號' });
     
     const db = req.app.locals.pokerDb;
-    if (!db) {
-        console.error('claim-daily-login: db is null!');
-        return res.json({ success: false, message: '資料庫未連線' });
-    }
+    if (!db) return res.json({ success: false, message: '資料庫未連線' });
     
     const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
-    const todayStr = today; // UTC+8 date string
     
     try {
-        // 檢查是否已領取（使用 poker_daily_bonus.last_claim）
-        const check = await db.execute({ sql: 'SELECT last_claim FROM poker_daily_bonus WHERE username = ?', args: [username] });
-        if (check.rows && check.rows.length > 0 && check.rows[0].last_claim === todayStr) {
+        // 檢查是否已領取（使用 last_daily_500 欄位）
+        const check = await db.execute({ sql: 'SELECT last_daily_500 FROM poker_daily_bonus WHERE username = ?', args: [username] });
+        if (check.rows && check.rows.length > 0 && check.rows[0].last_daily_500 === today) {
             return res.json({ success: false, message: '今天已領過了，明天再來！', alreadyClaimed: true });
         }
-    } catch(e) { 
-        // 表格可能還沒建立，先忽略
-        console.error('check error (may be ok):', e.message); 
-    }
+    } catch(e) { console.error('check error:', e.message); }
     
     try {
         // 發放 500 金幣
@@ -1133,14 +1126,12 @@ router.post('/claim-daily-login', async (req, res) => {
         return res.json({ success: false, message: '更新失敗: ' + e.message });
     }
     
-    // 更新 poker_daily_bonus 的 last_claim（使用 INSERT OR REPLACE）
+    // 更新 last_daily_500
     try {
-        const existing = await db.execute({ sql: 'SELECT streak FROM poker_daily_bonus WHERE username = ?', args: [username] });
-        const currentStreak = (existing.rows && existing.rows[0] && existing.rows[0].streak) || 0;
-        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)', args: [username, todayStr, currentStreak] });
-    } catch(e) {
-        console.error('bonus update error:', e.message);
-    }
+        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_daily_500, streak) SELECT ?, ?, COALESCE(streak, 0) FROM poker_daily_bonus WHERE username = ?', args: [username, today, username] });
+        // 如果用戶記錄不存在，用另一種方式
+        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_daily_500) VALUES (?, ?)', args: [username, today] });
+    } catch(e) { console.error('bonus update error:', e.message); }
     
     let newScore = 0;
     try {

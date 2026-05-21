@@ -2609,7 +2609,8 @@ async function initPokerTables() {
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_users ADD COLUMN lastVideoClaim TEXT DEFAULT ''` }); } catch(e) {}
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_users ADD COLUMN last_daily_login TEXT DEFAULT ''` }); } catch(e) {}
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, result TEXT NOT NULL, pot INTEGER NOT NULL, hand_name TEXT, opponent TEXT, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0)` });
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, streak INTEGER DEFAULT 0, last_daily_500 TEXT DEFAULT '')` });
+        try { await pokerDb.execute({ sql: `ALTER TABLE poker_daily_bonus ADD COLUMN last_daily_500 TEXT DEFAULT ''` }); } catch(e) {}
         console.log('撲克資料庫初始化完成');
     } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
 }
