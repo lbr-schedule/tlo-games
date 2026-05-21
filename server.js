@@ -1450,10 +1450,10 @@ app.post('/api/roulette/register', async (req, res) => {
             const inviterCheck = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [inviteCode]).catch(e => null);
             if (inviterCheck && inviterCheck.rows && inviterCheck.rows.length > 0) {
                 // 邀請人存在，發放獎勵（跟撲克一样：立即發放 + 記錄 claimed=0）
-                rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] }).catch(e => console.log('邀請人獎勵失敗:', e.message));
-                rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] }).catch(e => console.log('新用戶獎勵失敗:', e.message));
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] });
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] });
                 // 記錄到 roulette_invites（claimed=0 等之後領取，跟撲克一样）
-                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
+                await rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] });
                 inviterBonus = 200;
                 console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
             } else {
@@ -1461,7 +1461,7 @@ app.post('/api/roulette/register', async (req, res) => {
                 console.log('邀請碼無效:', inviteCode);
             }
         }
-        res.json({ success: true, message: '註冊成功！' + (inviterBonus > 0 ? '（邀請人獲得 200 金幣）' : ''), inviterBonus });
+        res.json({ success: true, message: '註冊成功！獲得 1,000 遊戲金' + (inviterBonus > 0 ? '（含邀請獎勵 200 金幣）' : ''), inviterBonus });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
         // 細分錯誤類型
