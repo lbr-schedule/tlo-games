@@ -1927,7 +1927,7 @@ function showPokerLevel() {
   fetch('/api/poker/player-level/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
     var tier = d.tier || '青銅';
     var tierColor = {青銅:'#CD7F32',白銀:'#C0C0C0',黃金:'#FFD700',白金:'#E5E4E2',鑽石:'#B9F2FF'}[tier] || '#ffd700';
-    var levelColor = d.level >= 41 ? '#b9f2ff' : d.level >= 31 ? '#e5e4e2' : d.level >= 21 ? '#ffd700' : d.level >= 11 ? '#c0c0c0' : '#cd7f32';
+    var levelColor = tierColor; // 等級顏色跟階級一致
     var html = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;text-align:center;">';
     html += '<div style="font-size:2rem;margin-bottom:15px;">🏆</div>';
     html += '<div style="font-size:1.2rem;color:#ffd700;margin-bottom:10px;">📊 等級與稱號</div>';
