@@ -2958,3 +2958,4 @@ app.get('/api/coin/admin/stats', async (req, res) => {
         res.json({ success: true, stats: result.rows || [] });
     } catch(e) { res.json({ success: false, message: e.message }); }
 });
+// Force redeploy v5
