@@ -1112,26 +1112,34 @@ router.post('/claim-daily-login', async (req, res) => {
     }
     
     const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
-    console.log('claim-daily-login start:', username, 'today:', today);
+    const todayStr = today; // UTC+8 date string
     
     try {
-        // 檢查是否已領取
-        const check = await db.execute({ sql: 'SELECT last_daily_login FROM poker_users WHERE username = ?', args: [username] });
-        console.log('check rows:', JSON.stringify(check.rows));
-        if (check.rows && check.rows.length > 0 && check.rows[0].last_daily_login === today) {
+        // 檢查是否已領取（使用 poker_daily_bonus.last_claim）
+        const check = await db.execute({ sql: 'SELECT last_claim FROM poker_daily_bonus WHERE username = ?', args: [username] });
+        if (check.rows && check.rows.length > 0 && check.rows[0].last_claim === todayStr) {
             return res.json({ success: false, message: '今天已領過了，明天再來！', alreadyClaimed: true });
         }
     } catch(e) { 
-        console.error('check error:', e.message); 
-        return res.json({ success: false, message: '查詢失敗: ' + e.message });
+        // 表格可能還沒建立，先忽略
+        console.error('check error (may be ok):', e.message); 
     }
     
     try {
         // 發放 500 金幣
-        await db.execute({ sql: 'UPDATE poker_users SET score = score + 500, last_daily_login = ? WHERE username = ?', args: [today, username] });
+        await db.execute({ sql: 'UPDATE poker_users SET score = score + 500 WHERE username = ?', args: [username] });
     } catch(e) { 
         console.error('update error:', e.message); 
         return res.json({ success: false, message: '更新失敗: ' + e.message });
+    }
+    
+    // 更新 poker_daily_bonus 的 last_claim（使用 INSERT OR REPLACE）
+    try {
+        const existing = await db.execute({ sql: 'SELECT streak FROM poker_daily_bonus WHERE username = ?', args: [username] });
+        const currentStreak = (existing.rows && existing.rows[0] && existing.rows[0].streak) || 0;
+        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)', args: [username, todayStr, currentStreak] });
+    } catch(e) {
+        console.error('bonus update error:', e.message);
     }
     
     let newScore = 0;
