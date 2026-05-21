@@ -1397,9 +1397,11 @@ function showPokerFeedback() {
 function submitPokerFeedback() {
   var text = document.getElementById('pokerFeedbackText').value.trim();
   if(!text){showToast('請輸入內容','error');return;}
-  // In production, send to server. For now just close and show success
-  document.getElementById('pokerFeedbackModal').style.display = 'none';
-  showToast('感謝您的回饋！','success');
+  fetch('/api/poker/feedback',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.username},body:JSON.stringify({message:text})}).then(r=>r.json()).then(d=>{
+    document.getElementById('pokerFeedbackModal').style.display = 'none';
+    if(d.success){showToast('感謝您的回饋！','success');}
+    else{showToast(d.message||'送出失敗','error');}
+  }).catch(()=>{showToast('網路錯誤','error');});
 }
 
 function showLoggedIn(user) {

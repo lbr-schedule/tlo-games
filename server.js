@@ -2618,6 +2618,8 @@ async function initPokerTables() {
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_daily_bonus ADD COLUMN last_invite_check TEXT DEFAULT ''` }); } catch(e) {}
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` });
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_invites ADD COLUMN claimed INTEGER DEFAULT 0` }); } catch(e) {}
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, message TEXT NOT NULL, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
+        try { await pokerDb.execute({ sql: `ALTER TABLE poker_feedback ADD COLUMN time TEXT DEFAULT CURRENT_TIMESTAMP` }); } catch(e) {}
         console.log('撲克資料庫初始化完成');
     } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
 }

@@ -136,6 +136,16 @@ async function initPokerDb(client) {
             FOREIGN KEY (invited) REFERENCES poker_users(username)
         )
     `);
+    
+    await client.execute(`
+        CREATE TABLE IF NOT EXISTS poker_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            message TEXT NOT NULL,
+            time TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (username) REFERENCES poker_users(username)
+        )
+    `);
     await client.execute(`
         CREATE TABLE IF NOT EXISTS poker_player_stats (
             username TEXT PRIMARY KEY,
@@ -1221,6 +1231,32 @@ router.get('/invite-notifications', async (req, res) => {
 });
 
 
+
+
+// ============ 問題反饋 ============
+router.post('/feedback', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    const { message } = req.body;
+    if (!message || message.trim().length === 0) {
+        return res.json({ success: false, message: '請輸入內容' });
+    }
+    
+    const db = req.app.locals.pokerDb;
+    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
+    
+    try {
+        await db.execute(
+            'INSERT INTO poker_feedback (username, message, time) VALUES (?, ?, ?)',
+            [username, message.trim(), today]
+        );
+        res.json({ success: true, message: '感謝您的回饋！' });
+    } catch(e) {
+        console.error('Feedback error:', e.message);
+        res.json({ success: false, message: '送出失敗，請稍後再試' });
+    }
+});
 
 // ============ 領取邀請獎勵 ============
 router.post('/claim-invite-reward', async (req, res) => {
