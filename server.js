@@ -1589,6 +1589,14 @@ function processWeeklyRewards() {
     }
     
     lastWeeklyReset = today;
+    
+    // 重置所有玩家的 weekly_bet（每週重新計算階級）
+    if (LOCAL_TEST_MODE) {
+        Object.keys(localPlayers).forEach(u => { localPlayers[u].weekly_bet = 0; });
+    } else if (rouletteDbAvailable) {
+        rouletteDb.execute({ sql: 'UPDATE roulette_player_stats SET weekly_bet = 0' }).catch(e => console.log('重置週投注失敗:', e.message));
+    }
+    console.log('🔄 每週階級已重置');
 }
 
 // 每小時檢查一次是否需要結算
