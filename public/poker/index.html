@@ -325,7 +325,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
       <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
       <button onclick="showPokerLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🔥 連續登入</button>
       <button onclick="showPokerVideo();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎬 看影片領獎勵</button>
-      <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級</button>
+      <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級與稱號</button>
       <button onclick="showPokerTasks();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📋 每日任務</button>
       <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲紀錄</button>
       <button onclick="showPokerInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎟️ 邀請碼</button>
@@ -450,7 +450,7 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 <!-- 等級 Modal -->
 <div class="modal-overlay" id="pokerLevelModal">
   <div class="modal" style="max-width:360px;">
-    <h2>📊 等級與經驗值</h2>
+    <h2>📊 等級與稱號</h2>
     <div id="pokerLevelContent" style="color:#fff;text-align:center;margin-top:10px;"></div>
     <button onclick="closePokerLevelModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
   </div>
@@ -1881,14 +1881,29 @@ function claimPokerVideoReward() {
 function showPokerLevel() {
   if(!currentUser){alert('請先登入');return;}
   fetch('/api/poker/player-level/'+encodeURIComponent(currentUser.username)).then(r=>r.json()).then(d=>{
-    var html = '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:10px;">🏆</div>';
-    html += '<div style="color:#ffd700;font-size:1.8rem;font-weight:bold;">Lv.'+d.level+' '+d.title+'</div>';
-    html += '<div style="color:#aaa;margin:5px 0;">'+d.tier+' | 本週下注: '+(d.weeklyBet||0)+'</div>';
-    html += '<div style="margin:15px 0;"><div style="background:#333;border-radius:10px;height:20px;overflow:hidden;"><div style="width:'+(d.progress||0)+'%;height:100%;background:linear-gradient(90deg,#ffd700,#ff6600);"></div></div></div>';
-    html += '<div style="color:#888;font-size:0.85rem;">'+(d.neededBet||0)+' 金幣後可升級</div>';
-    html += '<div style="margin-top:15px;padding:10px;background:#12122a;border-radius:10px;text-align:left;">';
-    html += '<div style="color:#aaa;font-size:0.8rem;margin-bottom:5px;">各等級所需下注量：</div>';
-    html += '<div style="font-size:0.75rem;color:#888;">青銅 0 | 白銀 1000 | 黃金 5000 | 白金 30000 | 鑽石 100000</div>';
+    var tier = d.tier || '青銅';
+    var tierColor = {青銅:'#CD7F32',白銀:'#C0C0C0',黃金:'#FFD700',白金:'#E5E4E2',鑽石:'#B9F2FF'}[tier] || '#ffd700';
+    var levelColor = d.level >= 41 ? '#b9f2ff' : d.level >= 31 ? '#e5e4e2' : d.level >= 21 ? '#ffd700' : d.level >= 11 ? '#c0c0c0' : '#cd7f32';
+    var html = '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:25px;text-align:center;">';
+    html += '<div style="font-size:2rem;margin-bottom:15px;">🏆</div>';
+    html += '<div style="font-size:1.2rem;color:#ffd700;margin-bottom:10px;">📊 等級與稱號</div>';
+    html += '<div style="font-size:2rem;font-weight:bold;color:'+levelColor+';margin-bottom:5px;">Lv.'+d.level+' '+tier+'</div>';
+    html += '<div style="font-size:1rem;color:#aaa;margin-bottom:5px;">稱號：'+(d.title||'菜鳥')+'</div>';
+    html += '<div style="font-size:0.9rem;color:#888;margin-bottom:20px;">本週下注：$'+(d.weeklyBet||0).toLocaleString()+'</div>';
+    var tiers = [
+      {name:'青銅',minLv:1,maxLv:10,minBet:0,color:'#CD7F32'},
+      {name:'白銀',minLv:11,maxLv:20,minBet:1000,color:'#C0C0C0'},
+      {name:'黃金',minLv:21,maxLv:30,minBet:5000,color:'#FFD700'},
+      {name:'白金',minLv:31,maxLv:40,minBet:30000,color:'#E5E4E2'},
+      {name:'鑽石',minLv:41,maxLv:50,minBet:100000,color:'#B9F2FF'}
+    ];
+    var tierBars = tiers.map(t => {
+      var active = d.level >= t.minLv;
+      var pct = t.minBet === 0 ? 100 : Math.min(100, Math.round((d.weeklyBet / t.minBet) * 100));
+      return '<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><span style="color:'+t.color+';font-weight:bold;">'+t.name+'</span><span style="color:#888;">Lv.'+t.minLv+'-'+t.maxLv+'</span></div><div style="background:#333;border-radius:4px;height:8px;overflow:hidden;"><div style="width:'+(active?Math.min(100,pct):0)+'%;height:100%;background:'+t.color+';transition:width 0.3s;"></div></div><div style="font-size:0.75rem;color:#666;text-align:right;">門檻 $'+t.minBet.toLocaleString()+'</div></div>';
+    }).join('');
+    html += '<div style="border-top:1px solid #333;padding-top:15px;">'+tierBars+'</div>';
+    html += '<div style="font-size:0.8rem;color:#666;text-align:center;margin-top:15px;">每週一結算，階級隨下注金額提升</div>';
     html += '</div>';
     document.getElementById('pokerLevelContent').innerHTML = html;
     document.getElementById('pokerLevelModal').classList.add('show');
