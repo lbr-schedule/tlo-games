@@ -131,6 +131,7 @@ async function initPokerDb(client) {
             invited TEXT NOT NULL,
             reward INTEGER DEFAULT 200,
             time TEXT DEFAULT CURRENT_TIMESTAMP,
+            claimed INTEGER DEFAULT 0,
             FOREIGN KEY (inviter) REFERENCES poker_users(username),
             FOREIGN KEY (invited) REFERENCES poker_users(username)
         )
@@ -228,7 +229,7 @@ router.post('/register', async (req, res) => {
                 );
                 // 記錄邀請（不限次數）
                 await req.app.locals.pokerDb.execute(
-                    'INSERT INTO poker_invites (inviter, invited, reward) VALUES (?, ?, ?)',
+                    'INSERT INTO poker_invites (inviter, invited, reward, claimed) VALUES (?, ?, ?, 0)',
                     [invitedBy, username, 200]
                 );
             }
@@ -1211,7 +1212,7 @@ router.get('/invite-notifications', async (req, res) => {
     try {
         // Get ALL invites for this inviter (show accumulated earnings)
         const invites = await db.execute(
-            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
+            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? AND claimed = 0 ORDER BY time DESC LIMIT 50',
             [username]
         );
         const totalEarned = invites.rows.reduce((sum, r) => sum + (r.reward || 0), 0);
@@ -1229,28 +1230,20 @@ router.post('/claim-invite-reward', async (req, res) => {
     const db = req.app.locals.pokerDb;
     if (!db) return res.json({ success: false, message: '資料庫未連線' });
     
-    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
-    
     try {
-        // Get last_invite_reward_claimed
-        const check = await db.execute('SELECT last_invite_reward_claimed FROM poker_users WHERE username = ?', [username]);
-        const lastClaimed = (check.rows && check.rows[0] && check.rows[0].last_invite_reward_claimed) || '';
-        
-        if (lastClaimed === today) {
-            return res.json({ success: false, message: '今日已領取，明天再來！', alreadyClaimed: true });
-        }
-        
-        // Get unclaimed invite total
-        const invites = await db.execute('SELECT SUM(reward) as total FROM poker_invites WHERE inviter = ?', [username]);
+        // Get unclaimed invites total (only unclaimed ones)
+        const invites = await db.execute('SELECT SUM(reward) as total FROM poker_invites WHERE inviter = ? AND claimed = 0', [username]);
         const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
         
         if (totalEarned <= 0) {
-            return res.json({ success: false, message: '還沒有邀請獎勵可領取' });
+            return res.json({ success: false, message: '還沒有可領取的邀請獎勵', alreadyClaimed: true });
         }
+        
+        // Mark these invites as claimed
+        await db.execute('UPDATE poker_invites SET claimed = 1 WHERE inviter = ? AND claimed = 0', [username]);
         
         // Give reward
         await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [totalEarned, username]);
-        await db.execute('UPDATE poker_users SET last_invite_reward_claimed = ? WHERE username = ?', [today, username]);
         
         // Get new score
         const newScoreRes = await db.execute('SELECT score FROM poker_users WHERE username = ?', [username]);

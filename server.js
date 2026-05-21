@@ -2616,8 +2616,8 @@ async function initPokerTables() {
         await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_daily_bonus (username TEXT PRIMARY KEY, last_claim TEXT, last_daily_500 TEXT DEFAULT '', streak INTEGER DEFAULT 0, last_invite_check TEXT DEFAULT '')` });
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_daily_bonus ADD COLUMN last_daily_500 TEXT DEFAULT ''` }); } catch(e) {}
         try { await pokerDb.execute({ sql: `ALTER TABLE poker_daily_bonus ADD COLUMN last_invite_check TEXT DEFAULT ''` }); } catch(e) {}
-        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP)` });
-        try { await pokerDb.execute({ sql: `ALTER TABLE poker_invites ADD COLUMN time TEXT DEFAULT CURRENT_TIMESTAMP` }); } catch(e) {}
+        await pokerDb.execute({ sql: `CREATE TABLE IF NOT EXISTS poker_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` });
+        try { await pokerDb.execute({ sql: `ALTER TABLE poker_invites ADD COLUMN claimed INTEGER DEFAULT 0` }); } catch(e) {}
         console.log('撲克資料庫初始化完成');
     } catch(e) { console.log('撲克資料庫初始化失敗:', e.message); }
 }
