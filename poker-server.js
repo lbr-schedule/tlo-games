@@ -10,10 +10,9 @@ function getTwTime() {
     const h = d.getUTCHours();
     const mi = String(d.getUTCMinutes()).padStart(2, '0');
     const s = String(d.getUTCSeconds()).padStart(2, '0');
-    // UTC hour 4-15 = GMT+8 12:00-23:00 = 下午, 其餘 = 上午
     const ampm = (h >= 4 && h < 16) ? '下午' : '上午';
     const h12 = (h === 0 || h === 12) ? 12 : (h > 12 ? h - 12 : h);
-    return `${y}/${mo}/${da} ${ampm}${String(h12).padStart(2,'0')}:${mi}:${s}`;
+    return y + '/' + mo + '/' + da + ' ' + ampm + String(h12).padStart(2,'0') + ':' + mi + ':' + s;
 }
 
 const router = express.Router();
