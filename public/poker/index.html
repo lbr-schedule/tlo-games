@@ -570,14 +570,14 @@ function playSound(type) {
     if (type === 'deal') {
       if (dealSound) {
         const d = new Audio(dealSound);
-        d.volume = 1.0;
+        d.volume = 0.8;
         d.play().catch(()=>{});
       } else {
         // Fallback to crisp snap
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(1200, now);
         osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
-        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.setValueAtTime(0.35, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
         osc.start(now); osc.stop(now + 0.06);
       }
@@ -585,20 +585,20 @@ function playSound(type) {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1200, now);
       osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
       osc.start(now); osc.stop(now + 0.08);
     } else if (type === 'shuffle') {
       if (shuffleSound) {
         const s = new Audio(shuffleSound);
-        s.volume = 1.0;
+        s.volume = 0.8;
         s.play().catch(()=>{});
       } else {
         // Fallback to crisp sound
         osc.type = 'square';
         osc.frequency.setValueAtTime(600, now);
         osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
         osc.start(now); osc.stop(now + 0.1);
       }
@@ -616,7 +616,7 @@ function playSound(type) {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.start(now); osc.stop(now + 0.35);
     } else if (type === 'tie') {
@@ -624,20 +624,20 @@ function playSound(type) {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(440, now);
       osc.frequency.setValueAtTime(440, now + 0.15);
-      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
       osc.start(now); osc.stop(now + 0.2);
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(350, now);
       osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.start(now); osc.stop(now + 0.35);
     } else if (type === 'bet') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
-      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       osc.start(now); osc.stop(now + 0.1);
     } else if (type === 'fold') {
@@ -650,21 +650,21 @@ function playSound(type) {
     } else if (type === 'check') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(500, now);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.start(now); osc.stop(now + 0.12);
     } else if (type === 'call') {
       osc.type = 'square';
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.exponentialRampToValueAtTime(500, now + 0.06);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       osc.start(now); osc.stop(now + 0.1);
     } else if (type === 'allin') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(200, now);
       osc.frequency.setValueAtTime(400, now + 0.1);
-      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
       osc.start(now); osc.stop(now + 0.2);
     }
@@ -1233,7 +1233,7 @@ function playBgMusic() {
     bgMusic = new Audio();
     bgMusic.src = 'chonklap.mp4';
     bgMusic.loop = true;
-    bgMusic.volume = 1.0;
+    bgMusic.volume = 0.25; // 降低背景音樂，否則會蓋過音效
   }
   bgMusic.play().catch(()=>{});
 }
