@@ -1446,14 +1446,20 @@ app.post('/api/roulette/register', async (req, res) => {
         console.log('✅ 註冊成功, username:', username);
         // 邀請人獎勵
         if (inviteCode && inviteCode !== username) {
-            // 記錄到 roulette_invites（claimed=0）讓邀請人可領取
-            rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
-            // 邀請人立即獲得 200 金幣（跟撲克一样）
-            rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] }).catch(e => console.log('邀請人獎勵失敗:', e.message));
-            // 新用戶使用邀請碼，額外獲得 200 金幣
-            rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] }).catch(e => console.log('新用戶邀請獎勵失敗:', e.message));
-            inviterBonus = 200;
-            console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
+            // 先檢查邀請人是否存在
+            const inviterCheck = await rouletteDb.execute('SELECT username FROM players WHERE username = ?', [inviteCode]).catch(e => null);
+            if (inviterCheck && inviterCheck.rows && inviterCheck.rows.length > 0) {
+                // 邀請人存在，發放獎勵
+                rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] }).catch(e => console.log('邀請人獎勵失敗:', e.message));
+                rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] }).catch(e => console.log('新用戶獎勵失敗:', e.message));
+                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 1)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
+                inviterBonus = 200;
+                console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
+            } else {
+                // 邀請碼無效，只記錄不使用
+                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 0, 1)`, args: [inviteCode || 'invalid', username] }).catch(e => {});
+                console.log('邀請碼無效:', inviteCode);
+            }
         }
         res.json({ success: true, message: '註冊成功！' + (inviterBonus > 0 ? '（邀請人獲得 200 金幣）' : ''), inviterBonus });
     } catch(e) {
