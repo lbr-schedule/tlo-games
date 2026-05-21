@@ -569,8 +569,15 @@ function playSound(type) {
     const now = ctx.currentTime;
     if (type === 'deal') {
       if (dealSound) {
+        // Use Web Audio API to boost volume beyond 1.0
         const d = new Audio(dealSound);
-        d.volume = 1.5;
+        d.volume = 1.0;
+        const ctx = getAudio();
+        const src = ctx.createMediaElementSource(d);
+        const gain = ctx.createGain();
+        gain.gain.value = 2.5; // Boost to 2.5x
+        src.connect(gain);
+        gain.connect(ctx.destination);
         d.play().catch(()=>{});
       } else {
         // Fallback to crisp snap
@@ -591,7 +598,13 @@ function playSound(type) {
     } else if (type === 'shuffle') {
       if (shuffleSound) {
         const s = new Audio(shuffleSound);
-        s.volume = 1.5;
+        s.volume = 1.0;
+        const ctx = getAudio();
+        const src = ctx.createMediaElementSource(s);
+        const gain = ctx.createGain();
+        gain.gain.value = 2.5;
+        src.connect(gain);
+        gain.connect(ctx.destination);
         s.play().catch(()=>{});
       } else {
         // Fallback to crisp sound
@@ -1011,6 +1024,14 @@ function advancePhase() {
     G.community.push(G.deck.pop());
     var ca = new Audio(dealSound);
     ca.volume = 1.0;
+    try {
+      const ctx = getAudio();
+      const src = ctx.createMediaElementSource(ca);
+      const gain = ctx.createGain();
+      gain.gain.value = 2.5;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+    } catch(e){}
     ca.play().catch(()=>{});
     setTimeout(() => { render(); enablePlayerActions(); }, 400);
     return;
@@ -1019,6 +1040,14 @@ function advancePhase() {
     G.community.push(G.deck.pop());
     var ca = new Audio(dealSound);
     ca.volume = 1.0;
+    try {
+      const ctx = getAudio();
+      const src = ctx.createMediaElementSource(ca);
+      const gain = ctx.createGain();
+      gain.gain.value = 2.5;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+    } catch(e){}
     ca.play().catch(()=>{});
     setTimeout(() => { render(); enablePlayerActions(); }, 400);
     return;
