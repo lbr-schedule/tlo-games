@@ -2341,10 +2341,10 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
 
 // ============ 輪盤邀請系統 API ============
 app.get('/api/roulette/invite-notifications', async (req, res) => {
-    const username = getUsernameFromReq(req);
-    if (!username) return res.json({ success: false, message: '請先登入' });
-    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
     try {
+        const username = getUsernameFromReq(req);
+        if (!username) return res.json({ success: false, message: '請先登入' });
+        if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
         const invites = await rouletteDb.execute(
             'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? AND claimed = 0 ORDER BY time DESC LIMIT 50',
             [username]
@@ -2355,10 +2355,10 @@ app.get('/api/roulette/invite-notifications', async (req, res) => {
 });
 
 app.post('/api/roulette/claim-invite-reward', async (req, res) => {
-    const username = getUsernameFromReq(req);
-    if (!username) return res.json({ success: false, message: '請先登入' });
-    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
     try {
+        const username = getUsernameFromReq(req);
+        if (!username) return res.json({ success: false, message: '請先登入' });
+        if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
         const invites = await rouletteDb.execute('SELECT SUM(reward) as total FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
         const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
         if (totalEarned <= 0) return res.json({ success: false, message: '沒有可領取的邀請獎勵' });
