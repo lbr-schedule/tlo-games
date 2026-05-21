@@ -201,6 +201,14 @@ router.post('/register', async (req, res) => {
             return res.json({ success: false, message: '密碼需要至少 4 字' });
         }
         
+        // 驗證手機號碼格式（台灣）
+        if (phone) {
+            const phoneRegex = /^09[0-9]{8}$/;
+            if (!phoneRegex.test(phone)) {
+                return res.json({ success: false, message: '手機號碼格式錯誤（需為09開頭的10位數）' });
+            }
+        }
+        
         // 檢查是否已存在
         const existing = await req.app.locals.pokerDb.execute(
             'SELECT username FROM poker_users WHERE username = ?',
@@ -213,7 +221,7 @@ router.post('/register', async (req, res) => {
         // 註冊
         // Generate invite code (use username as the invite code)
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_users (username, password, score) VALUES (?, ?, 10000)',
+            'INSERT INTO poker_users (username, password, score) VALUES (?, ?, 1000)',
             [username, password]
         );
         // Update optional fields one by one to avoid missing column errors
@@ -250,7 +258,7 @@ router.post('/register', async (req, res) => {
             );
         }
         
-        res.json({ success: true, message: '註冊成功！獲得 10,000 遊戲金' + (invitedBy ? '（含邀請獎勵 200 金幣）' : '') });
+        res.json({ success: true, message: '註冊成功！獲得 1,000 遊戲金' + (invitedBy ? '（含邀請獎勵 200 金幣）' : '') });
     } catch (e) {
         res.json({ success: false, message: '註冊失敗: ' + e.message });
     }

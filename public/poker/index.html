@@ -154,6 +154,9 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 .raise-input { padding: 0.4rem; width: 65px; border-radius: 6px; border: 1px solid #333; background: #1a1a3a; color: #fff; text-align: center; font-size: 0.85rem; }
 
 .waiting-hint { text-align: center; font-size: 0.85rem; color: #888; margin: 0.4rem 0; }
+.modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
+.modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
+.modal .guide-step p strong { color: #fff; }
 .typing-dots { display: inline-block; }
 .typing-dots::after { content: '...'; animation: typingDots 1.2s infinite; }
 @keyframes typingDots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'}; }
@@ -477,34 +480,43 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 <!-- 遊戲說明 Modal -->
 <div class="modal-overlay" id="pokerHelpModal">
   <div class="modal" style="max-width:360px;">
-    <h2>❓ 德州撲克說明</h2>
-    <div id="pokerHelpPage1" style="color:#fff;text-align:left;padding:10px 0;">
-      <h3 style="color:#ffd700;margin-bottom:10px;">🎴 基本規則</h3>
-      <p style="margin-bottom:8px;">1. 發給每位玩家 2 張底牌，只有自己能看</p>
-      <p style="margin-bottom:8px;">2. 公共牌分三階段發出：翻牌（3張）、轉牌（1張）、河牌（1張）</p>
-      <p style="margin-bottom:8px;">3. 玩家可選擇：過牌、加注、跟注、棄牌</p>
-      <p style="margin-bottom:15px;">4. 最後比大小，大的贏得底池</p>
-      <h3 style="color:#ffd700;margin-bottom:10px;">🃏 牌型大小（由大到小）</h3>
-      <p style="margin-bottom:6px;">皇家同花順 > 同花順 > 四條</p>
-      <p style="margin-bottom:6px;">滿堂紅 > 同花 > 順子</p>
-      <p style="margin-bottom:6px;">三條 > 兩對 > 一對 > 高牌</p>
-      <button onclick="showPokerHelpPage(2)" style="width:100%;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">下一頁 →</button>
+    <h2>🎮 新手導引</h2>
+    
+    <div class="guide-step" id="pokerGuideStep1">
+      <h3>📌 第一步：了解牌型</h3>
+      <p>🎴 發給你 2 張底牌，只有自己能看</p>
+      <p>🃏 公共牌分三階段發出：<br>翻牌（3張）→ 轉牌（1張）→ 河牌（1張）</p>
+      <p style="margin-top:10px;color:#ffd700;">💡 牌型大小：<br>皇家同花順 > 同花順 > 四條 > 滿堂紅 > 同花 > 順子 > 三條 > 兩對 > 一對 > 高牌</p>
     </div>
-    <div id="pokerHelpPage2" style="display:none;color:#fff;text-align:left;padding:10px 0;">
-      <h3 style="color:#ffd700;margin-bottom:10px;">💰 下注選項</h3>
-      <p style="margin-bottom:8px;">• 過牌：不投入金幣，讓下一家繼續</p>
-      <p style="margin-bottom:8px;">• 跟注：投入與對手相同的金額</p>
-      <p style="margin-bottom:8px;">• 加注：投入比對手更多的金額</p>
-      <p style="margin-bottom:8px;">• 全下：投入手中全部金幣</p>
-      <p style="margin-bottom:15px;">• 棄牌：放棄此局，認輸</p>
-      <h3 style="color:#ffd700;margin-bottom:10px;">🎯 遊戲流程</h3>
-      <p style="margin-bottom:8px;">1. 小盲注、大盲注預設下注</p>
-      <p style="margin-bottom:8px;">2. 發底牌，進行第一輪下注</p>
-      <p style="margin-bottom:8px;">3. 發翻牌，進行第二輪下注</p>
-      <p style="margin-bottom:8px;">4. 發轉牌，進行第三輪下注</p>
-      <p style="margin-bottom:15px;">5. 發河牌，最後一輪下注後攤牌比大小</p>
-      <button onclick="closePokerHelpModal()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:25px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">知道了</button>
+    
+    <div class="guide-step" id="pokerGuideStep2" style="display:none;">
+      <h3>📌 第二步：下注動作</h3>
+      <p>✅ <strong>過牌</strong>：不投入金幣，讓下一家繼續</p>
+      <p>✅ <strong>跟注</strong>：投入與對手相同的金額</p>
+      <p>✅ <strong>加注</strong>：投入比對手更多的金額</p>
+      <p>✅ <strong>全下</strong>：投入手中全部金幣</p>
+      <p>✅ <strong>棄牌</strong>：放棄此局，認輸</p>
     </div>
+    
+    <div class="guide-step" id="pokerGuideStep3" style="display:none;">
+      <h3>📌 第三步：功能按鍵</h3>
+      <p>👤 <strong>個人資料</strong> - 查看與修改個人資訊</p>
+      <p>📊 <strong>等級與稱號</strong> - 查看你的階級與進度</p>
+      <p>🏆 <strong>排行榜</strong> - 查看 TOP 15 玩家</p>
+      <p>🔥 <strong>連續登入</strong> - 領取每日連續登入獎勵</p>
+      <p>🎟️ <strong>邀請碼</strong> - 分享邀請碼獲取獎勵</p>
+    </div>
+    
+    <div class="guide-step" id="pokerGuideStep4" style="display:none;">
+      <h3>📌 第四步：賺取金幣</h3>
+      <p>💰 <strong>每日登入</strong> - 每天登入可領 500 金幣</p>
+      <p>🔥 <strong>連續登入</strong> - 最高可達 2000 金幣/天</p>
+      <p>🎁 <strong>邀請好友</strong> - 雙方都獲得 200 金幣</p>
+      <p>📋 <strong>每日任務</strong> - 完成挑戰獲得額外獎勵</p>
+      <p style="margin-top:10px;color:#ffd700;">💡 善用這些功能，快速累積你的金幣！</p>
+    </div>
+    
+    <button id="pokerGuideNextBtn" onclick="nextPokerGuide(2)" style="width:100%;margin-top:15px;padding:12px;background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;border-radius:25px;font-size:1rem;font-weight:bold;color:#1a1a2e;cursor:pointer;">下一步</button>
   </div>
 </div>
 
@@ -2073,6 +2085,34 @@ async function showPokerLeaderboard() {
 
 function showPokerGuide() {
   document.getElementById('pokerHelpModal').classList.add('show');
+  showPokerGuideStep(1);
+}
+
+function showPokerGuideStep(step) {
+  document.querySelectorAll('.guide-step').forEach((s, i) => {
+    s.style.display = (i + 1) === step ? 'block' : 'none';
+  });
+  const btn = document.getElementById('pokerGuideNextBtn');
+  if (step === 1) {
+    btn.textContent = '下一步';
+    btn.onclick = () => showPokerGuideStep(2);
+  } else if (step === 2) {
+    btn.textContent = '下一步';
+    btn.onclick = () => showPokerGuideStep(3);
+  } else if (step === 3) {
+    btn.textContent = '下一步';
+    btn.onclick = () => showPokerGuideStep(4);
+  } else if (step === 4) {
+    btn.textContent = '我知道了';
+    btn.onclick = closePokerHelpModal;
+  }
+}
+
+function nextPokerGuide(step) { showPokerGuideStep(step); }
+
+function closePokerHelpModal() {
+  document.getElementById('pokerHelpModal').classList.remove('show');
+  if(currentUser) localStorage.setItem('pokerGuided_' + currentUser.username, 'true');
 }
 
 function closePokerVideoPopup() {
@@ -2240,10 +2280,7 @@ function showPokerHelp() {
   document.getElementById('pokerHelpPage1').style.display='block';
   document.getElementById('pokerHelpPage2').style.display='none';
 }
-function showPokerHelpPage(page){
-  document.getElementById('pokerHelpPage1').style.display=page===1?'block':'none';
-  document.getElementById('pokerHelpPage2').style.display=page===2?'block':'none';
-}
+
 function closePokerHelpModal(){
   document.getElementById('pokerHelpModal').classList.remove('show');
   if(currentUser) localStorage.setItem('pokerGuided_' + currentUser.username, 'true');
