@@ -115,8 +115,21 @@ async function initPokerDb(client) {
         CREATE TABLE IF NOT EXISTS poker_daily_bonus (
             username TEXT PRIMARY KEY,
             last_claim TEXT,
+            last_daily_500 TEXT DEFAULT '',
             streak INTEGER DEFAULT 0,
             FOREIGN KEY (username) REFERENCES poker_users(username)
+        )
+    `);
+    
+    await client.execute(`
+        CREATE TABLE IF NOT EXISTS poker_invites (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            inviter TEXT NOT NULL,
+            invited TEXT NOT NULL,
+            reward INTEGER DEFAULT 200,
+            time TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (inviter) REFERENCES poker_users(username),
+            FOREIGN KEY (invited) REFERENCES poker_users(username)
         )
     `);
     await client.execute(`
@@ -200,30 +213,31 @@ router.post('/register', async (req, res) => {
             try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET used_invite_code = ? WHERE username = ?', [invitedBy, username]); } catch(e) {}
         }
         
-        // 邀請人獎勵（檢查是否已使用過邀請碼，防止重複）
+        // 邀請人獎勵（不限次數，每次邀請成功可得 200 金幣）
         if (invitedBy) {
             const inviter = await req.app.locals.pokerDb.execute(
-                'SELECT score, used_invite_code FROM poker_users WHERE username = ?',
+                'SELECT score FROM poker_users WHERE username = ?',
                 [invitedBy]
             );
             if (inviter.rows.length > 0) {
-                // 檢查是否已邀請過（每個帳號只能成功邀請一次）
-                const inviterUsed = inviter.rows[0].used_invite_code || '';
-                if (inviterUsed === '') {
-                    await req.app.locals.pokerDb.execute(
-                        'UPDATE poker_users SET score = score + 500 WHERE username = ?',
-                        [invitedBy]
-                    );
-                }
+                await req.app.locals.pokerDb.execute(
+                    'UPDATE poker_users SET score = score + 200 WHERE username = ?',
+                    [invitedBy]
+                );
+                // 記錄邀請（不限次數）
+                await req.app.locals.pokerDb.execute(
+                    'INSERT INTO poker_invites (inviter, invited, reward) VALUES (?, ?, ?)',
+                    [invitedBy, username, 200]
+                );
             }
-            // 新用戶使用邀請碼註冊，額外獲得 500 金幣
+            // 新用戶使用邀請碼註冊，額外獲得 200 金幣
             await req.app.locals.pokerDb.execute(
-                'UPDATE poker_users SET score = score + 500 WHERE username = ?',
+                'UPDATE poker_users SET score = score + 200 WHERE username = ?',
                 [username]
             );
         }
         
-        res.json({ success: true, message: '註冊成功！獲得 10,000 遊戲金' + (invitedBy ? '（含邀請獎勵 500 金幣）' : '') });
+        res.json({ success: true, message: '註冊成功！獲得 10,000 遊戲金' + (invitedBy ? '（含邀請獎勵 200 金幣）' : '') });
     } catch (e) {
         res.json({ success: false, message: '註冊失敗: ' + e.message });
     }
@@ -1172,6 +1186,28 @@ router.post('/admin/delete-users', async (req, res) => {
     }
     
     res.json({ success: true, deleted, remaining: toDelete });
+});
+
+
+
+
+// ============ 邀請通知與明細 ============
+router.get('/invite-notifications', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    const db = req.app.locals.pokerDb;
+    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
+    
+    // Get all invites for this inviter
+    try {
+        const invites = await db.execute(
+            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? ORDER BY time DESC LIMIT 20',
+            [username]
+        );
+        const totalEarned = invites.rows.reduce((sum, r) => sum + (r.reward || 0), 0);
+        res.json({ success: true, invites: invites.rows || [], totalEarned, count: invites.rows?.length || 0 });
+    } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
 
