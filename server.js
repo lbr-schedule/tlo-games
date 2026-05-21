@@ -2340,6 +2340,14 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
 });
 
 // ============ 輪盤邀請系統 API ============
+function getUsernameFromReq(req) {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ')) {
+        return auth.slice(7);
+    }
+    return req.query.username || req.body.username || null;
+}
+
 app.get('/api/roulette/invite-notifications', async (req, res) => {
     try {
         const username = getUsernameFromReq(req);
