@@ -1207,14 +1207,10 @@ router.get('/invite-notifications', async (req, res) => {
     const db = req.app.locals.pokerDb;
     
     try {
-        // Get last_invite_check time for this user
-        const userRes = await db.execute('SELECT last_invite_check FROM poker_users WHERE username = ?', [username]);
-        const lastCheck = (userRes.rows && userRes.rows[0] && userRes.rows[0].last_invite_check) || '1970-01-01';
-        
-        // Get invites since last check (only new ones since last login)
+        // Get ALL invites for this inviter (show accumulated earnings)
         const invites = await db.execute(
-            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? AND time > ? ORDER BY time DESC LIMIT 20',
-            [username, lastCheck]
+            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
+            [username]
         );
         const totalEarned = invites.rows.reduce((sum, r) => sum + (r.reward || 0), 0);
         res.json({ success: true, invites: invites.rows || [], totalEarned, count: invites.rows?.length || 0 });
