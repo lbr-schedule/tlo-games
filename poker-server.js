@@ -676,7 +676,7 @@ router.get('/player-level/:username', async (req, res) => {
 
 const STREAK_BONUSES = {
     1: 200, 2: 200, 3: 400, 4: 500, 5: 700,
-    6: 800, 7: 900, 8: 1000, 9: 1100, 10: 1200
+    6: 1000, 7: 2000
 };
 
 function getStreakTitle(streak) {
@@ -734,7 +734,7 @@ async function processPokerLoginStreak(db, username) {
             }
         }
         
-        bonus = STREAK_BONUSES[newStreak] || Math.min(100 + newStreak * 50, 2000);
+        bonus = STREAK_BONUSES[Math.min(newStreak, 7)] || 2000;
         title = getStreakTitle(newStreak);
         
         await db.execute({
