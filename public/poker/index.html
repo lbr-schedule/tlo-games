@@ -1907,11 +1907,11 @@ async function showPokerLevelInfo() {
     var tier = d.tier || '青銅';
     var tierColor = {青銅:'#CD7F32',白銀:'#C0C0C0',黃金:'#FFD700',白金:'#E5E4E2',鑽石:'#B9F2FF'}[tier] || '#ffd700';
     var tiers = [
-      {name:'青銅',minLv:1,maxLv:10,minBet:0},
-      {name:'白銀',minLv:11,maxLv:20,minBet:1000},
-      {name:'黃金',minLv:21,maxLv:30,minBet:5000},
-      {name:'白金',minLv:31,maxLv:40,minBet:30000},
-      {name:'鑽石',minLv:41,maxLv:50,minBet:100000}
+      {name:'青銅',minLv:1,maxLv:10,minBet:0,color:'#CD7F32'},
+      {name:'白銀',minLv:11,maxLv:20,minBet:1000,color:'#C0C0C0'},
+      {name:'黃金',minLv:21,maxLv:30,minBet:5000,color:'#FFD700'},
+      {name:'白金',minLv:31,maxLv:40,minBet:30000,color:'#E5E4E2'},
+      {name:'鑽石',minLv:41,maxLv:50,minBet:100000,color:'#B9F2FF'}
     ];
     var tierBars = tiers.map(t => {
       var active = d.level >= t.minLv;
