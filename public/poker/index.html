@@ -324,15 +324,21 @@ h1 { margin: 0.8rem; font-size: 1.3rem; text-align: center; color: #f5c518; text
 <div class="modal-overlay" id="playerMenuModal" onclick="if(event.target===this)closePlayerMenu()">
   <div style="background:#1a1a2e;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h2 style="color:#ffd700;margin:0 0 16px;">☰ 玩家專區</h2>
-    <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;flex-direction:column;gap:8px;" id="pokerMenuList">
       <button onclick="showPokerProfile();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">👤 個人資料</button>
       <button onclick="showPokerLevel();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📊 等級與稱號</button>
+      <button onclick="showPokerLeaderboard();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🏆 排行榜</button>
       <button onclick="showPokerLoginReward();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🔥 連續登入</button>
       <button onclick="showPokerTasks();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📋 每日任務</button>
       <button onclick="showPokerHistory();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">📜 遊戲紀錄</button>
       <button onclick="showPokerInviteCode();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🎟️ 邀請碼</button>
       <button onclick="showPokerGuide();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">❓ 遊戲說明</button>
-      <button onclick="showPokerLeaderboard();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">🏆 排行榜</button>
+      <button onclick="showPokerFeedback();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">💬 問題反饋</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;" id="pokerMenuPagination">
+      <button onclick="pokerMenuPrev()" id="pokerMenuPrevBtn" style="flex:1;padding:10px;background:#333;border:none;border-radius:10px;color:#888;font-size:0.9rem;cursor:pointer;" disabled>◀ 上一頁</button>
+      <span style="color:#888;font-size:0.85rem;padding:0 10px;" id="pokerMenuPage">1/2</span>
+      <button onclick="pokerMenuNext()" id="pokerMenuNextBtn" style="flex:1;padding:10px;background:#ffd700;border:none;border-radius:10px;color:#1a1a2e;font-size:0.9rem;font-weight:bold;cursor:pointer;">下一頁 ▶</button>
     </div>
     <button onclick="closePlayerMenu()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:15px;">關閉</button>
   </div>
@@ -1339,6 +1345,63 @@ function showAuthTab(tab) {
   document.getElementById('loginTabBtn').className=tab==='login'?'btn btn-primary':'btn btn-secondary';
   document.getElementById('registerTabBtn').className=tab==='register'?'btn btn-primary':'btn btn-secondary';
 }
+var pokerMenuPage = 1;
+var pokerMenuTotalPages = 2;
+var pokerMenuItems = [
+  ['showPokerProfile', '👤 個人資料'],
+  ['showPokerLevel', '📊 等級與稱號'],
+  ['showPokerLeaderboard', '🏆 排行榜'],
+  ['showPokerLoginReward', '🔥 連續登入'],
+  ['showPokerTasks', '📋 每日任務'],
+  ['showPokerHistory', '📜 遊戲紀錄'],
+  ['showPokerInviteCode', '🎟️ 邀請碼'],
+  ['showPokerGuide', '❓ 遊戲說明'],
+  ['showPokerFeedback', '💬 問題反饋']
+];
+
+function pokerMenuUpdate() {
+  var list = document.getElementById('pokerMenuList');
+  if(!list) return;
+  var start = (pokerMenuPage - 1) * 5;
+  var end = start + 5;
+  var pageItems = pokerMenuItems.slice(start, end);
+  list.innerHTML = pageItems.map(function(item) {
+    return '<button onclick="'+item[0]+'();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;">'+item[1]+'</button>';
+  }).join('');
+  document.getElementById('pokerMenuPage').textContent = pokerMenuPage + '/' + pokerMenuTotalPages;
+  document.getElementById('pokerMenuPrevBtn').disabled = pokerMenuPage === 1;
+  document.getElementById('pokerMenuNextBtn').disabled = pokerMenuPage === pokerMenuTotalPages;
+  document.getElementById('pokerMenuPrevBtn').style.background = pokerMenuPage === 1 ? '#333' : '#ffd700';
+  document.getElementById('pokerMenuPrevBtn').style.color = pokerMenuPage === 1 ? '#888' : '#1a1a2e';
+  document.getElementById('pokerMenuNextBtn').style.background = pokerMenuPage === pokerMenuTotalPages ? '#333' : '#ffd700';
+  document.getElementById('pokerMenuNextBtn').style.color = pokerMenuPage === pokerMenuTotalPages ? '#888' : '#1a1a2e';
+}
+
+function pokerMenuPrev() { if(pokerMenuPage > 1) { pokerMenuPage--; pokerMenuUpdate(); } }
+function pokerMenuNext() { if(pokerMenuPage < pokerMenuTotalPages) { pokerMenuPage++; pokerMenuUpdate(); } }
+
+function showPokerFeedback() {
+  if(!currentUser){alert('請先登入');return;}
+  let modal = document.getElementById('pokerFeedbackModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'pokerFeedbackModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:600;display:none;justify-content:center;align-items:center;';
+    modal.innerHTML = '<div style="background:#1a1a2e;border:2px solid #ffd700;border-radius:15px;padding:20px;max-width:320px;width:90%;color:white;"></div>';
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+  modal.querySelector('div').innerHTML = '<h2 style="color:#ffd700;margin:0 0 15px;text-align:center;">💬 問題反饋</h2><textarea id="pokerFeedbackText" placeholder="請描述您遇到的問題或建議..." style="width:100%;height:100px;background:#333;border:1px solid #555;border-radius:10px;color:#fff;padding:10px;font-size:0.9rem;resize:none;box-sizing:border-box;"></textarea><button onclick="submitPokerFeedback()" style="width:100%;padding:12px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">送出</button><button onclick="document.getElementById(\x27pokerFeedbackModal\x27).style.display=\x27none\x27" style="width:100%;padding:10px;background:#333;border:none;border-radius:10px;color:#888;cursor:pointer;margin-top:8px;">取消</button>';
+}
+
+function submitPokerFeedback() {
+  var text = document.getElementById('pokerFeedbackText').value.trim();
+  if(!text){showToast('請輸入內容','error');return;}
+  // In production, send to server. For now just close and show success
+  document.getElementById('pokerFeedbackModal').style.display = 'none';
+  showToast('感謝您的回饋！','success');
+}
+
 function showLoggedIn(user) {
   document.getElementById('authSection').style.display='none';
   document.getElementById('startScreen').style.display='none';
