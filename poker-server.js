@@ -415,12 +415,11 @@ router.post('/update-score', async (req, res) => {
         const twNow = new Date(now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }));
         const dayOfWeek = twNow.getDay(); // 0=Sun, 1=Mon
         const hours = twNow.getHours();
-        // 每週一凌晨00:00-01:00檢查並重置
-        if (dayOfWeek === 1 && hours < 1) {
-            await req.app.locals.pokerDb.execute(
-                'UPDATE poker_player_stats SET weekly_bet = 0 WHERE username = ?',
-                [username]
-            );
+        // 每週一凌晨檢查並重置（每週只重置一次）
+        if (dayOfWeek === 1 && hours < 1 && lastPokerWeeklyReset !== todayStr) {
+            await req.app.locals.pokerDb.execute('UPDATE poker_player_stats SET weekly_bet = 0');
+            lastPokerWeeklyReset = todayStr;
+            console.log('🔄 撲克每週階級已重置');
         }
         
         // 更新 poker_users 分數（確保不為負）
