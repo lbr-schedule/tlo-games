@@ -1888,7 +1888,7 @@ function copyPokerInviteCode() {
 
 function showPokerInviteCode() {
   if(!currentUser){alert('請先登入');return;}
-  var code = 'POKER' + currentUser.username.toUpperCase().split('').map(c => c.charCodeAt(0) % 10).join('');
+  var code = currentUser.username; // 邀請碼就是用戶名
   document.getElementById('pokerInviteCodeDisplay').textContent = code;
   
   // 載入邀請獎勵通知
