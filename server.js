@@ -2343,6 +2343,7 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
 app.get('/api/roulette/invite-notifications', async (req, res) => {
     const username = getUsernameFromReq(req);
     if (!username) return res.json({ success: false, message: '請先登入' });
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
     try {
         const invites = await rouletteDb.execute(
             'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
@@ -2356,6 +2357,7 @@ app.get('/api/roulette/invite-notifications', async (req, res) => {
 app.post('/api/roulette/claim-invite-reward', async (req, res) => {
     const username = getUsernameFromReq(req);
     if (!username) return res.json({ success: false, message: '請先登入' });
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
     try {
         const invites = await rouletteDb.execute('SELECT SUM(reward) as total FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
         const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
