@@ -2076,7 +2076,7 @@ async function showPokerLeaderboard() {
       const tc = tierGradients[p.tier]||'#888';
       const badge = p.title?'<span style="background:linear-gradient(135deg,'+tc+','+tc+'88);padding:1px 6px;border-radius:8px;font-size:0.7rem;margin-left:4px;color:#fff;">'+p.title+'</span>':'';
       html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #333;color:'+color+';align-items:center;">';
-      html += '<span onclick="showOtherPokerPlayer(''+p.username+'')" style="cursor:pointer;">'+medal+' '+p.username+badge+'</span><span style="font-weight:bold;">'+p.score.toLocaleString()+'</span></div>';
+      html += '<span onclick="showOtherPokerPlayer(\''+p.username+'\')" style="cursor:pointer;">'+medal+' '+p.username+badge+'</span><span style="font-weight:bold;">'+p.score.toLocaleString()+'</span></div>';
     });
     html += '</div>';
     modal.querySelector('div').innerHTML = html + '<button onclick="document.getElementById(\x27pokerLeaderboardModal\x27).style.display=\x27none\x27" style="margin-top:15px;width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">關閉</button>';
