@@ -1102,40 +1102,46 @@ router.get('/leaderboard', async (req, res) => {
 
 // ============ 每日登入獎勵 500（與連續登入無關）============
 router.post('/claim-daily-login', async (req, res) => {
-    try {
-        const username = getUsernameFromReq(req);
-        if (!username) return res.json({ success: false, message: '缺少帳號' });
-        
-        const db = req.app.locals.pokerDb;
-        const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
-        
-        // 檢查是否已領取（使用 last_daily_login 欄位）
-        let lastDailyLogin = '';
-        try {
-            const check = await db.execute({ sql: 'SELECT last_daily_login FROM poker_users WHERE username = ?', args: [username] });
-            if (check.rows && check.rows.length > 0 && check.rows[0].last_daily_login === today) {
-                return res.json({ success: false, message: '今天已領過了，明天再來！', alreadyClaimed: true });
-            }
-            if (check.rows && check.rows.length > 0) lastDailyLogin = check.rows[0].last_daily_login || '';
-        } catch(e) { console.error('claim-daily-login check error:', e.message); }
-        
-        // 發放 500 金幣
-        try {
-            await db.execute('UPDATE poker_users SET score = score + 500, last_daily_login = ? WHERE username = ?', [today, username]);
-        } catch(e) { console.error('claim-daily-login update error:', e.message); return res.json({ success: false, message: '更新失敗: ' + e.message }); }
-        
-        let newScore = 0;
-        try {
-            const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
-            newScore = (r.rows && r.rows[0] && r.rows[0].score) ? r.rows[0].score : 0;
-        } catch(e) { console.error('claim-daily-login select error:', e.message); }
-        
-        console.log('每日登入獎勵 500:', username, 'newScore:', newScore);
-        res.json({ success: true, reward: 500, newScore, message: '獲得 500 金幣！' });
-    } catch (e) {
-        console.error('claim-daily-login error:', e.message, e.stack);
-        res.json({ success: false, message: '領取失敗，請稍後再試: ' + e.message });
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    const db = req.app.locals.pokerDb;
+    if (!db) {
+        console.error('claim-daily-login: db is null!');
+        return res.json({ success: false, message: '資料庫未連線' });
     }
+    
+    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
+    console.log('claim-daily-login start:', username, 'today:', today);
+    
+    try {
+        // 檢查是否已領取
+        const check = await db.execute({ sql: 'SELECT last_daily_login FROM poker_users WHERE username = ?', args: [username] });
+        console.log('check rows:', JSON.stringify(check.rows));
+        if (check.rows && check.rows.length > 0 && check.rows[0].last_daily_login === today) {
+            return res.json({ success: false, message: '今天已領過了，明天再來！', alreadyClaimed: true });
+        }
+    } catch(e) { 
+        console.error('check error:', e.message); 
+        return res.json({ success: false, message: '查詢失敗: ' + e.message });
+    }
+    
+    try {
+        // 發放 500 金幣
+        await db.execute({ sql: 'UPDATE poker_users SET score = score + 500, last_daily_login = ? WHERE username = ?', args: [today, username] });
+    } catch(e) { 
+        console.error('update error:', e.message); 
+        return res.json({ success: false, message: '更新失敗: ' + e.message });
+    }
+    
+    let newScore = 0;
+    try {
+        const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
+        newScore = (r.rows && r.rows[0] && r.rows[0].score) ? r.rows[0].score : 0;
+    } catch(e) { console.error('select error:', e.message); }
+    
+    console.log('每日登入獎勵 500:', username, 'newScore:', newScore);
+    res.json({ success: true, reward: 500, newScore, message: '獲得 500 金幣！' });
 });
 
 module.exports = router;
