@@ -1,5 +1,21 @@
 // T-LO 德州撲克伺服器
 const express = require('express');
+
+// 取得 GMT+8 時間字串（格式：2026/05/19 下午06:37:23）
+function getTwTime() {
+    const d = new Date(Date.now() + 8*60*60*1000);
+    const y = d.getUTCFullYear();
+    const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const da = String(d.getUTCDate()).padStart(2, '0');
+    const h = d.getUTCHours();
+    const mi = String(d.getUTCMinutes()).padStart(2, '0');
+    const s = String(d.getUTCSeconds()).padStart(2, '0');
+    // UTC hour 4-15 = GMT+8 12:00-23:00 = 下午, 其餘 = 上午
+    const ampm = (h >= 4 && h < 16) ? '下午' : '上午';
+    const h12 = (h === 0 || h === 12) ? 12 : (h > 12 ? h - 12 : h);
+    return `${y}/${mo}/${da} ${ampm}${String(h12).padStart(2,'0')}:${mi}:${s}`;
+}
+
 const router = express.Router();
 
 // 德州撲克資料庫
@@ -277,7 +293,7 @@ router.post('/history', async (req, res) => {
         const db = req.app.locals.pokerDb;
         
         // 使用台灣時區儲存時間
-        const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        const twTime = getTwTime();
         
         // 寫入歷史
         await db.execute(
@@ -386,7 +402,7 @@ router.post('/update-score', async (req, res) => {
         
         // 記錄歷史（使用台灣時區）- entry fee 不需要記錄
         if (result !== 'entry') {
-            const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+            const twTime = getTwTime();
             await req.app.locals.pokerDb.execute(
                 'INSERT INTO poker_history (username, result, pot, hand_name, opponent, time) VALUES (?, ?, ?, ?, ?, ?)',
                 [username, result, pot, hand_name || '無', opponent || '電腦', twTime]
