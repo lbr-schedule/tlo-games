@@ -199,13 +199,13 @@ router.post('/register', async (req, res) => {
         // 註冊
         // Generate invite code (use username as the invite code)
         await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_users (username, password, score, invite_code) VALUES (?, ?, 10000, ?)',
-            [username, password, username]  // invite_code = username
+            'INSERT INTO poker_users (username, password, score) VALUES (?, ?, 10000)',
+            [username, password]
         );
         // Update optional fields one by one to avoid missing column errors
         try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET phone = ? WHERE username = ?', [phone || '', username]); } catch(e) {}
         try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET email = ? WHERE username = ?', [email || '', username]); } catch(e) {}
-        // invite_code is already set in INSERT
+        try { await req.app.locals.pokerDb.execute('UPDATE poker_users SET invite_code = ? WHERE username = ?', [username, username]); } catch(e) {}
         
         // 記錄被使用的邀請碼（新用戶獲得bonus）
         if (invitedBy) {
