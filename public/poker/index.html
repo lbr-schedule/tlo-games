@@ -1517,6 +1517,8 @@ function savePokerHistory(result, pot, handName, opponent) {
 }
 function showPlayerMenu() {
   document.getElementById('playerMenuModal').classList.add('show');
+  pokerMenuPage = 1; // Reset to page 1
+  pokerMenuUpdate(); // Render correct page content
 }
 function closePlayerMenu() {
   document.getElementById('playerMenuModal').classList.remove('show');
