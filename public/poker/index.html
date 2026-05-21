@@ -570,7 +570,7 @@ function playSound(type) {
     if (type === 'deal') {
       if (dealSound) {
         const d = new Audio(dealSound);
-        d.volume = 0.8;
+        d.volume = 1.5;
         d.play().catch(()=>{});
       } else {
         // Fallback to crisp snap
@@ -591,7 +591,7 @@ function playSound(type) {
     } else if (type === 'shuffle') {
       if (shuffleSound) {
         const s = new Audio(shuffleSound);
-        s.volume = 0.8;
+        s.volume = 1.5;
         s.play().catch(()=>{});
       } else {
         // Fallback to crisp sound
