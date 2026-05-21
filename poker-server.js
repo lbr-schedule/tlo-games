@@ -1041,4 +1041,20 @@ router.post('/feedback', async (req, res) => {
     }
 });
 
+// DEBUG: Reset daily tasks for a user
+router.post('/admin/reset-tasks', async (req, res) => {
+    try {
+        const { username } = req.body;
+        if (!username) return res.json({ success: false, message: '缺少 username' });
+        const db = req.app.locals.pokerDb;
+        await db.execute({
+            sql: "UPDATE poker_player_stats SET completed_tasks = '{}' WHERE username = ?",
+            args: [username]
+        });
+        res.json({ success: true, message: `已重置 ${username} 的每日任務` });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;
