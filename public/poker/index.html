@@ -1339,10 +1339,26 @@ function showLoggedIn(user) {
       newHand();
     });
 }
+function deductEntryFee() {
+  // 立即同步 entry fee 到 Server
+  var fee = 20;
+  fetch('/api/poker/update-score', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username: currentUser.username, score_change: -fee, result: 'entry', pot: 0, hand_name: '進場費', opponent: '系統'})
+  }).then(r=>r.json()).then(d=>{
+    if(d.success && d.newScore !== undefined) {
+      currentUser.score = d.newScore;
+      localStorage.setItem('pokerUser', JSON.stringify(currentUser));
+    }
+  }).catch(e=>{console.log('entry fee sync error:',e);});
+}
+
 function enterGame() {
   document.getElementById('startScreen').style.display='none';
   document.getElementById('gameScreen').style.display='block';
-  newGame(currentUser.username);
+  deductEntryFee(); // 立即扣entry fee並同步Server
+  newGame(currentUser.username, (currentUser.score||1000)-20); // 進場前先扣20
   newHand();
 }
 function logoutPoker() {

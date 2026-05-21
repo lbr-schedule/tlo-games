@@ -384,21 +384,25 @@ router.post('/update-score', async (req, res) => {
             );
         }
         
-        // 記錄歷史（使用台灣時區）
-        const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-        await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_history (username, result, pot, hand_name, opponent, time) VALUES (?, ?, ?, ?, ?, ?)',
-            [username, result, pot, hand_name || '無', opponent || '電腦', twTime]
-        );
+        // 記錄歷史（使用台灣時區）- entry fee 不需要記錄
+        if (result !== 'entry') {
+            const twTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+            await req.app.locals.pokerDb.execute(
+                'INSERT INTO poker_history (username, result, pot, hand_name, opponent, time) VALUES (?, ?, ?, ?, ?, ?)',
+                [username, result, pot, hand_name || '無', opponent || '電腦', twTime]
+            );
+        }
         
-        // 更新每週下注（使用絕對值，不論輸贏）
+        // 更新每週下注（使用絕對值，不論輸贏）- entry fee 不計入下注統計
         const absBet = Math.abs(score_change);
         const now3 = new Date(Date.now() + 8*60*60*1000);
         const today = now3.toISOString().split('T')[0];
-        await req.app.locals.pokerDb.execute(
-            'INSERT INTO poker_player_stats (username, weekly_bet, bet_count_today, wins_today, last_task_reset) VALUES (?, ?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET weekly_bet = weekly_bet + ?, bet_count_today = bet_count_today + 1, last_task_reset = ?',
-            [username, absBet, today, absBet, today]
-        );
+        if (result !== 'entry') {
+            await req.app.locals.pokerDb.execute(
+                'INSERT INTO poker_player_stats (username, weekly_bet, bet_count_today, wins_today, last_task_reset) VALUES (?, ?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET weekly_bet = weekly_bet + ?, bet_count_today = bet_count_today + 1, last_task_reset = ?',
+                [username, absBet, today, absBet, today]
+            );
+        }
         
         if (result === 'player') {
             await req.app.locals.pokerDb.execute(
