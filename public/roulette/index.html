@@ -2372,9 +2372,10 @@ function showMyInviteCode() {
             fetch('/api/roulette/invite-notifications', { method: 'GET', headers: { 'Authorization': 'Bearer ' + myName } }).then(r => r.json()).then(d => {
                 let rewardsHtml = '';
                 if (d.success && d.count > 0) {
-                    rewardsHtml = '<div style="background:#1a3a1a;border-radius:10px;padding:12px;margin-top:15px;text-align:center;"><div style="color:#00c864;font-size:1.2rem;font-weight:bold;">🎉 有人用過你的邀請碼！</div><div style="color:#ffd700;font-size:1.8rem;margin:10px 0;">+' + (d.totalEarned || 0) + ' 金幣</div><div style="color:#888;font-size:0.85rem;">共 ' + d.count + ' 次邀請</div><button onclick="claimRouletteInviteReward()" style="margin-top:12px;padding:10px 30px;background:#00c864;border:none;border-radius:20px;font-size:1rem;font-weight:bold;cursor:pointer;color:white;">領取 ' + d.totalEarned + ' 金幣</button></div>';
+                    // 已發放（金幣直接入帳）
+                    rewardsHtml = '<div style="background:#1a3a1a;border-radius:10px;padding:12px;margin-top:15px;text-align:center;"><div style="color:#00c864;font-size:1.2rem;font-weight:bold;">🎉 有人用過你的邀請碼！</div><div style="color:#ffd700;font-size:1.8rem;margin:10px 0;">已發放 +' + (d.totalEarned || 0) + ' 金幣</div><div style="color:#888;font-size:0.85rem;">共 ' + d.count + ' 次邀請</div></div>';
                 } else {
-                    rewardsHtml = '<div style="color:#888;font-size:0.85rem;margin-top:15px;text-align:center;">已領取過獎勵<br>下次有人使用你的邀請碼時再領取</div>';
+                    rewardsHtml = '<div style="color:#888;font-size:0.85rem;margin-top:15px;text-align:center;">還沒有人使用你的邀請碼<br>分享給朋友，雙方都獲得獎勵</div>';
                 }
                 document.getElementById('rouletteInviteRewards').innerHTML = rewardsHtml;
             }).catch(() => {});
@@ -2397,10 +2398,13 @@ function showMyInviteCode() {
                     updateBalance(myScore);
                     showToast('獲得 ' + d.totalEarned + ' 金幣！', 'success');
                     showMyInviteCode();
+                } else if (d.alreadyClaimed) {
+                    showToast(d.message || '已領取過獎勵', 'info');
+                    showMyInviteCode(); // refresh to show updated state
                 } else {
                     showToast(d.message || '領取失敗', 'error');
                 }
-            }).catch(() => { showToast('網路錯誤', 'error'); });
+            }).catch((e) => { console.error('claim error:', e); showToast('網路錯誤', 'error'); });
         }
         
         function checkRouletteInviteNotifications() {

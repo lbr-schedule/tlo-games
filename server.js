@@ -2353,12 +2353,15 @@ app.get('/api/roulette/invite-notifications', async (req, res) => {
         const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '請先登入' });
         if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
+        // Show ALL invites (claimed=0 AND claimed=1) so users can see their history
         const invites = await rouletteDb.execute(
-            'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? AND claimed = 0 ORDER BY time DESC LIMIT 50',
+            'SELECT invited, reward, time, claimed FROM roulette_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
             [username]
         );
-        const totalEarned = (invites.rows || []).reduce((sum, r) => sum + (r.reward || 0), 0);
-        res.json({ success: true, invites: invites.rows || [], totalEarned, count: invites.rows?.length || 0 });
+        // Only count unclaimed (claimed=0) as "earnable" - but show all for transparency
+        const unclaimedInvites = (invites.rows || []).filter(i => i.claimed === 0);
+        const totalEarned = unclaimedInvites.reduce((sum, r) => sum + (r.reward || 0), 0);
+        res.json({ success: true, invites: invites.rows || [], totalEarned, count: unclaimedInvites.length });
     } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
@@ -2367,14 +2370,24 @@ app.post('/api/roulette/claim-invite-reward', async (req, res) => {
         const username = getUsernameFromReq(req);
         if (!username) return res.json({ success: false, message: '請先登入' });
         if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
-        const invites = await rouletteDb.execute('SELECT SUM(reward) as total FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
+        // Get unclaimed invites
+        const invites = await rouletteDb.execute('SELECT SUM(reward) as total, COUNT(*) as cnt FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
         const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
-        if (totalEarned <= 0) return res.json({ success: false, message: '沒有可領取的邀請獎勵' });
+        const cnt = (invites.rows && invites.rows[0] && invites.rows[0].cnt) || 0;
+        if (totalEarned <= 0) {
+            // Check if there are any invites at all (claimed or not)
+            const allInvites = await rouletteDb.execute('SELECT COUNT(*) as totalCnt FROM roulette_invites WHERE inviter = ?', [username]);
+            const totalCnt = (allInvites.rows && allInvites.rows[0] && allInvites.rows[0].totalCnt) || 0;
+            if (totalCnt > 0) {
+                return res.json({ success: false, message: '已領取過獎勵（' + totalCnt + '次邀請）', alreadyClaimed: true });
+            }
+            return res.json({ success: false, message: '還沒有可領取的邀請獎勵', alreadyClaimed: true });
+        }
         await rouletteDb.execute('UPDATE roulette_invites SET claimed = 1 WHERE inviter = ? AND claimed = 0', [username]);
         await rouletteDb.execute('UPDATE players SET score = score + ? WHERE username = ?', [totalEarned, username]);
         const r = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [username]);
-        res.json({ success: true, message: `獲得 ${totalEarned} 金幣獎勵！`, totalEarned, newScore: r.rows?.[0]?.score || 0 });
-    } catch(e) { res.json({ success: false, message: e.message }); }
+        res.json({ success: true, message: '獲得 ' + totalEarned + ' 金幣獎勵！', totalEarned, newScore: r.rows?.[0]?.score || 0 });
+    } catch(e) { res.json({ success: false, message: '領取失敗: ' + e.message }); }
 });
 
 // 寵物系統 API
