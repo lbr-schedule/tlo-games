@@ -1446,18 +1446,18 @@ app.post('/api/roulette/register', async (req, res) => {
         console.log('✅ 註冊成功, username:', username);
         // 邀請人獎勵
         if (inviteCode && inviteCode !== username) {
-            // 先檢查邀請人是否存在
-            const inviterCheck = await rouletteDb.execute('SELECT username FROM players WHERE username = ?', [inviteCode]).catch(e => null);
+            // 先檢查邀請人是否存在（跟撲克一模一樣的邏輯）
+            const inviterCheck = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [inviteCode]).catch(e => null);
             if (inviterCheck && inviterCheck.rows && inviterCheck.rows.length > 0) {
-                // 邀請人存在，發放獎勵
+                // 邀請人存在，發放獎勵（跟撲克一样：立即發放 + 記錄 claimed=0）
                 rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] }).catch(e => console.log('邀請人獎勵失敗:', e.message));
                 rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] }).catch(e => console.log('新用戶獎勵失敗:', e.message));
-                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 1)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
+                // 記錄到 roulette_invites（claimed=0 等之後領取，跟撲克一样）
+                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
                 inviterBonus = 200;
                 console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
             } else {
-                // 邀請碼無效，只記錄不使用
-                rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 0, 1)`, args: [inviteCode || 'invalid', username] }).catch(e => {});
+                // 邀請碼無效，不發放獎勵
                 console.log('邀請碼無效:', inviteCode);
             }
         }
@@ -2346,7 +2346,7 @@ app.get('/api/roulette/invite-notifications', async (req, res) => {
     if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
     try {
         const invites = await rouletteDb.execute(
-            'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
+            'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? AND claimed = 0 ORDER BY time DESC LIMIT 50',
             [username]
         );
         const totalEarned = (invites.rows || []).reduce((sum, r) => sum + (r.reward || 0), 0);
