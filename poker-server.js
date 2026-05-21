@@ -95,6 +95,9 @@ async function initPokerDb(client) {
     try {
         await client.execute("ALTER TABLE poker_users ADD COLUMN last_daily_login TEXT DEFAULT ''");
     } catch(e) {}
+    try {
+        await client.execute("ALTER TABLE poker_users ADD COLUMN last_invite_reward_claimed TEXT DEFAULT ''");
+    } catch(e) {}
     await client.execute(`
         CREATE TABLE IF NOT EXISTS poker_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1216,5 +1219,47 @@ router.get('/invite-notifications', async (req, res) => {
     } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
+
+
+// ============ 領取邀請獎勵 ============
+router.post('/claim-invite-reward', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    const db = req.app.locals.pokerDb;
+    if (!db) return res.json({ success: false, message: '資料庫未連線' });
+    
+    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
+    
+    try {
+        // Get last_invite_reward_claimed
+        const check = await db.execute('SELECT last_invite_reward_claimed FROM poker_users WHERE username = ?', [username]);
+        const lastClaimed = (check.rows && check.rows[0] && check.rows[0].last_invite_reward_claimed) || '';
+        
+        if (lastClaimed === today) {
+            return res.json({ success: false, message: '今日已領取，明天再來！', alreadyClaimed: true });
+        }
+        
+        // Get unclaimed invite total
+        const invites = await db.execute('SELECT SUM(reward) as total FROM poker_invites WHERE inviter = ?', [username]);
+        const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
+        
+        if (totalEarned <= 0) {
+            return res.json({ success: false, message: '還沒有邀請獎勵可領取' });
+        }
+        
+        // Give reward
+        await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [totalEarned, username]);
+        await db.execute('UPDATE poker_users SET last_invite_reward_claimed = ? WHERE username = ?', [today, username]);
+        
+        // Get new score
+        const newScoreRes = await db.execute('SELECT score FROM poker_users WHERE username = ?', [username]);
+        const newScore = (newScoreRes.rows && newScoreRes.rows[0] && newScoreRes.rows[0].score) || 0;
+        
+        res.json({ success: true, reward: totalEarned, newScore, message: '獲得 ' + totalEarned + ' 金幣！' });
+    } catch(e) {
+        res.json({ success: false, message: '領取失敗: ' + e.message });
+    }
+});
 
 module.exports = router;
