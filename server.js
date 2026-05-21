@@ -101,6 +101,12 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDbAvailable = true;
         // 建立 game_config 表格（神秘彩池持久化）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
+        // 玩家邀請相關欄位
+        try { await rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN invite_code TEXT DEFAULT ''` }); } catch(e) {}
+        try { await rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN used_invite_code TEXT DEFAULT ''` }); } catch(e) {}
+        // 邀請記錄表
+        await rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
+        try { await rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }); } catch(e) {}
         // 建立 roulette_bets 表格（所有下注追蹤）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
         // 建立 mystery_bets 表格（每局神秘下注追蹤）
@@ -1362,6 +1368,11 @@ app.post('/api/roulette/register', async (req, res) => {
     const { inviteCode } = req.body;
     let inviterBonus = 0;
     
+    // 驗證邀請碼是否存在（可選：邀請人不能是自己）
+    if (inviteCode && inviteCode === username) {
+        return res.json({ success: false, message: '邀請碼無效' });
+    }
+    
     // 本地測試模式
     if (LOCAL_TEST_MODE) {
         if (localPlayers[username]) {
@@ -1418,8 +1429,8 @@ app.post('/api/roulette/register', async (req, res) => {
         // 帳號不存在，執行註冊（嘗試包含新欄位）
         try {
             const executePromise = rouletteDb.execute({
-                sql: `INSERT INTO players (username, password, score, realname, phone, email) VALUES (?, ?, 1000, ?, ?, ?)`,
-                args: [username, password, realname || '', phone || '', email || '']
+                sql: `INSERT INTO players (username, password, score, realname, phone, email, invite_code, used_invite_code) VALUES (?, ?, 1000, ?, ?, ?, ?, ?)`,
+                args: [username, password, realname || '', phone || '', email || '', username, inviteCode || '']
             });
             await Promise.race([executePromise, timeoutPromise]);
         } catch(dbErr) {
@@ -1433,7 +1444,14 @@ app.post('/api/roulette/register', async (req, res) => {
         }
         
         console.log('✅ 註冊成功, username:', username);
-        res.json({ success: true, message: '註冊成功！' });
+        // 邀請人獎勵
+        if (inviteCode && inviteCode !== username) {
+            rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] }).catch(e => console.log('邀請人獎勵失敗:', e.message));
+            rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] }).catch(e => console.log('記錄邀請失敗:', e.message));
+            inviterBonus = 200;
+            console.log('邀請獎勵發放:', inviteCode, '+200');
+        }
+        res.json({ success: true, message: '註冊成功！' + (inviterBonus > 0 ? '（邀請人獲得 200 金幣）' : ''), inviterBonus });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
         // 細分錯誤類型
@@ -2309,6 +2327,34 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
     } catch(e) {
         res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
     }
+});
+
+// ============ 輪盤邀請系統 API ============
+router.get('/roulette/invite-notifications', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    try {
+        const invites = await rouletteDb.execute(
+            'SELECT invited, reward, time FROM roulette_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
+            [username]
+        );
+        const totalEarned = (invites.rows || []).reduce((sum, r) => sum + (r.reward || 0), 0);
+        res.json({ success: true, invites: invites.rows || [], totalEarned, count: invites.rows?.length || 0 });
+    } catch(e) { res.json({ success: false, message: e.message }); }
+});
+
+router.post('/roulette/claim-invite-reward', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    try {
+        const invites = await rouletteDb.execute('SELECT SUM(reward) as total FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
+        const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
+        if (totalEarned <= 0) return res.json({ success: false, message: '沒有可領取的邀請獎勵' });
+        await rouletteDb.execute('UPDATE roulette_invites SET claimed = 1 WHERE inviter = ? AND claimed = 0', [username]);
+        await rouletteDb.execute('UPDATE players SET score = score + ? WHERE username = ?', [totalEarned, username]);
+        const r = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [username]);
+        res.json({ success: true, message: `獲得 ${totalEarned} 金幣獎勵！`, totalEarned, newScore: r.rows?.[0]?.score || 0 });
+    } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
 // 寵物系統 API
