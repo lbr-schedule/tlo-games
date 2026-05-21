@@ -246,7 +246,15 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const result = await req.app.locals.pokerDb.execute(
+        const db = req.app.locals.pokerDb;
+        
+        // 更新 last_invite_check（這樣舊的邀請通知就會被清除）
+        const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
+        try {
+            await db.execute('UPDATE poker_users SET last_invite_check = ? WHERE username = ?', [today, username]);
+        } catch(e) { /* ignore */ }
+        
+        const result = await db.execute(
             'SELECT username, score, games_played, games_won, games_tied FROM poker_users WHERE username = ? AND password = ?',
             [username, password]
         );
@@ -1197,13 +1205,16 @@ router.get('/invite-notifications', async (req, res) => {
     if (!username) return res.json({ success: false, message: '缺少帳號' });
     
     const db = req.app.locals.pokerDb;
-    const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
     
-    // Get all invites for this inviter
     try {
+        // Get last_invite_check time for this user
+        const userRes = await db.execute('SELECT last_invite_check FROM poker_users WHERE username = ?', [username]);
+        const lastCheck = (userRes.rows && userRes.rows[0] && userRes.rows[0].last_invite_check) || '1970-01-01';
+        
+        // Get invites since last check (only new ones since last login)
         const invites = await db.execute(
-            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? ORDER BY time DESC LIMIT 20',
-            [username]
+            'SELECT invited, reward, time FROM poker_invites WHERE inviter = ? AND time > ? ORDER BY time DESC LIMIT 20',
+            [username, lastCheck]
         );
         const totalEarned = invites.rows.reduce((sum, r) => sum + (r.reward || 0), 0);
         res.json({ success: true, invites: invites.rows || [], totalEarned, count: invites.rows?.length || 0 });
