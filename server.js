@@ -2330,7 +2330,7 @@ app.get('/api/roulette/player-level/:username', async (req, res) => {
 });
 
 // ============ 輪盤邀請系統 API ============
-router.get('/roulette/invite-notifications', async (req, res) => {
+app.get('/api/roulette/invite-notifications', async (req, res) => {
     const username = getUsernameFromReq(req);
     if (!username) return res.json({ success: false, message: '請先登入' });
     try {
@@ -2343,7 +2343,7 @@ router.get('/roulette/invite-notifications', async (req, res) => {
     } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
-router.post('/roulette/claim-invite-reward', async (req, res) => {
+app.post('/api/roulette/claim-invite-reward', async (req, res) => {
     const username = getUsernameFromReq(req);
     if (!username) return res.json({ success: false, message: '請先登入' });
     try {
