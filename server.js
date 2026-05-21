@@ -355,10 +355,16 @@ async function processLoginStreak(username) {
                 title = '';
             }
             
-            await rouletteDb.execute({
+            const updateResult = await rouletteDb.execute({
                 sql: 'UPDATE roulette_player_stats SET last_login_date = ?, login_streak = ?, streak_title = ? WHERE username = ?',
                 args: [today, newStreak, title, username]
             });
+            if ((updateResult.rowsAffected || 0) === 0) {
+                await rouletteDb.execute({
+                    sql: 'INSERT INTO roulette_player_stats (username, last_login_date, login_streak, streak_title) VALUES (?, ?, ?, ?)',
+                    args: [username, today, newStreak, title]
+                });
+            }
             
             return { streak: newStreak, bonus, title, alreadyClaimed: false };
         }
