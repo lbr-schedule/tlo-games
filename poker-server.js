@@ -810,8 +810,13 @@ router.post('/claim-daily-bonus', async (req, res) => {
         
         // Update last_claim in poker_daily_bonus（使用 UTC+8 標準日期格式）
         const today2 = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
-        // Use INSERT OR REPLACE to ensure row exists and last_claim is properly set
-        await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)', args: [username, today2, result.streak] });
+        // Update instead of INSERT OR REPLACE to preserve last_daily_500
+        const existingRow = await db.execute('SELECT last_daily_500 FROM poker_daily_bonus WHERE username = ?', [username]);
+        const preservedDaily500 = (existingRow.rows && existingRow.rows[0] && existingRow.rows[0].last_daily_500) || '';
+        const updateResult = await db.execute('UPDATE poker_daily_bonus SET last_claim = ?, streak = ?, last_daily_500 = ? WHERE username = ?', [today2, result.streak, preservedDaily500, username]);
+        if ((updateResult.rowsAffected || 0) === 0) {
+            await db.execute('INSERT INTO poker_daily_bonus (username, last_claim, streak, last_daily_500) VALUES (?, ?, ?, ?)', [username, today2, result.streak, preservedDaily500]);
+        }
         
         const r = await db.execute({ sql: 'SELECT score FROM poker_users WHERE username = ?', args: [username] });
         const newScore = (r.rows && r.rows[0] && r.rows[0].score) ? r.rows[0].score : 0;
