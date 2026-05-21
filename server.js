@@ -102,11 +102,11 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         // 建立 game_config 表格（神秘彩池持久化）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
         // 玩家邀請相關欄位
-        try { await rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN invite_code TEXT DEFAULT ''` }); } catch(e) {}
-        try { await rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN used_invite_code TEXT DEFAULT ''` }); } catch(e) {}
+        rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN invite_code TEXT DEFAULT ''` }).catch(e => {});
+        rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN used_invite_code TEXT DEFAULT ''` }).catch(e => {});
         // 邀請記錄表
-        await rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
-        try { await rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }); } catch(e) {}
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
+        rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }).catch(e => {});
         // 建立 roulette_bets 表格（所有下注追蹤）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
         // 建立 mystery_bets 表格（每局神秘下注追蹤）
