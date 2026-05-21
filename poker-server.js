@@ -393,7 +393,8 @@ router.post('/update-score', async (req, res) => {
         
         // 更新每週下注（使用絕對值，不論輸贏）
         const absBet = Math.abs(score_change);
-        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        const now3 = new Date(Date.now() + 8*60*60*1000);
+        const today = now3.toISOString().split('T')[0];
         await req.app.locals.pokerDb.execute(
             'INSERT INTO poker_player_stats (username, weekly_bet, bet_count_today, wins_today, last_task_reset) VALUES (?, ?, 1, 0, ?) ON CONFLICT(username) DO UPDATE SET weekly_bet = weekly_bet + ?, bet_count_today = bet_count_today + 1, last_task_reset = ?',
             [username, absBet, today, absBet, today]
@@ -417,9 +418,9 @@ router.post('/update-score', async (req, res) => {
 router.post('/daily-bonus', async (req, res) => {
     try {
         const { username } = req.body;
-        // 使用台灣時區計算日期
-        const now = new Date();
-        const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        // 使用 UTC+8 標準日期格式
+        const now = new Date(Date.now() + 8*60*60*1000);
+        const today = now.toISOString().split('T')[0];
         
         const bonus_result = await req.app.locals.pokerDb.execute(
             'SELECT last_claim, streak FROM poker_daily_bonus WHERE username = ?',
@@ -435,9 +436,9 @@ router.post('/daily-bonus', async (req, res) => {
                 return res.json({ success: false, message: '今日已領取！明天再來' });
             }
             
-            const yesterday = new Date();
+            const yesterday = new Date(Date.now() + 8*60*60*1000);
             yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
             
             if (lastClaim && lastClaim.startsWith(yesterdayStr)) {
                 newStreak = bonus_result.rows[0].streak + 1;
@@ -631,9 +632,9 @@ function getStreakTitle(streak) {
 
 // 檢查每日任務重置
 async function checkPokerDailyTasks(db, username) {
-    // 使用台灣時區計算日期
-    const now = new Date();
-    const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+    // 使用 UTC+8 標準日期格式
+    const now = new Date(Date.now() + 8*60*60*1000);
+    const today = now.toISOString().split('T')[0];
     try {
         const r = await db.execute({ sql: 'SELECT last_task_reset FROM poker_player_stats WHERE username = ?', args: [username] });
         if (r.rows && r.rows.length > 0 && r.rows[0].last_task_reset === today) return;
@@ -647,12 +648,12 @@ async function checkPokerDailyTasks(db, username) {
 
 // 處理登入連續
 async function processPokerLoginStreak(db, username) {
-    // 使用台灣時區計算日期
-    const now = new Date();
-    const today = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+    // 使用 UTC+8 標準日期格式
+    const now = new Date(Date.now() + 8*60*60*1000);
+    const today = now.toISOString().split('T')[0];
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
     
     let newStreak = 1;
     let bonus = STREAK_BONUSES[1] || 100;
@@ -742,8 +743,8 @@ router.post('/claim-daily-bonus', async (req, res) => {
         // 發放獎勵
         await db.execute('UPDATE poker_users SET score = score + ? WHERE username = ?', [result.bonus, username]);
         
-        // Update last_claim in poker_daily_bonus（使用台灣時區）
-        const today2 = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        // Update last_claim in poker_daily_bonus（使用 UTC+8 標準日期格式）
+        const today2 = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
         // Use INSERT OR REPLACE to ensure row exists and last_claim is properly set
         await db.execute({ sql: 'INSERT OR REPLACE INTO poker_daily_bonus (username, last_claim, streak) VALUES (?, ?, ?)', args: [username, today2, result.streak] });
         
