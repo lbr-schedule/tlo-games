@@ -1143,4 +1143,36 @@ router.post('/claim-daily-login', async (req, res) => {
     res.json({ success: true, reward: 500, newScore, message: '獲得 500 金幣！' });
 });
 
+
+
+// ============ 管理員：刪除測試用戶 ============
+router.post('/admin/delete-users', async (req, res) => {
+    const username = getUsernameFromReq(req);
+    if (!username || username !== 'T-LO') return res.json({ success: false, message: '無權限' });
+    
+    const db = req.app.locals.pokerDb;
+    const { users } = req.body; // array of usernames to delete
+    
+    if (!Array.isArray(users) || users.length === 0) {
+        return res.json({ success: false, message: '需提供用戶列表' });
+    }
+    
+    // 保留清單
+    const keepList = ['yi1', 'T-LO', 'Sally0126'];
+    const toDelete = users.filter(u => !keepList.includes(u));
+    
+    let deleted = 0;
+    for (const u of toDelete) {
+        try {
+            await db.execute({ sql: 'DELETE FROM poker_users WHERE username = ?', args: [u] });
+            await db.execute({ sql: 'DELETE FROM poker_daily_bonus WHERE username = ?', args: [u] });
+            await db.execute({ sql: 'DELETE FROM poker_history WHERE username = ?', args: [u] });
+            deleted++;
+        } catch(e) { console.error('delete error:', u, e.message); }
+    }
+    
+    res.json({ success: true, deleted, remaining: toDelete });
+});
+
+
 module.exports = router;
