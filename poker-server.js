@@ -637,7 +637,7 @@ router.get('/player-level/:username', async (req, res) => {
 // ============ 每日登入獎勵 ============
 
 const STREAK_BONUSES = {
-    1: 100, 2: 200, 3: 300, 4: 400, 5: 500,
+    1: 500, 2: 500, 3: 500, 4: 500, 5: 500,
     6: 600, 7: 700, 8: 800, 9: 900, 10: 1000
 };
 
@@ -1073,6 +1073,27 @@ router.post('/admin/reset-tasks', async (req, res) => {
         res.json({ success: true, message: `已重置 ${username} 的每日任務` });
     } catch(e) {
         res.json({ success: false, message: e.message });
+    }
+});
+
+
+
+// ============ 排行榜 ============
+router.get('/leaderboard', async (req, res) => {
+    try {
+        const db = req.app.locals.pokerDb;
+        const result = await db.execute({
+            sql: `SELECT username, score FROM poker_users ORDER BY score DESC LIMIT 15`
+        });
+        const leaderboard = (result.rows || []).map((r, i) => {
+            const weeklyBet = r.weekly_bet || 0;
+            const levelInfo = getLevelInfo(weeklyBet);
+            return { rank: i + 1, username: r.username, score: r.score, ...levelInfo };
+        });
+        res.json({ success: true, leaderboard });
+    } catch(e) {
+        console.log('Leaderboard error:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
     }
 });
 
