@@ -890,7 +890,8 @@ router.post('/claim-video', async (req, res) => {
         if (!username) return res.json({ success: false, message: '請先登入' });
         
         const db = req.app.locals.pokerDb;
-        const today = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }).split(' ')[0];
+        // 使用 UTC+8 標準日期格式（與輪盤一致）
+        const today = new Date(Date.now() + 8*60*60*1000).toISOString().split('T')[0];
         
         const check = await db.execute({ sql: 'SELECT lastVideoClaim FROM poker_users WHERE username = ?', args: [username] });
         if (check.rows && check.rows.length > 0 && check.rows[0].lastVideoClaim === today) {
