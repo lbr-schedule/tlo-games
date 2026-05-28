@@ -1,0 +1,437 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [isRegister, setIsRegister] = useState(false);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const [bounceTitle, setBounceTitle] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setTimeout(() => setBounceTitle(true), 300);
+    setTimeout(() => setShowPanel(true), 600);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const body = isRegister
+        ? { username, email, password, nickname }
+        : { username, password };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.push('/game');
+      } else {
+        setError(data.error || '操作失敗');
+      }
+    } catch (err) {
+      setError('網路錯誤，請稍後再試');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #87CEEB 0%, #98D8C8 50%, #90EE90 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: "'Cubic11', 'Microsoft JhengHei', sans-serif",
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {mounted && <FloatingLeaves />}
+      {mounted && <ParticleField />}
+      {mounted && <CloudField />}
+      {mounted && <BirdField />}
+
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 36,
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 0,
+        imageRendering: 'pixelated',
+        zIndex: 10,
+      }}>
+        {[...Array(22)].map((_, i) => (
+          <img key={i} src="/assets/ui/fence_decoration.png" alt="" style={{ 
+            imageRendering: 'pixelated',
+            animation: 'fenceSway 2.5s ease-in-out ' + (i * 0.08) + 's infinite alternate',
+          }} />
+        ))}
+      </div>
+
+      <div style={{
+        marginBottom: 30,
+        textAlign: 'center',
+        transform: bounceTitle ? 'translateY(0)' : 'translateY(-50px)',
+        opacity: bounceTitle ? 1 : 0,
+        transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        animation: 'skyFloat 5s ease-in-out infinite',
+        zIndex: 10,
+        position: 'relative',
+        display: 'inline-block',
+      }}>
+        <img src="/assets/ui/post.png" alt="" style={{ position: 'absolute', top: 10, left: 30, width: 14, height: 75, imageRendering: 'pixelated', zIndex: 1 }} />
+        <img src="/assets/ui/post.png" alt="" style={{ position: 'absolute', top: 10, right: 30, width: 14, height: 75, imageRendering: 'pixelated', zIndex: 1 }} />
+        <img src="/assets/ui/wood_sign.png" alt="" style={{ position: 'relative', top: 0, width: 240, height: 95, imageRendering: 'pixelated', zIndex: 2 }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          fontSize: 24, color: '#FFFFFF', textShadow: '2px 2px 0 #5c3d2e',
+          fontFamily: "'Cubic11', sans-serif", fontWeight: 'bold', letterSpacing: '3px',
+          whiteSpace: 'nowrap', zIndex: 3,
+        }}>
+          T-LO 像素農場
+        </div>
+      </div>
+        
+      <p style={{ color: '#4a3520', marginTop: 8, fontSize: 14, letterSpacing: '4px', position: 'relative', zIndex: 10, textShadow: '1px 1px 0 #a08060' }}>
+        像素風格農場遊戲
+      </p>
+
+      <div style={{
+        background: 'url(/assets/ui/panel_bg.png) repeat',
+        backgroundColor: '#F5DEB3',
+        border: '8px solid #5c3d2e',
+        padding: '45px 55px',
+        maxWidth: 440,
+        width: '100%',
+        boxShadow: '10px 10px 0 #3d2518, inset 0 0 0 5px #8b6243',
+        position: 'relative',
+        imageRendering: 'pixelated',
+        transform: showPanel ? 'translateY(0) scale(1)' : 'translateY(60px) scale(0.9)',
+        opacity: showPanel ? 1 : 0,
+        transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        zIndex: 10,
+      }}>
+        <div style={{ position: 'absolute', top: -22, left: 22 }}>
+          <img src="/assets/ui/wheat.png" alt="" style={{ imageRendering: 'pixelated' }} />
+        </div>
+        <div style={{ position: 'absolute', top: -22, right: 22 }}>
+          <img src="/assets/ui/wheat.png" alt="" style={{ imageRendering: 'pixelated', transform: 'scaleX(-1)' }} />
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <div style={{ animation: 'slideIn 0.4s ease-out 0.1s both' }}>
+            <label style={{ display: 'block', color: '#4a3520', fontWeight: 'bold', marginBottom: 10, fontSize: 16, letterSpacing: '2px', textShadow: '1px 1px 0 #c0a080' }}>帳號</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+              style={{ width: '100%', padding: '18px 16px', border: '5px solid #5c3d2e', background: '#fff', fontSize: 17, fontFamily: "'Cubic11', sans-serif", outline: 'none', boxShadow: 'inset 5px 5px 0 #d4c4a8', transition: 'all 0.2s', borderRadius: '2px' }}
+              onFocus={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8, 0 0 0 4px #8b6243'}
+              onBlur={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8'}
+              placeholder="請輸入帳號" required />
+          </div>
+
+          {isRegister && (
+            <div style={{ animation: 'slideIn 0.4s ease-out 0.2s both' }}>
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', color: '#4a3520', fontWeight: 'bold', marginBottom: 10, fontSize: 16, letterSpacing: '2px', textShadow: '1px 1px 0 #c0a080' }}>電子郵件</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  style={{ width: '100%', padding: '18px 16px', border: '5px solid #5c3d2e', background: '#fff', fontSize: 17, fontFamily: "'Cubic11', sans-serif", outline: 'none', boxShadow: 'inset 5px 5px 0 #d4c4a8', transition: 'all 0.2s', borderRadius: '2px' }}
+                  onFocus={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8, 0 0 0 4px #8b6243'}
+                  onBlur={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8'}
+                  placeholder="請輸入 email" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', color: '#4a3520', fontWeight: 'bold', marginBottom: 10, fontSize: 16, letterSpacing: '2px', textShadow: '1px 1px 0 #c0a080' }}>暱稱</label>
+                <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)}
+                  style={{ width: '100%', padding: '18px 16px', border: '5px solid #5c3d2e', background: '#fff', fontSize: 17, fontFamily: "'Cubic11', sans-serif", outline: 'none', boxShadow: 'inset 5px 5px 0 #d4c4a8', transition: 'all 0.2s', borderRadius: '2px' }}
+                  onFocus={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8, 0 0 0 4px #8b6243'}
+                  onBlur={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8'}
+                  placeholder="遊戲中顯示的名字" required />
+              </div>
+            </div>
+          )}
+
+          <div style={{ animation: 'slideIn 0.4s ease-out ' + (isRegister ? '0.3s' : '0.2s') + ' both' }}>
+            <label style={{ display: 'block', color: '#4a3520', fontWeight: 'bold', marginBottom: 10, fontSize: 16, letterSpacing: '2px', textShadow: '1px 1px 0 #c0a080' }}>密碼</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              style={{ width: '100%', padding: '18px 16px', border: '5px solid #5c3d2e', background: '#fff', fontSize: 17, fontFamily: "'Cubic11', sans-serif", outline: 'none', boxShadow: 'inset 5px 5px 0 #d4c4a8', transition: 'all 0.2s', borderRadius: '2px' }}
+              onFocus={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8, 0 0 0 4px #8b6243'}
+              onBlur={(e) => e.target.style.boxShadow = 'inset 5px 5px 0 #d4c4a8'}
+              placeholder="請輸入密碼" required />
+          </div>
+
+          {error && (
+            <div style={{ color: '#8b0000', background: '#fff0f0', padding: '16px', border: '4px solid #8b0000', fontSize: 15, textAlign: 'center', animation: 'shake 0.5s ease-in-out' }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading}
+            style={{ width: '100%', padding: '20px', marginTop: 10, background: 'url(/assets/ui/button.png) repeat', backgroundColor: '#8b5a2b', border: '5px solid #5c3d2e', color: '#fff', fontSize: 20, fontFamily: "'Cubic11', sans-serif", fontWeight: 'bold', letterSpacing: '5px', cursor: loading ? 'wait' : 'pointer', boxShadow: '5px 5px 0 #3d2518', imageRendering: 'pixelated', opacity: loading ? 0.7 : 1, transform: loading ? 'scale(0.98)' : 'scale(1)', transition: 'all 0.15s', animation: 'slideIn 0.4s ease-out 0.4s both', borderRadius: '2px' }}
+            onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '7px 7px 0 #3d2518'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '5px 5px 0 #3d2518'; }}>
+            {loading ? '處理中...' : isRegister ? '註冊帳號' : '登入農場'}
+          </button>
+        </form>
+
+        <div style={{ textAlign: 'center', marginTop: 28 }}>
+          <button type="button" onClick={() => setIsRegister(!isRegister)}
+            style={{ background: 'none', border: 'none', color: '#5c3d2e', cursor: 'pointer', fontSize: 15, fontFamily: "'Cubic11', sans-serif", textDecoration: 'underline', letterSpacing: '1px' }}>
+            {isRegister ? '已經有帳號？立即登入' : '還沒有帳號？免費註冊'}
+          </button>
+        </div>
+
+        <div style={{ position: 'absolute', bottom: -18, left: 35 }}>
+          <img src="/assets/ui/corn.png" alt="" style={{ imageRendering: 'pixelated', animation: 'cornSway 2.5s ease-in-out infinite alternate' }} />
+        </div>
+        <div style={{ position: 'absolute', bottom: -18, right: 35 }}>
+          <img src="/assets/ui/corn.png" alt="" style={{ imageRendering: 'pixelated', animation: 'cornSway 2.5s ease-in-out 0.6s infinite alternate', transform: 'scaleX(-1)' }} />
+        </div>
+      </div>
+
+      {/* Full-width grass with colorful flowers */}
+      <GrassWithFlowers />
+
+      <style>{`
+        @keyframes skyFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes fenceSway { 0% { transform: rotate(-1.5deg); } 100% { transform: rotate(1.5deg); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-10px); } 80% { transform: translateX(10px); } }
+        @keyframes cornSway { 0% { transform: rotate(-4deg); } 100% { transform: rotate(4deg); } }
+        @keyframes particleFloat { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.4; } 100% { transform: translateY(-20vh) rotate(180deg); opacity: 0; } }
+        
+        @keyframes cloudDrift { from { left: -200px; } to { left: calc(100vw + 200px); } }
+        @keyframes cloudDriftCustom { from { left: -200px; } to { left: calc(100vw + 200px); } }
+        @keyframes cloudBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+        
+        @keyframes birdFlyR { from { left: -80px; } to { left: calc(100vw + 80px); } }
+        @keyframes birdFlyL { from { right: -80px; } to { right: calc(100vw + 80px); } }
+        @keyframes birdFlap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
+        
+        @keyframes leafFloat { 
+          0% { transform: translateY(-20px) rotate(0deg); opacity: 0; } 
+          10% { opacity: 0.7; } 
+          90% { opacity: 0.6; } 
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } 
+        }
+        
+        @keyframes grassBreathing { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
+        
+        @keyframes flowerBreathe { 0%, 100% { transform: scaleY(1) scaleX(1); } 50% { transform: scaleY(1.08) scaleX(0.95); } }
+      `}</style>
+    </div>
+  );
+}
+
+// Deterministic pseudo-random (seeded)
+function seededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function GrassWithFlowers() {
+  // Use seeded random for deterministic positions (no hydration mismatch)
+  const flowerTypes = [
+    'flower_sprite_0', 'flower_sprite_1', 'flower_sprite_2', 'flower_sprite_3',
+    'flower_sprite_4', 'flower_sprite_5', 'flower_sprite_6', 'flower_sprite_7',
+    'flower_large_0', 'flower_large_1', 'flower_large_2', 'flower_large_3'
+  ];
+  
+  const flowers = [];
+  
+  // Generate 60 flowers with deterministic positions
+  for (let i = 0; i < 60; i++) {
+    const seed = i * 9973;  // Prime number for good distribution
+    flowers.push({
+      x: 2 + (i * 1.6) + seededRandom(seed) * 2,
+      y: 20 + seededRandom(seed + 1) * 60,
+      size: 16 + Math.floor(seededRandom(seed + 2) * 14),
+      type: flowerTypes[Math.floor(seededRandom(seed + 3) * flowerTypes.length)],
+      delay: seededRandom(seed + 4) * 3,
+      duration: 2.5 + seededRandom(seed + 5) * 1.5,
+    });
+  }
+
+  return (
+    <div style={{ 
+      position: 'fixed', 
+      bottom: 0, 
+      left: 0, 
+      right: 0, 
+      height: 140,
+      zIndex: 5,
+      pointerEvents: 'none',
+    }}>
+      {/* Grass base */}
+      <img 
+        src="/assets/ui/grass_wide.png" 
+        alt="" 
+        style={{ 
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100vw',
+          height: '100%',
+          imageRendering: 'pixelated',
+          animation: 'grassBreathing 6s ease-in-out infinite',
+        }} 
+      />
+      
+      {/* Colorful flowers on top of grass */}
+      {flowers.map((flower, i) => (
+        <img 
+          key={i} 
+          src={`/assets/ui/${flower.type}.png`} 
+          alt="" 
+          style={{
+            position: 'absolute',
+            left: flower.x + '%',
+            bottom: flower.y,
+            width: flower.size,
+            height: 'auto',
+            imageRendering: 'pixelated',
+            animation: `flowerBreathe ${flower.duration}s ease-in-out ${flower.delay}s infinite`,
+            transformOrigin: 'bottom center',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CloudField() {
+  // Negative delays offset the start position within the animation cycle
+  // Duration varies (40, 46, 52...) so delays offset clouds across the full viewport
+  const clouds = [
+    { src: '/assets/ui/cloud.png', size: 280, top: 15, duration: 40, delay: 0 },
+    { src: '/assets/ui/cloud_small.png', size: 180, top: 50, duration: 46, delay: -15 },
+    { src: '/assets/ui/cloud.png', size: 240, top: 5, duration: 52, delay: -30 },
+    { src: '/assets/ui/cloud_small.png', size: 150, top: 60, duration: 58, delay: -20 },
+    { src: '/assets/ui/cloud.png', size: 120, top: 35, duration: 64, delay: -45 },
+    { src: '/assets/ui/cloud_small.png', size: 100, top: 80, duration: 70, delay: -55 },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', top: 36, left: 0, right: 0, bottom: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
+      {clouds.map((cloud, i) => (
+        <img key={i} src={cloud.src} alt="" style={{
+          position: 'absolute',
+          top: cloud.top,
+          left: -200,
+          width: cloud.size,
+          height: 'auto',
+          imageRendering: 'pixelated',
+          animation: 'cloudDriftCustom ' + cloud.duration + 's linear ' + cloud.delay + 's infinite, cloudBob 4s ease-in-out 0s infinite',
+          opacity: 0.92,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function BirdField() {
+  const birds = [
+    { top: 78, duration: 14, size: 34, reverse: false },
+    { top: 98, duration: 17, size: 30, reverse: false },
+    { top: 88, duration: 15, size: 32, reverse: true },
+    { top: 110, duration: 19, size: 28, reverse: true },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 2 }}>
+      {birds.map((bird, i) => (
+        <img key={i} src="/assets/ui/bird.png" alt="" style={{
+          position: 'absolute',
+          top: bird.top,
+          left: bird.reverse ? 'auto' : (-80 - i * 35),
+          right: bird.reverse ? (-80 - i * 35) : 'auto',
+          width: bird.size,
+          height: 'auto',
+          imageRendering: 'pixelated',
+          transform: bird.reverse ? 'scaleX(-1)' : 'none',
+          animation: (bird.reverse ? 'birdFlyL ' : 'birdFlyR ') + bird.duration + 's linear infinite, birdFlap 0.22s ease-in-out ' + (i * 0.4) + 's infinite',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function FloatingLeaves() {
+  const leaves = [
+    { x: 8, size: 14, speed: 25, delay: 0 },
+    { x: 22, size: 12, speed: 28, delay: 5 },
+    { x: 38, size: 15, speed: 22, delay: 2 },
+    { x: 55, size: 13, speed: 26, delay: 8 },
+    { x: 72, size: 16, speed: 24, delay: 3 },
+    { x: 88, size: 11, speed: 27, delay: 7 },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+      {leaves.map((leaf, i) => (
+        <img key={i} src="/assets/ui/leaf.png" alt="" style={{
+          position: 'absolute',
+          left: leaf.x + '%',
+          top: 0,
+          width: leaf.size,
+          height: 'auto',
+          imageRendering: 'pixelated',
+          animation: 'leafFloat ' + leaf.speed + 's linear ' + leaf.delay + 's infinite',
+          opacity: 0.7,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function ParticleField() {
+  const particles = [
+    { x: 12, size: 11, speed: 20, delay: 0 },
+    { x: 28, size: 13, speed: 24, delay: 4 },
+    { x: 45, size: 10, speed: 18, delay: 8 },
+    { x: 60, size: 15, speed: 26, delay: 2 },
+    { x: 75, size: 12, speed: 22, delay: 6 },
+    { x: 88, size: 11, speed: 21, delay: 10 },
+    { x: 18, size: 13, speed: 23, delay: 12 },
+    { x: 52, size: 10, speed: 19, delay: 5 },
+    { x: 80, size: 14, speed: 25, delay: 7 },
+    { x: 35, size: 12, speed: 22, delay: 9 },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {particles.map((p, i) => (
+        <div key={i} style={{
+          position: 'absolute', left: p.x + '%', top: 0, width: p.size, height: p.size,
+          background: ['#90EE90', '#FFD700', '#98D8C8', '#FFB347'][i % 4], opacity: 0.45, imageRendering: 'pixelated',
+          animation: 'particleFloat ' + p.speed + 's linear ' + p.delay + 's infinite',
+          borderRadius: '50%',
+        }} />
+      ))}
+    </div>
+  );
+}

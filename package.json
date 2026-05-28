@@ -1,12 +1,14 @@
 {
-  "name": "tlo-roulette",
+  "name": "tlo-games",
   "version": "1.0.0",
-  "description": "T-LO 俄羅斯輪盤 - 即時對戰",
-  "main": "server/server.js",
+  "description": "T-LO 統一遊戲伺服器 - 骰子 + 俄羅斯輪盤",
+  "main": "server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
+    "compression": "^1.8.1",
     "express": "^4.18.2",
     "ws": "^8.14.2"
   }

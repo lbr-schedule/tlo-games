@@ -1,0 +1,3029 @@
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const { createClient } = require('@libsql/client');
+const compression = require('compression');
+
+const app = express();
+app.use(compression());
+const server = http.createServer(app);
+
+// 骰子遊戲資料庫（Turso）
+const dbUrl = process.env.DATABASE_URL || 'libsql://lbr-dice-lbr-schedule.aws-ap-northeast-1.turso.io';
+const dbAuthToken = process.env.DATABASE_AUTH_TOKEN || '';
+
+
+
+
+
+let dbAvailable = false;
+
+try {
+    db = createClient({
+        url: dbUrl,
+        authToken: dbAuthToken
+    });
+    dbAvailable = true;
+    console.log('骰子遊戲已连接到 Turso 数据库:', dbUrl);
+} catch(e) {
+    console.log('骰子遊戲 Turso 连接失败:', e.message);
+}
+
+// 輪盤遊戲資料庫（Turso）
+const rouletteDbUrl = process.env.ROULETTE_DATABASE_URL || 'libsql://lbr-roulette-lbr-schedule.aws-ap-northeast-1.turso.io';
+const rouletteDbAuthToken = process.env.ROULETTE_DATABASE_AUTH_TOKEN || '';
+
+let rouletteDb = null;
+let rouletteDbAvailable = false;
+
+// 本地測試模式：使用記憶體資料庫
+const LOCAL_TEST_MODE = !process.env.ROULETTE_DATABASE_URL;
+const localPlayers = {}; // { username: { password, score, invitedBy } }
+const localFeedback = []; // { username, feedback, time }
+const weeklyRewardConfig = { top1: 1000, top2: 800, top3: 500 }; // 每週前三名獎勵
+
+// 等級制度設定（一週結算）
+const LEVEL_THRESHOLDS = [
+    { level: 1, title: '菜鳥', tier: '青銅' },
+    { level: 11, title: '新手', tier: '白銀' },
+    { level: 21, title: '老手', tier: '黃金' },
+    { level: 31, title: '大師', tier: '白金' },
+    { level: 41, title: '傳說', tier: '鑽石' },
+];
+
+function calculateLevel(weeklyBet) {
+    // 等級門檻：1-10: 0, 11-20: 10000, 21-30: 50000, 31-40: 200000, 41-50: 500000
+    if (weeklyBet >= 500000) return Math.min(50, 41 + Math.floor((weeklyBet - 500000) / 25000));
+    if (weeklyBet >= 200000) return Math.min(40, 31 + Math.floor((weeklyBet - 200000) / 30000));
+    if (weeklyBet >= 50000) return Math.min(30, 21 + Math.floor((weeklyBet - 50000) / 15000));
+    if (weeklyBet >= 10000) return Math.min(20, 11 + Math.floor((weeklyBet - 10000) / 9000));
+    return Math.max(1, Math.min(10, 1 + Math.floor(weeklyBet / 2000)));
+}
+
+function getLevelInfo(weeklyBet) {
+    const level = calculateLevel(weeklyBet);
+    let tier = '青銅', title = '菜鳥';
+    for (const t of LEVEL_THRESHOLDS) {
+        if (level >= t.level) { tier = t.tier; title = t.title; }
+    }
+    return { level, tier, title };
+}
+
+function getWeekStartDate(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+}
+let lastWeeklyReset = new Date().toISOString().split('T')[0]; // 用於追蹤每週結算
+const localHistory = [];  // [{ username, result, color, win, amount }]
+const localStats = {};  // { username: { bet_count_today, wins_today, mystery_bets_today, last_task_reset, last_login_date, login_streak, streak_title, weekly_bet } }
+
+if (LOCAL_TEST_MODE) {
+    console.log('⚠️ 本地測試模式：使用記憶體資料庫（所有資料重啟後消失）');
+    rouletteDbAvailable = true; // 假設可用，因為使用記憶體模式
+} else {
+    try {
+        rouletteDb = createClient({
+            url: rouletteDbUrl,
+            authToken: rouletteDbAuthToken
+        });
+        console.log('輪盤遊戲 Turso client 已建立');
+    } catch(e) {
+        console.log('輪盤遊戲 Turso client 建立失敗:', e.message);
+    }
+}
+
+// 測試輪盤資料庫連線
+if (rouletteDb && !LOCAL_TEST_MODE) {
+    rouletteDb.execute({ sql: 'SELECT 1 as test' }).then((result) => {
+        console.log('輪盤資料庫連線測試成功, result:', JSON.stringify(result));
+        rouletteDbAvailable = true;
+        // 建立 game_config 表格（神秘彩池持久化）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS game_config (key TEXT PRIMARY KEY, value TEXT)` }).catch(e => console.log('建立 game_config 表格失敗:', e.message));
+        // 玩家邀請相關欄位
+        rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN invite_code TEXT DEFAULT ''` }).catch(e => {});
+        rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN used_invite_code TEXT DEFAULT ''` }).catch(e => {});
+        // 邀請記錄表
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
+        rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }).catch(e => {});
+        // 建立 roulette_bets 表格（所有下注追蹤）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
+        // 建立 mystery_bets 表格（每局神秘下注追蹤）
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_mystery_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, round_id TEXT UNIQUE, result_number INTEGER, pool_amount INTEGER, winners INTEGER DEFAULT 0, distributed INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_mystery_bets 表格失敗:', e.message));
+        // 建立 roulette_player_stats 表格（如果不存在）
+        rouletteDb.execute({
+            sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1, completed_tasks TEXT DEFAULT '[]')`
+        }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
+        // 建立 pets 表格（寵物系統）
+        rouletteDb.execute({
+            sql: `CREATE TABLE IF NOT EXISTS roulette_pets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, pet_type TEXT DEFAULT 'none', pet_name TEXT DEFAULT '', pet_level INTEGER DEFAULT 1, pet_xp INTEGER DEFAULT 0, pet_hunger INTEGER DEFAULT 100, pet_energy INTEGER DEFAULT 100, last_fed TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')))`
+        }).catch(e => console.log('建立 roulette_pets 表格失敗:', e.message));
+        // 啟動時載入神秘彩池、廣告索引、贏家狀態
+        loadMysteryPool();
+        loadRouletteAdIndex();
+        loadWinnerState();
+    }).catch(e => {
+        console.log('輪盤資料庫連線測試失敗:', e.message);
+        rouletteDbAvailable = false;
+    });
+}
+
+// 骰子遊戲用 HTTP Long-Polling（取代 WebSocket）
+const diceState = {
+    waitingPlayers: [],
+    games: new Map(),
+    players: new Map(),  // { username: { lastPoll: timestamp, pendingMessages: [] } }
+    pollInterval: 1000    // 1秒polling
+};
+
+// 神秘彩池持久化
+async function loadMysteryPool() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['mysteryPool'] });
+        if (r.rows && r.rows.length > 0) {
+            rouletteState.mysteryPool = parseInt(r.rows[0].value) || 0;
+            console.log('從資料庫載入神秘彩池:', rouletteState.mysteryPool);
+        }
+    } catch(e) { console.log('載入神秘彩池失敗:', e.message); }
+}
+
+async function saveMysteryPool() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('mysteryPool', ?)`, args: [String(rouletteState.mysteryPool)] });
+        console.log('✅ 彩池已持久化:', rouletteState.mysteryPool);
+    } catch(e) { console.log('保存神秘彩池失敗:', e.message); }
+}
+
+// 分發神秘彩池獎金
+async function distributeMysteryPool(roundId, poolAmount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) return poolAmount;
+    if (!roundId || poolAmount <= 0) return 0;
+    try {
+        // 找出這局所有下注神秘的人
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, amount FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`,
+            args: [roundId]
+        });
+        const winners = result.rows || [];
+        // 無人中獎時也寫入記錄，方便後續判斷是否該歸零彩池
+        if (winners.length === 0) {
+            await rouletteDb.execute({
+                sql: `INSERT OR REPLACE INTO roulette_mystery_bets (round_id, result_number, pool_amount, winners, distributed) VALUES (?, ?, ?, 0, 0)`,
+                args: [roundId, 0, poolAmount]
+            });
+            console.log('神秘彩池無人中獎，不分發');
+            return 0;
+        }
+        const poolPerPerson = Math.floor(poolAmount / winners.length);
+        console.log('神秘彩池分發: 共' + winners.length + '人，各得 $' + poolPerPerson);
+        for (const w of winners) {
+            await rouletteDb.execute({
+                sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                args: [poolPerPerson, w.username]
+            });
+            console.log('  -> ' + w.username + ' 獲得 $' + poolPerPerson);
+        }
+        // 標記已分發
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_mystery_bets SET winners = ?, distributed = 1 WHERE round_id = ?`,
+            args: [winners.length, roundId]
+        });
+        // 儲存所有中獎者資訊供廣播使用
+        const winnerUsernames = winners.map(w => w.username).join(', ');
+        rouletteState.lastWinner = { 
+            username: winners[0].username, 
+            amount: poolPerPerson, 
+            type: 'mystery',
+            winnersCount: winners.length,
+            winnersList: winnerUsernames,
+            poolAmount: poolAmount
+        };
+        await saveWinnerState();
+        return poolPerPerson;
+    } catch(e) { console.log('分發彩池失敗:', e.message); return 0; }
+}
+
+// 追蹤下注（寫入DB）
+async function trackBet(username, roundId, betType, choice, amount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    if (!roundId) return;
+    try {
+        await rouletteDb.execute({
+            sql: `INSERT INTO roulette_bets (username, round_id, bet_type, choice, amount) VALUES (?, ?, ?, ?, ?)`,
+            args: [username, roundId, betType, choice, amount]
+        });
+    } catch(e) { console.log('追蹤下注失敗:', e.message); }
+}
+
+async function loadRouletteAdIndex() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const r = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['rouletteAdIndex'] });
+        if (r.rows && r.rows.length > 0) {
+            rouletteState.rouletteAdIndex = parseInt(r.rows[0].value) || 0;
+            console.log('✅ 廣告索引已載入:', rouletteState.rouletteAdIndex);
+        }
+    } catch(e) { console.log('載入廣告索引失敗:', e.message); }
+}
+
+async function saveRouletteAdIndex() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('rouletteAdIndex', ?)`, args: [String(rouletteState.rouletteAdIndex)] });
+        console.log('✅ 廣告索引已持久化:', rouletteState.rouletteAdIndex);
+    } catch(e) { console.log('保存廣告索引失敗:', e.message); }
+}
+
+// 輪盤遊戲狀態（單人，無需 WebSocket）
+let rouletteState = {
+    phase: 'waiting', // waiting, betting, spinning, result
+    result: null,
+    lastSpin: null,
+    spinTimer: null,
+    betTimer: null,
+    BETTING_TIME: 8000,
+    phaseStartTime: 0,
+    hasPlayer: false,
+    mysteryPool: 0,  // 神秘彩池
+    lastWinner: null,
+    currentRoundId: null,    // 神秘中獎者 {username, amount, type}
+    bigWinner: null,     // 大贏家 {username, amount}
+    rouletteAdIndex: 0   // 廣告輪播索引（持久化）
+};
+
+// 輪盤廣告設定
+const ROULETTE_ADS = [
+    '/roulette/ad1.jpg',
+    '/roulette/ad2.jpg',
+    '/roulette/ad3.jpg',
+    '/roulette/ad4.png',
+    '/roulette/ad5.jpg',
+    '/roulette/ad6.png'
+];
+let rouletteAdIndex = 0;
+const ROULETTE_AD_RATE = 0.1;
+
+function getNextRouletteAd() {
+    rouletteState.rouletteAdIndex = (rouletteState.rouletteAdIndex + 1) % ROULETTE_ADS.length;
+    saveRouletteAdIndex();
+    return { url: ROULETTE_ADS[rouletteState.rouletteAdIndex], lineId: '@778ryayw' };
+}
+
+// ========== 每日任務系統 ==========
+const DAILY_TASKS = [
+    { id: 'bet_10', name: '初試身手', desc: '下注 10 次', condition: (p) => p.bet_count_today >= 10, reward: 100 },
+    { id: 'bet_50', name: '小試手氣', desc: '下注 50 次', condition: (p) => p.bet_count_today >= 50, reward: 300 },
+    { id: 'bet_100', name: '活躍玩家', desc: '下注 100 次', condition: (p) => p.bet_count_today >= 100, reward: 800 },
+    { id: 'win_5', name: '幸運玩家', desc: '贏 5 次', condition: (p) => p.wins_today >= 5, reward: 500 },
+    { id: 'mystery_1', name: '膽識玩家', desc: '下注神秘 1 次', condition: (p) => p.mystery_bets_today >= 1, reward: 200 }
+];
+
+const STREAK_REWARDS = [200, 300, 400, 500, 700, 1000, 2000];
+const STREAK_TITLES = ['', '', '', '', '', '', '連續登入王'];
+
+function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function getYesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+}
+
+async function checkAndResetDailyTasks(username) {
+    const today = getTodayStr();
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        const stats = localStats[username];
+        if (stats.last_task_reset !== today) {
+            stats.bet_count_today = 0; stats.wins_today = 0; stats.mystery_bets_today = 0; stats.last_task_reset = today;
+        }
+        return;
+    }
+    if (!rouletteDb) return;
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, last_task_reset FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        if (r.rows && r.rows.length > 0) {
+            const lastReset = r.rows[0].last_task_reset || '';
+            if (lastReset !== today) {
+                await rouletteDb.execute({
+                    sql: 'UPDATE roulette_player_stats SET bet_count_today = 0, wins_today = 0, mystery_bets_today = 0, last_task_reset = ? WHERE username = ?',
+                    args: [today, username]
+                });
+            }
+        }
+    } catch(e) { console.log('檢查每日任務失敗:', e.message); }
+}
+
+async function processLoginStreak(username) {
+    const today = getTodayStr();
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        const stats = localStats[username];
+        if (stats.last_login_date === today) return { streak: stats.login_streak, bonus: 0, title: stats.streak_title, alreadyClaimed: true };
+        const newStreak = stats.last_login_date === getYesterdayStr() ? Math.min(stats.login_streak + 1, 7) : 1;
+        const bonus = STREAK_REWARDS[newStreak - 1] || 200;
+        const title = newStreak === 7 ? STREAK_TITLES[6] : '';
+        stats.last_login_date = today; stats.login_streak = newStreak; stats.streak_title = title;
+        return { streak: newStreak, bonus, title, alreadyClaimed: false };
+    }
+    if (!rouletteDb) return { streak: 0, bonus: 0, title: '' };
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT last_login_date, login_streak, streak_title FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        if (r.rows && r.rows.length > 0) {
+            const lastDate = r.rows[0].last_login_date || '';
+            const prevStreak = r.rows[0].login_streak || 0;
+            const prevTitle = r.rows[0].streak_title || '';
+            let newStreak = 1;
+            let bonus = STREAK_REWARDS[0];
+            let title = '';
+            
+            if (lastDate === today) {
+                return { streak: prevStreak, bonus: 0, title: prevTitle, alreadyClaimed: true };
+            } else if (lastDate === getYesterdayStr()) {
+                newStreak = prevStreak + 1;
+                if (newStreak > 7) newStreak = 7;
+                bonus = STREAK_REWARDS[newStreak - 1] || 200;
+                title = STREAK_TITLES[newStreak - 1] || '';
+            } else {
+                newStreak = 1;
+                bonus = STREAK_REWARDS[0];
+                title = '';
+            }
+            
+            const updateResult = await rouletteDb.execute({
+                sql: 'UPDATE roulette_player_stats SET last_login_date = ?, login_streak = ?, streak_title = ? WHERE username = ?',
+                args: [today, newStreak, title, username]
+            });
+            if ((updateResult.rowsAffected || 0) === 0) {
+                await rouletteDb.execute({
+                    sql: 'INSERT INTO roulette_player_stats (username, last_login_date, login_streak, streak_title) VALUES (?, ?, ?, ?)',
+                    args: [username, today, newStreak, title]
+                });
+            }
+            
+            return { streak: newStreak, bonus, title, alreadyClaimed: false };
+        }
+    } catch(e) { console.log('處理登入連續失敗:', e.message); }
+    return { streak: 0, bonus: 0, title: '', alreadyClaimed: false };
+}
+
+// ========== 骰子遊戲邏輯 ==========
+function createDiceGame(player1, player2) {
+    return {
+        id: Date.now(),
+        players: [player1, player2],
+        scores: [0, 0],
+        rolled: [false, false],  // 記錄誰已骰
+        diceValues: [0, 0],       // 記錄骰出的點數
+        status: 'playing',
+        round: 1
+    };
+}
+
+function broadcastDice(msg) {
+    // 廣播消息到所有玩家的 pendingMessages（long-polling 機制）
+    for (const [name, data] of diceState.players) {
+        data.pendingMessages.push(msg);
+    }
+}
+
+// 發送消息給特定玩家（long-polling 機制）
+function sendToPlayer(username, msg) {
+    const player = diceState.players.get(username);
+    if (player) {
+        player.pendingMessages.push(msg);
+    }
+}
+
+
+// 骰子遊戲 - 更新玩家積分
+// 獲取玩家積分
+async function getPlayerScore(username) {
+    if (!dbAvailable) return null;
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        return result.rows?.[0]?.score ?? null;
+    } catch(e) {
+        return null;
+    }
+}
+
+async function updateDicePlayerScore(winner, loser, betAmount) {
+    if (LOCAL_TEST_MODE) {
+        // 本地測試模式
+        if (localPlayers[winner]) localPlayers[winner].score += betAmount;
+        if (localPlayers[loser]) localPlayers[loser].score = Math.max(0, localPlayers[loser].score - betAmount);
+        return;
+    }
+    
+    if (!dbAvailable) return;
+    
+    try {
+        // 贏家加積分
+        await db.execute({
+            sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+            args: [betAmount, winner]
+        });
+        // 輸家扣積分
+        await db.execute({
+            sql: `UPDATE players SET score = CASE WHEN score < ? THEN 0 ELSE score - ? END WHERE username = ?`,
+            args: [betAmount, betAmount, loser]
+        });
+        console.log('骰子遊戲積分結算:', winner, '+' + betAmount, loser, '-' + betAmount);
+    } catch(e) {
+        console.log('更新骰子遊戲積分失敗:', e.message);
+    }
+}
+
+async function handleDiceMessage(ws, msg) {
+    const username = msg.username || 'Player';
+
+    if (msg.type === 'cancel') {
+        // Remove from waiting list
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        sendToPlayer(username, { type: 'cancel' });
+        return;
+    }
+    
+    if (msg.type === 'leave') {
+        const player = diceState.players.get(username);
+        
+        // If in a game, notify opponent and remove game
+        if (player?.gameId) {
+            const game = diceState.games.get(player.gameId);
+            if (game) {
+                const opponent = game.players.find(p => p !== username);
+                if (opponent) {
+                    sendToPlayer(opponent, { type: 'opponent_left' });
+                    // Reset opponent's state
+                    const oppPlayer = diceState.players.get(opponent);
+                    if (oppPlayer) delete oppPlayer.gameId;
+                }
+                diceState.games.delete(player.gameId);
+            }
+        }
+        
+        // Remove from waiting list if there
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        delete player.gameId;
+        sendToPlayer(username, { type: 'left' });
+        return;
+    }
+    
+    if (msg.type === 'join') {
+        const player = diceState.players.get(username);
+        
+        // Check if player has enough score to play (min 10)
+        let playerScore = 0;
+        try {
+            const result = await db.execute({
+                sql: 'SELECT score FROM players WHERE username = ?',
+                args: [username]
+            });
+            playerScore = result.rows?.[0]?.score ?? 0;
+        } catch(e) {}
+        
+        if (playerScore < 10) {
+            sendToPlayer(username, { type: 'balance_insufficient', score: playerScore, required: 10 });
+            return;
+        }
+        
+        // If already in a game, re-send game_start with current game info
+        if (player?.gameId) {
+            const game = diceState.games.get(player.gameId);
+            if (game) {
+                const opponent = game.players[1 - game.players.indexOf(username)];
+                sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: player.gameId, myIndex: game.players.indexOf(username) });
+                return;
+            } else {
+                // Game expired or deleted, clear gameId and treat as fresh
+                delete player.gameId;
+            }
+        }
+        
+        // If already in waiting list, just re-send waiting message
+        if (diceState.waitingPlayers.includes(username)) {
+            sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+            return;
+        }
+        
+        // Remove from waiting list (prevent duplicates)
+        diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== username);
+        
+        // If there are other waiting players, match immediately (check both have score)
+        if (diceState.waitingPlayers.length > 0) {
+            // Find a waiting player with enough score
+            let opponent = null;
+            for (const p of diceState.waitingPlayers) {
+                try {
+                    const result = await db.execute({
+                        sql: 'SELECT score FROM players WHERE username = ?',
+                        args: [p]
+                    });
+                    const score = result.rows?.[0]?.score ?? 0;
+                    if (score >= 10) {
+                        opponent = diceState.waitingPlayers.shift();
+                        break;
+                    } else {
+                        // Remove player with insufficient score
+                        diceState.waitingPlayers = diceState.waitingPlayers.filter(wp => wp !== p);
+                    }
+                } catch(e) {}
+            }
+            
+            if (!opponent) {
+                // No valid opponent, just add self to queue
+                diceState.waitingPlayers.push(username);
+                sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+                return;
+            }
+            const game = createDiceGame(opponent, username);
+            diceState.games.set(game.id, game);
+            
+            // Check both players have enough score before starting
+            let opponentScore = 0;
+            try {
+                const r = await db.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [opponent] });
+                opponentScore = r.rows?.[0]?.score ?? 0;
+            } catch(e) {}
+            
+            if (opponentScore < 10) {
+                // Opponent no longer has enough score, notify and remove from queue
+                diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== opponent);
+                sendToPlayer(opponent, { type: 'balance_insufficient', score: opponentScore, required: 10 });
+                // Add current player to queue instead
+                diceState.waitingPlayers.push(username);
+                sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+                return;
+            }
+            
+            // Send game_start to both
+            sendToPlayer(opponent, { type: 'game_start', opponent: username, gameId: game.id, myIndex: 0 });
+            sendToPlayer(username, { type: 'game_start', opponent: opponent, gameId: game.id, myIndex: 1 });
+            
+            // Update player game state
+            diceState.players.set(opponent, { ...(diceState.players.get(opponent) || {}), gameId: game.id });
+            diceState.players.set(username, { ...(diceState.players.get(username) || {}), gameId: game.id });
+        } else {
+            // No one waiting, add to queue
+            diceState.waitingPlayers.push(username);
+            sendToPlayer(username, { type: 'waiting', message: '等待對手中...' });
+        }
+    }
+    
+    if (msg.type === 'roll') {
+        const player = diceState.players.get(username);
+        if (!player?.gameId) return;
+        
+        const game = diceState.games.get(player.gameId);
+        if (!game || game.status !== 'playing') return;
+        
+        const playerIndex = game.players.indexOf(username);
+        // 檢查這玩家是否已經骰過（不重複骰）
+        if (game.rolled && game.rolled[playerIndex]) return;
+        
+        // 如果是老闆帳號(12345)，使用加權骰子給予約70%勝率
+        let dice;
+        if (username === '12345') {
+            // 65%機會骰到5-6，35%機會骰到1-4
+            dice = Math.random() < 0.65 ? Math.floor(Math.random() * 2) + 5 : Math.floor(Math.random() * 4) + 1;
+        } else {
+            dice = Math.floor(Math.random() * 6) + 1;
+        }
+        // 記錄骰子
+        game.rolled[playerIndex] = true;
+        game.diceValues[playerIndex] = dice;
+        
+        // 廣播骰子結果（包含雙方骰子）
+        broadcastDice({
+            type: 'roll_result',
+            player: username,
+            dice,
+            diceValues: [...game.diceValues],
+            rolled: [...game.rolled]
+        });
+        
+        // 檢查是否雙方都骰完
+        if (game.rolled[0] && game.rolled[1]) {
+            // 計算勝負
+            const [d1, d2] = game.diceValues;
+            let winner, isDraw;
+            if (d1 > d2) { winner = game.players[0]; isDraw = false; }
+            else if (d2 > d1) { winner = game.players[1]; isDraw = false; }
+            else { winner = null; isDraw = true; }
+            
+            game.status = 'finished';
+            game.winner = winner;
+            game.isDraw = isDraw;
+            
+            broadcastDice({
+                type: 'game_over',
+                diceValues: [...game.diceValues],
+                winner: winner,
+                isDraw: isDraw
+            });
+            
+            // 結算後更新資料庫積分
+            if (winner && !isDraw) {
+                const loser = game.players.find(p => p !== winner);
+                updateDicePlayerScore(winner, loser, 10);
+                
+                // 廣播積分更新給雙方
+                getPlayerScore(winner).then(wScore => {
+                    getPlayerScore(loser).then(lScore => {
+                        if (wScore !== null) {
+                            sendToPlayer(winner, { type: 'score_update', score: wScore });
+                        }
+                        if (lScore !== null) {
+                            sendToPlayer(loser, { type: 'score_update', score: lScore });
+                        }
+                    });
+                });
+            }
+        }
+        
+        // 一局 = 雙方各擲一次 = 2次roll
+        // 2 rolls per round, then end round
+        if (game.round >= 3) {
+            const winner = game.scores[0] > game.scores[1] ? 0 : (game.scores[1] > game.scores[0] ? 1 : -1);
+            game.status = 'finished';
+            game.winner = winner >= 0 ? game.players[winner] : null;
+            game.isDraw = winner === -1;
+            game.rematchRequests = [];
+            
+            broadcastDice({
+                type: 'game_over',
+                scores: game.scores,
+                winner: game.winner,
+                isDraw: game.isDraw
+            });
+            
+            // 非平手時更新積分
+            if (game.winner && !game.isDraw) {
+                const loser = game.players.find(p => p !== game.winner);
+                updateDicePlayerScore(game.winner, loser, 10); // 預設10積分
+            }
+        }
+    }
+    
+    if (msg.type === 'rematch') {
+        const player = diceState.players.get(username);
+        if (!player?.gameId) return;
+        
+        const game = diceState.games.get(player.gameId);
+        if (!game || game.status !== 'finished') return;
+        
+        // 一方按了馬上開始新遊戲
+        const newGame = createDiceGame(game.players[0], game.players[1]);
+        diceState.games.set(newGame.id, newGame);
+        diceState.games.delete(game.id);
+        
+        // 更新雙方玩家的 gameId
+        const p0 = diceState.players.get(game.players[0]);
+        const p1 = diceState.players.get(game.players[1]);
+        if (p0) p0.gameId = newGame.id;
+        if (p1) p1.gameId = newGame.id;
+        
+        // 發送 game_start 給雙方（包含 myIndex 和 opponent）
+        sendToPlayer(game.players[0], { type: 'game_start', opponent: game.players[1], gameId: newGame.id, myIndex: 0 });
+        sendToPlayer(game.players[1], { type: 'game_start', opponent: game.players[0], gameId: newGame.id, myIndex: 1 });
+    }
+}
+
+// JSON 解析
+app.use(express.json({ limit: '50mb' }));
+
+// ============ 撲克遊戲 ============
+const POKER_DB_URL = process.env.POKER_DATABASE_URL || 'libsql://lbr-poker-lbr-schedule.aws-ap-northeast-1.turso.io';
+const POKER_DB_AUTH = process.env.POKER_DATABASE_AUTH_TOKEN || '';
+
+let pokerDb = null;
+let pokerDbAvailable = false;
+
+try {
+    pokerDb = createClient({
+        url: POKER_DB_URL,
+        authToken: POKER_DB_AUTH
+    });
+    pokerDbAvailable = true;
+    console.log('撲克遊戲 Turso client 已建立:', POKER_DB_URL);
+} catch(e) {
+    console.log('撲克遊戲 Turso client 建立失敗:', e.message);
+}
+
+app.locals.pokerDb = pokerDb;
+
+const pokerRouter = require('./poker-server.js');
+app.use('/api/poker', pokerRouter);
+
+// 測試端點
+app.get('/api/poker/test', (req, res) => {
+    res.json({ success: true, message: 'Poker API working!', pokerDbAvailable });
+});
+
+// ========== 骰子遊戲 HTTP Long-Polling 端點 ==========
+// 客戶端每1秒輪詢一次 /dice/poll
+app.get('/dice/poll', (req, res) => {
+    const username = req.query.username;
+    if (!username) return res.json({ error: 'no username' });
+    
+    // 初始化玩家狀態
+    if (!diceState.players.has(username)) {
+        diceState.players.set(username, { lastPoll: Date.now(), pendingMessages: [] });
+    }
+    
+    const player = diceState.players.get(username);
+    player.lastPoll = Date.now();
+    
+    // 返回所有待發送消息並清空
+    const messages = player.pendingMessages;
+    player.pendingMessages = [];
+    
+    res.json({ messages, timestamp: Date.now() });
+});
+
+
+// 清理超時玩家（30秒沒poll就移除）- FORCE REDEPLOY
+function cleanupStalePlayers() {
+    const now = Date.now();
+    const staleTimeout = 30000; // 30秒
+    
+    // 清理等待池中超時的玩家
+    for (const name of diceState.waitingPlayers) {
+        const player = diceState.players.get(name);
+        if (!player || (now - player.lastPoll > staleTimeout)) {
+            diceState.waitingPlayers = diceState.waitingPlayers.filter(p => p !== name);
+            diceState.players.delete(name);
+        }
+    }
+}
+
+// 每10秒清理一次
+setInterval(cleanupStalePlayers, 10000);
+
+// 發送消息到伺服器（客戶端使用 POST）
+app.post('/dice/action', (req, res) => {
+    const { username, type } = req.body;
+    if (!username) return res.status(400).json({ error: 'no username' });
+    
+    // 確保玩家在 players map 中
+    if (!diceState.players.has(username)) {
+        diceState.players.set(username, { lastPoll: Date.now(), pendingMessages: [] });
+    }
+    
+    // 處理各種消息類型
+    const msg = { type, username, ...req.body };
+    handleDiceMessage(null, msg);
+    
+    res.json({ ok: true });
+});
+
+// ========== 輪盤遊戲邏輯（無 WebSocket） ==========
+function getRouletteColor(num) {
+    if (num === 0) return 'green';
+    const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    return reds.includes(num) ? 'red' : 'black';
+}
+
+async function spinWheel() {
+    rouletteState.phase = 'spinning';
+    
+    const allNumbers = [
+        {num:0,color:'gold'},
+        {num:32,color:'red'},{num:15,color:'black'},{num:19,color:'red'},{num:4,color:'black'},
+        {num:21,color:'red'},{num:2,color:'black'},{num:25,color:'red'},{num:17,color:'black'},
+        {num:34,color:'red'},{num:6,color:'black'},{num:27,color:'red'},{num:13,color:'black'},
+        {num:36,color:'red'},{num:11,color:'black'},{num:30,color:'red'},{num:8,color:'black'},
+        {num:23,color:'red'},{num:10,color:'black'},{num:5,color:'red'},{num:24,color:'black'},
+        {num:16,color:'red'},{num:33,color:'black'},{num:1,color:'red'},{num:20,color:'black'},
+        {num:14,color:'red'},{num:31,color:'black'},{num:9,color:'red'},{num:22,color:'black'},
+        {num:18,color:'red'},{num:29,color:'black'},{num:7,color:'red'},{num:28,color:'black'},
+        {num:12,color:'red'},{num:35,color:'black'},{num:3,color:'red'},{num:26,color:'black'},
+    ];
+    
+    const selectedIndex = Math.floor(Math.random() * 37);
+    const selected = allNumbers[selectedIndex];
+    
+    // 保存當前彩池金額（用於顯示）
+    const poolBeforeResult = rouletteState.mysteryPool;
+    const wasMystery = selected.num === 0;
+    
+    rouletteState.lastSpin = { 
+        result: selected.num, 
+        color: selected.color, 
+        time: Date.now(),
+        mystery: wasMystery,
+        mysteryPool: wasMystery ? poolBeforeResult : 0
+    };
+    
+    // 神秘中獎：立即計算並分發（同步，客戶端poll時能看到完整資料）
+    if (wasMystery && poolBeforeResult > 0 && rouletteState.currentRoundId) {
+        try {
+            // 同步查詢贏家（等待結果，讓子彈有機會飛）
+            const r = await rouletteDb.execute({
+                sql: `SELECT username FROM roulette_bets WHERE round_id = ? AND bet_type = 'number' AND choice = '0'`,
+                args: [rouletteState.currentRoundId]
+            });
+            const winners = r.rows || [];
+            const winnersCount = winners.length;
+            const perPersonPool = winnersCount > 0 ? Math.floor(poolBeforeResult / winnersCount) : 0;
+            const winnerNames = winners.map(w => w.username).join(', ');
+
+            // 立即設定（客戶端poll時就能看到）
+            rouletteState.lastWinner = {
+                username: winnersCount > 1 ? (winnersCount + '位玩家') : winnerNames,
+                amount: perPersonPool,
+                type: 'mystery',
+                winnersCount,
+                winnersList: winnerNames,
+                poolAmount: poolBeforeResult
+            };
+            rouletteState.lastSpin.perPersonPool = perPersonPool;
+            rouletteState.lastSpin.mysteryWinners = winnersCount;
+            await saveWinnerState();
+
+            console.log('神秘彩池結算: ' + winnersCount + '人各得 $' + perPersonPool);
+
+            // 分發獎金（背景執行，不阻擋）
+            (async () => {
+                try {
+                    await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
+                    // 只有有人中獎才歸零彩池，否則彩池繼續累積
+                    const distResult = await rouletteDb.execute({
+                        sql: `SELECT distributed FROM roulette_mystery_bets WHERE round_id = ?`,
+                        args: [rouletteState.currentRoundId]
+                    });
+                    const distributed = distResult.rows?.[0]?.distributed;
+                    if (distributed === 1) {
+                        rouletteState.mysteryPool = 0;
+                        try { await saveMysteryPool(); } catch(e) {}
+                    } else {
+                        console.log('神秘彩池無人中獎，彩池累積至 $' + rouletteState.mysteryPool);
+                    }
+                } catch(e) { console.log('分發失敗:', e.message); }
+                rouletteState.currentRoundId = null;
+            })();
+        } catch(e) {
+            console.log('神秘彩池處理失敗:', e.message);
+        }
+    } else if (!wasMystery) {
+        // 非神秘局更換 roundId
+        rouletteState.currentRoundId = null;
+    }
+    
+    // 只有當有人中神秘（0）且有下注神秘時，才在結算時歸零彩池
+    // 彩池歸零的時機：結算時玩家領取獎金後才歸零（見 bet API 中的神秘中獎邏輯）
+    // 不在這裡歸零
+    
+    // HTTP輪詢模式：spinning 5秒 → 結果顯示3.5秒 → 下注8秒 → 循環
+    setTimeout(() => {
+        rouletteState.phase = 'result';
+        // 結果顯示3.5秒後進入下注時間
+        rouletteState.spinTimer = setTimeout(startBetting, 3500);
+    }, 5000);
+}
+
+// 當玩家登入時呼叫
+function playerJoined() {
+    rouletteState.hasPlayer = true;
+    if (rouletteState.phase === 'waiting') {
+        startBetting();
+    }
+}
+
+// 輪盤遊戲 - 玩家上線（保持遊戲運行）
+app.post('/api/roulette/ping', (req, res) => {
+    playerJoined();
+    res.json({ success: true });
+});
+
+// 版本確認
+app.post('/api/roulette/video-bonus', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    const today = new Date().toISOString().split('T')[0];
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
+    try {
+        const check = await rouletteDb.execute({ sql: `SELECT lastVideoClaim FROM players WHERE username = ?`, args: [username] });
+        if (check.rows && check.rows.length > 0) {
+            const last = check.rows[0].lastVideoClaim || '';
+            if (last === today) return res.json({ success: false, message: '今天已領過了，明天再來！' });
+        }
+        await rouletteDb.execute({ sql: `UPDATE players SET score = score + 1000, lastVideoClaim = ? WHERE username = ?`, args: [today, username] });
+        const scoreResult = await rouletteDb.execute({ sql: `SELECT score FROM players WHERE username = ?`, args: [username] });
+        const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
+        res.json({ success: true, amount: 1000, newScore });
+    } catch(e) { res.json({ success: false, message: '領取失敗，請稍後再試' }); }
+});
+
+app.get('/api/version', (req, res) => {
+    res.json({ 
+        version: 'v4.0-ACTUAL',
+        deployTime: new Date().toISOString(),
+        wsPath: '/dice'
+    });
+});
+
+function startBetting() {
+    if (!rouletteState.hasPlayer) {
+        rouletteState.phase = 'waiting';
+        return;
+    }
+    rouletteState.phase = 'betting';
+    rouletteState.lastSpin = null;
+    rouletteState.currentBets = [];
+    rouletteState.phaseStartTime = Date.now();
+    // 新回合：更換 roundId
+    rouletteState.currentRoundId = Date.now().toString();
+    // 注意：mysteryPool 不在這裡重置，等有人中神秘後才重置
+    // 贏家廣播保留直到下一個新贏家出現（不主動清除，確保所有人都能看到）
+}
+
+// 不再自動開始，等待玩家加入
+
+// 輪盤 API
+app.get('/api/roulette/status', (req, res) => {
+    console.log('收到 roulette/status 請求');
+    try {
+        let remaining = 0;
+        
+        if (rouletteState.phase === 'betting') {
+            const elapsed = (Date.now() - rouletteState.phaseStartTime) / 1000;
+            remaining = Math.max(0, Math.ceil(rouletteState.BETTING_TIME / 1000 - elapsed));
+            // 如果剩餘時間為0但還在betting phase，強制開始轉盤
+            if (remaining === 0 && rouletteState.phase === 'betting') {
+                console.log('betting phase expired but spinning not triggered, forcing spin...');
+                spinWheel();
+            }
+        } else if (rouletteState.phase === 'waiting' && rouletteState.hasPlayer) {
+            // 卡在waiting超過2秒，自動開始下注
+            const waitingTime = (Date.now() - rouletteState.phaseStartTime) / 1000;
+            if (waitingTime > 2) {
+                console.log('stuck in waiting with player, auto-starting bet...');
+                startBetting();
+            }
+            remaining = 1;
+        } else if (rouletteState.phase === 'spinning' && rouletteState.spinTimer === null) {
+            // 卡在spinning超過15秒，強制結算
+            const spinTime = rouletteState.lastSpin ? (Date.now() - rouletteState.lastSpin.time) / 1000 : 0;
+            if (spinTime > 15) {
+                console.log('stuck in spinning, forcing result...');
+                rouletteState.phase = 'result';
+                rouletteState.result = { num: Math.floor(Math.random() * 37), time: Date.now() };
+            }
+            remaining = 0;
+        } else if (rouletteState.phase === 'result') {
+            remaining = 5;
+        }
+        
+        const response = {
+            phase: rouletteState.phase,
+            lastSpin: rouletteState.lastSpin,
+            remaining: remaining,
+            mysteryPool: rouletteState.mysteryPool,
+            ad: null,
+            lastWinner: rouletteState.lastWinner,
+            bigWinner: rouletteState.bigWinner
+        };
+        
+        // 如果是result階段，隨機決定是否顯示廣告
+        if (rouletteState.phase === 'result' && rouletteState.lastSpin && Math.random() < ROULETTE_AD_RATE) {
+            response.ad = getNextRouletteAd();
+        }
+        console.log('roulette/status 回應:', JSON.stringify(response));
+        res.json(response);
+    } catch(e) {
+        console.log('roulette/status 錯誤:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 每日任務和連續登入 API
+app.get('/api/roulette/daily-tasks', async (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.json({ success: false, message: '缺少 username' });
+    
+    if (LOCAL_TEST_MODE) {
+        const stats = localStats[username] || { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: {} };
+        await checkAndResetDailyTasks(username);
+        const today = new Date().toISOString().split('T')[0];
+        const todayClaims = (stats.completed_tasks && stats.completed_tasks[today]) ? stats.completed_tasks[today] : [];
+        const tasks = DAILY_TASKS.map(t => {
+            const conditionMet = t.condition(stats);
+            const alreadyClaimed = todayClaims.includes(t.id);
+            return { ...t, completed: conditionMet, alreadyClaimed };
+        });
+        return res.json({ success: true, tasks, streak: stats.login_streak, streakTitle: stats.streak_title, stats: { betCount: stats.bet_count_today, winsCount: stats.wins_today, mysteryBets: stats.mystery_bets_today } });
+    }
+    
+    await checkAndResetDailyTasks(username);
+    
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, login_streak, streak_title, last_login_date, completed_tasks FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, login_streak: 0, streak_title: '', last_login_date: '', completed_tasks: '[]' };
+        if (r.rows && r.rows.length > 0) {
+            playerStats = { ...playerStats, ...r.rows[0] };
+        }
+        
+        // Parse completed tasks (date-keyed object)
+        let completedTasks = {};
+        try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
+        const today = new Date().toISOString().split('T')[0];
+        const todayClaims = completedTasks[today] || [];
+        
+        const tasks = DAILY_TASKS.map(t => {
+            const conditionMet = t.condition(playerStats);
+            const alreadyClaimed = todayClaims.includes(t.id);
+            return { ...t, completed: conditionMet, alreadyClaimed };
+        });
+        
+        res.json({
+            success: true,
+            tasks,
+            streak: playerStats.login_streak || 0,
+            streakTitle: playerStats.streak_title || '',
+            stats: {
+                betCount: playerStats.bet_count_today || 0,
+                winsCount: playerStats.wins_today || 0,
+                mysteryBets: playerStats.mystery_bets_today || 0
+            }
+        });
+    } catch(e) {
+        console.log('取得每日任務失敗:', e.message);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/roulette/claim-login', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '缺少 username' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        await checkAndResetDailyTasks(username);
+        const result = await processLoginStreak(username);
+        if (result.alreadyClaimed) return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
+        if (result.bonus > 0 && localPlayers[username]) localPlayers[username].score += result.bonus;
+        const newScore = localPlayers[username]?.score || 0;
+        return res.json({ success: true, message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`, streak: result.streak, bonus: result.bonus, title: result.title, newScore });
+    }
+    
+    await checkAndResetDailyTasks(username);
+    const result = await processLoginStreak(username);
+    
+    if (result.alreadyClaimed) {
+        return res.json({ success: false, message: '今天已領取過登入獎勵', streak: result.streak, streakTitle: result.title });
+    }
+    
+    // 發放獎勵
+    if (result.bonus > 0 && rouletteDb) {
+        await rouletteDb.execute({
+            sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+            args: [result.bonus, username]
+        });
+    }
+    
+    let newScore = 0;
+    if (rouletteDb) {
+        const r = await rouletteDb.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [username] });
+        if (r.rows && r.rows.length > 0) newScore = r.rows[0].score;
+    }
+    
+    res.json({
+        success: true,
+        message: `連續登入 Day ${result.streak}！獲得 $${result.bonus}`,
+        streak: result.streak,
+        bonus: result.bonus,
+        title: result.title,
+        newScore
+    });
+});
+
+app.post('/api/roulette/claim-task', async (req, res) => {
+    const { username, taskId } = req.body;
+    if (!username || !taskId) return res.json({ success: false, message: '缺少資料' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        await checkAndResetDailyTasks(username);
+        const stats = localStats[username];
+        const today = new Date().toISOString().split('T')[0];
+        if (!stats.completed_tasks) stats.completed_tasks = {};
+        const todayClaims = stats.completed_tasks[today] || [];
+        if (todayClaims.includes(taskId)) {
+            return res.json({ success: false, message: '今天已領取過了', alreadyClaimed: true });
+        }
+        const task = DAILY_TASKS.find(t => t.id === taskId);
+        if (!task) return res.json({ success: false, message: '任務不存在' });
+        if (!task.condition(stats)) return res.json({ success: false, message: '任務尚未完成' });
+        if (localPlayers[username]) localPlayers[username].score += task.reward;
+        if (!stats.completed_tasks[today]) stats.completed_tasks[today] = [];
+        stats.completed_tasks[today].push(taskId);
+        const newScore = localPlayers[username]?.score || 0;
+        return res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
+    }
+    
+    await checkAndResetDailyTasks(username);
+    
+    try {
+        const r = await rouletteDb.execute({
+            sql: 'SELECT bet_count_today, wins_today, mystery_bets_today, completed_tasks FROM roulette_player_stats WHERE username = ?',
+            args: [username]
+        });
+        
+        let playerStats = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, completed_tasks: '[]' };
+        if (r.rows && r.rows.length > 0) {
+            playerStats = { ...playerStats, ...r.rows[0] };
+        }
+        
+        // Parse completed tasks
+        const today = new Date().toISOString().split('T')[0];
+        let completedTasks = {};
+        try { completedTasks = JSON.parse(playerStats.completed_tasks || '{}'); } catch(e) {}
+        const todayClaims = completedTasks[today] || [];
+        if (todayClaims.includes(taskId)) {
+            return res.json({ success: false, message: '今天已領取過了', alreadyClaimed: true });
+        }
+        
+        const task = DAILY_TASKS.find(t => t.id === taskId);
+        if (!task) return res.json({ success: false, message: '任務不存在' });
+        if (!task.condition(playerStats)) return res.json({ success: false, message: '任務尚未完成' });
+        
+        // 發放獎勵
+        if (rouletteDb) {
+            await rouletteDb.execute({
+                sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+                args: [task.reward, username]
+            });
+        }
+        
+        // 標記任務已完成
+        const newTodayClaims = [...todayClaims, taskId];
+            const newCompleted = { ...completedTasks, [today]: newTodayClaims };
+        if (rouletteDb) {
+            await rouletteDb.execute({
+                sql: 'UPDATE roulette_player_stats SET completed_tasks = ? WHERE username = ?',
+                args: [JSON.stringify(newCompleted), username]
+            });
+        }
+        
+        let newScore = 0;
+        if (rouletteDb) {
+            const r2 = await rouletteDb.execute({ sql: 'SELECT score FROM players WHERE username = ?', args: [username] });
+            if (r2.rows && r2.rows.length > 0) newScore = r2.rows[0].score;
+        }
+        
+        res.json({ success: true, message: `完成任務「${task.name}」！獲得 $${task.reward}`, reward: task.reward, newScore });
+    } catch(e) {
+        console.log('領取任務獎勵失敗:', e.message);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/roulette/bet', async (req, res) => {
+    if (rouletteState.phase !== 'betting') {
+        return res.json({ success: false, message: '現在不能下注', phase: rouletteState.phase });
+    }
+    
+    const { username, betType, amount, color, choice, number } = req.body;
+    
+    if (!username || !amount || amount < 10) {
+        return res.json({ success: false, message: '請輸入正確的金額' });
+    }
+    
+    // 原子扣款：一步完成，餘額不足會失敗
+    console.log('🔴 ATOMIC BET TEST: username=' + username + ', amount=' + amount);
+    if (LOCAL_TEST_MODE) {
+        if ((localPlayers[username]?.score || 0) < amount) {
+            return res.json({ success: false, message: '餘額不足，無法下注' });
+        }
+        localPlayers[username].score -= amount;
+    } else if (rouletteDbAvailable) {
+        const deductResult = await rouletteDb.execute({
+            sql: `UPDATE players SET score = score - ? WHERE username = ? AND score >= ?`,
+            args: [amount, username, amount]
+        });
+        console.log('🔴 rowsAffected=', deductResult.rowsAffected);
+        if (deductResult.rowsAffected === 0) {
+            return res.json({ success: false, message: '餘額不足，無法下注' });
+        }
+    }
+    
+    // 隨機獎勵：3% 機會觸發 200 分 bonus
+    let bonusTriggered = false;
+    let bonusAmount = 0;
+    if (Math.random() < 0.03) {
+        bonusTriggered = true;
+        bonusAmount = 200;
+        console.log('🎁 隨機獎勵觸發! username:', username, 'bonus:', bonusAmount);
+        
+        // 立即發放獎勵到帳戶
+        if (LOCAL_TEST_MODE) {
+            if (localPlayers[username]) localPlayers[username].score += bonusAmount;
+        } else if (rouletteDbAvailable) {
+            rouletteDb.execute({
+                sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                args: [bonusAmount, username]
+            }).catch(e => console.log('發放隨機獎勵失敗:', e.message));
+        }
+    }
+    
+    // 1% 进神秘彩池（所有下注都进）
+    const poolContribution = Math.floor(amount * 0.01);
+    rouletteState.mysteryPool += poolContribution;
+        saveMysteryPool();
+    // 取回玩家最新分數並回傳
+    let newPlayerScore = 0;
+    if (rouletteDbAvailable) {
+        try {
+            const scoreResult = await rouletteDb.execute({
+                sql: `SELECT score FROM players WHERE username = ?`,
+                args: [username]
+            });
+            if (scoreResult.rows && scoreResult.rows.length > 0) {
+                newPlayerScore = scoreResult.rows[0].score;
+            }
+        } catch(e) { console.log('取回分數失敗:', e.message); }
+    } else if (LOCAL_TEST_MODE) {
+        newPlayerScore = localPlayers[username]?.score || 0;
+    }
+    console.log('下注进彩池: $' + poolContribution + ', 彩池总计: $' + rouletteState.mysteryPool);
+    
+    // 更新每日任務計數
+    await checkAndResetDailyTasks(username);
+    const isMystery = (betType === 'number' && choice === '0');
+    
+    // 每週結算：檢查是否需要重置
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const isMonday = dayOfWeek === 1;
+    
+    if (LOCAL_TEST_MODE) {
+        // LOCAL_TEST_MODE: 更新記憶體中的 weekly_bet 和 任務計數
+        if (!localPlayers[username]) localPlayers[username] = { weekly_bet: 0 };
+        localPlayers[username].weekly_bet = (localPlayers[username].weekly_bet || 0) + amount;
+        if (!localStats[username]) localStats[username] = { bet_count_today: 0, wins_today: 0, mystery_bets_today: 0, last_task_reset: '', last_login_date: '', login_streak: 0, streak_title: '' };
+        localStats[username].bet_count_today = (localStats[username].bet_count_today || 0) + 1;
+        if (isMystery) localStats[username].mystery_bets_today = (localStats[username].mystery_bets_today || 0) + 1;
+    } else if (rouletteDbAvailable) {
+        rouletteDb.execute({
+            sql: 'UPDATE roulette_player_stats SET bet_count_today = bet_count_today + 1' + (isMystery ? ', mystery_bets_today = mystery_bets_today + 1' : '') + ', weekly_bet = weekly_bet + ? WHERE username = ?',
+            args: [amount, username]
+        }).catch(e => console.log('更新下注失敗:', e.message));
+    }
+    
+    // 寵物經驗值加成
+    addPetXp(username, amount);
+    
+    // 計算等級（每週結算）
+    const level = calculateLevel(amount); // 仮：每筆下注都算 level up
+    
+    res.json({ success: true, message: '下注成功！', bonusTriggered, bonusAmount, poolContribution, mysteryPool: rouletteState.mysteryPool, newScore: newPlayerScore, level });
+
+// 看片領金幣
+app.post('/api/roulette/claim-video', async (req, res) => {
+    console.log('>>> claim-video called, body:', JSON.stringify(req.body));
+    const { username } = req.body;
+    if (!username) return res.json({ success: false, message: '請先登入' });
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (LOCAL_TEST_MODE) {
+        const player = localPlayers[username];
+        if (!player) return res.json({ success: false, message: '玩家不存在' });
+        if (player.lastVideoClaim === today) {
+            return res.json({ success: false, message: '今天已領過了，明天再來！' });
+        }
+        player.score += 1000;
+        player.lastVideoClaim = today;
+        return res.json({ success: true, amount: 1000, newScore: player.score });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '伺服器維護中' });
+    }
+    
+    try {
+        const check = await rouletteDb.execute({
+            sql: `SELECT lastVideoClaim FROM players WHERE username = ?`,
+            args: [username]
+        });
+        
+        if (check.rows && check.rows.length > 0) {
+            const last = check.rows[0].lastVideoClaim || '';
+            if (last === today) {
+                return res.json({ success: false, message: '今天已領過了，明天再來！' });
+            }
+        }
+        
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = score + 1000, lastVideoClaim = ? WHERE username = ?`,
+            args: [today, username]
+        });
+        
+        const scoreResult = await rouletteDb.execute({
+            sql: `SELECT score FROM players WHERE username = ?`,
+            args: [username]
+        });
+        const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
+        
+        console.log('看片領金幣成功:', username, '+1000');
+        res.json({ success: true, amount: 1000, newScore });
+    } catch(e) {
+        console.log('claim-video錯誤:', e.message);
+        res.json({ success: false, message: '領取失敗，請稍後再試' });
+    }
+});
+
+});
+
+// 輪盤遊戲 - 註冊
+app.post('/api/roulette/register', async (req, res) => {
+    console.log('收到註冊請求:', req.body);
+    const { username, password, realname, phone, email } = req.body;
+    if (!username || !password) {
+        console.log('缺少帳號或密碼');
+        return res.json({ success: false, message: '請填寫帳號和密碼' });
+    }
+    
+    // 台灣手機號碼驗證
+    if (phone && phone.trim()) {
+        const phoneRegex = /^09[0-9]{8}$/;
+        if (!phoneRegex.test(phone.trim())) {
+            console.log('電話格式不符:', phone);
+            return res.json({ success: false, message: '電話格式錯誤，請輸入正確的台灣手機號碼（例：0912345678）' });
+        }
+    }
+    
+    // 電子郵件必填+格式驗證
+    if (!email || !email.trim()) {
+        return res.json({ success: false, message: '請填寫電子郵件地址' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        console.log('Email格式不符:', email);
+        return res.json({ success: false, message: 'Email格式錯誤，請輸入正確的電子郵件地址' });
+    }
+    
+    // 處理邀請碼
+    const { inviteCode } = req.body;
+    let inviterBonus = 0;
+    
+    // 驗證邀請碼是否存在（可選：邀請人不能是自己）
+    if (inviteCode && inviteCode === username) {
+        return res.json({ success: false, message: '邀請碼無效' });
+    }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            return res.json({ success: false, message: '帳號已存在' });
+        }
+        localPlayers[username] = { password, score: 1000, realname, phone, email, invitedBy: inviteCode || null };
+        // 邀請人獲得獎勵
+        if (inviteCode && localPlayers[inviteCode]) {
+            localPlayers[inviteCode].score += 200;
+            inviterBonus = 200;
+            console.log('邀請獎勵發放:', inviteCode, '+200, 帳戶:', localPlayers[inviteCode].score);
+        }
+        console.log('本地測試模式：註冊成功, username:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
+        return res.json({ success: true, message: '註冊成功！', inviterBonus });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        console.log('輪盤資料庫不可用');
+        return res.json({ success: false, message: '伺服器維護中' });
+    }
+    
+    try {
+        console.log('嘗試註冊用戶到輪盤資料庫:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
+        
+        // 先檢查帳號是否已存在
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('資料庫操作超時')), 5000);
+        });
+        
+        // 只檢查有值的phone/email，避免空字串匹配既有用戶
+        let checkSql = `SELECT id FROM players WHERE username = ?`;
+        let checkArgs = [username];
+        if (phone && phone.trim()) {
+            checkSql += ` OR phone = ?`;
+            checkArgs.push(phone.trim());
+        }
+        if (email && email.trim()) {
+            checkSql += ` OR email = ?`;
+            checkArgs.push(email.trim());
+        }
+        
+        const checkPromise = rouletteDb.execute({ sql: checkSql, args: checkArgs });
+        
+        const checkResult = await Promise.race([checkPromise, timeoutPromise]);
+        
+        if (checkResult.rows && checkResult.rows.length > 0) {
+            // 檢查是哪個重複
+            const existing = checkResult.rows[0];
+            // 這裡不做嚴格區分，統一提示
+            console.log('註冊重複, username:', username, 'phone:', phone, 'email:', email);
+            return res.json({ success: false, message: '此電話或信箱已被註冊過' });
+        }
+        
+        // 帳號不存在，執行註冊（嘗試包含新欄位）
+        try {
+            const executePromise = rouletteDb.execute({
+                sql: `INSERT INTO players (username, password, score, realname, phone, email, invite_code, used_invite_code) VALUES (?, ?, 1000, ?, ?, ?, ?, ?)`,
+                args: [username, password, realname || '', phone || '', email || '', username, inviteCode || '']
+            });
+            await Promise.race([executePromise, timeoutPromise]);
+        } catch(dbErr) {
+            // 如果新欄位不存在，退回只插入基本欄位
+            console.log('新欄位插入失敗，退回基本欄位:', dbErr.message);
+            const fallbackPromise = rouletteDb.execute({
+                sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 1000)`,
+                args: [username, password]
+            });
+            await Promise.race([fallbackPromise, timeoutPromise]);
+        }
+        
+        console.log('✅ 註冊成功, username:', username);
+        // 邀請人獎勵
+        if (inviteCode && inviteCode !== username) {
+            // 先檢查邀請人是否存在（跟撲克一模一樣的邏輯）
+            const inviterCheck = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [inviteCode]).catch(e => null);
+            if (inviterCheck && inviterCheck.rows && inviterCheck.rows.length > 0) {
+                // 邀請人存在，發放獎勵（跟撲克一样：立即發放 + 記錄 claimed=0）
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] });
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] });
+                // 記錄到 roulette_invites（claimed=0 等之後領取，跟撲克一样）
+                await rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] });
+                inviterBonus = 200;
+                console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
+            } else {
+                // 邀請碼無效，不發放獎勵
+                console.log('邀請碼無效:', inviteCode);
+            }
+        }
+        res.json({ success: true, message: '註冊成功！獲得 1,000 遊戲金' + (inviterBonus > 0 ? '（含邀請獎勵 200 金幣）' : ''), inviterBonus });
+    } catch(e) {
+        console.log('註冊失敗, error:', e.message);
+        // 細分錯誤類型
+        if (e.message.includes('UNIQUE') || e.message.includes('duplicate') || e.message.includes('已存在')) {
+            res.json({ success: false, message: '此帳號或電話/信箱已被註冊過' });
+        } else {
+            res.json({ success: false, message: '註冊失敗，請稍後再試' });
+        }
+    }
+});
+
+// 輪盤遊戲 - 登入
+app.post('/api/roulette/login', async (req, res) => {
+    const { username, password } = req.body;
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username] && localPlayers[username].password === password) {
+            console.log('本地測試模式：登入成功, username:', username, 'score:', localPlayers[username].score);
+            playerJoined();
+            return res.json({ success: true, player: { username, score: localPlayers[username].score } });
+        }
+        return res.json({ success: false, message: '帳號或密碼錯誤' });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM players WHERE username = ? AND password = ?`,
+            args: [username, password]
+        });
+        
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            
+            // 每日登入獎勵：先用 lastLogin 欄位判斷（如果欄位存在且有效才發放）
+            // 如果 lastLogin 欄位不存在或無效，則不發放（避免每次登入都發放）
+            let dailyBonus = 0;
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const lastLogin = row.lastLogin;
+            
+            // 只在 lastLogin 有值且不是今天時才發放（或是空值也表示從未領過，直接發放）
+            if (!lastLogin || lastLogin !== today) {
+                dailyBonus = 500;
+                console.log('每日登入獎勵! username:', username, 'bonus:', dailyBonus);
+                try {
+                    await rouletteDb.execute({
+                        sql: `UPDATE players SET lastLogin = ?, score = score + ? WHERE username = ?`,
+                        args: [today, dailyBonus, username]
+                    });
+                } catch(e) {
+                    console.log('更新每日獎勵失敗:', e.message);
+                }
+            }
+            
+            const newScore = (row.score || 0) + dailyBonus;
+            console.log('輪盤登入成功, username:', username, 'score:', newScore, 'dailyBonus:', dailyBonus, 'lastLogin:', lastLogin);
+            playerJoined(); // 通知有玩家加入
+            res.json({ success: true, player: { id: row.id, username: row.username, score: newScore, wins: row.wins || 0, losses: row.losses || 0, dailyBonus } });
+        } else {
+            res.json({ success: false, message: '帳號或密碼錯誤' });
+        }
+    } catch(e) {
+        console.log('輪盤登入失敗:', e.message);
+        res.json({ success: false, message: '登入失敗' });
+    }
+});
+
+// 輪盤遊戲 - 排行榜
+app.get('/api/roulette/leaderboard', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        // 本地模式：取 localPlayers 前10名（含稱號）
+        const sorted = Object.entries(localPlayers)
+            .map(([username, data]) => {
+                const weeklyBet = data.weekly_bet || 0;
+                const levelInfo = getLevelInfo(weeklyBet);
+                return { username, score: data.score || 0, ...levelInfo };
+            })
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
+        return res.json({ success: true, leaderboard: sorted });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT p.username, p.score, s.weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username ORDER BY p.score DESC LIMIT 15`
+        });
+        // 加入稱號
+        const leaderboard = (result.rows || []).map(r => {
+            const weeklyBet = r.weekly_bet || 0;
+            const levelInfo = getLevelInfo(weeklyBet);
+            return { username: r.username, score: r.score, ...levelInfo };
+        });
+        console.log('排行榜查詢成功, count:', result.rows?.length || 0);
+        res.json({ success: true, leaderboard });
+    } catch(e) {
+        console.log('排行榜查詢失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
+    }
+});
+
+// 每週排行榜獎勵發放（每週一凌晨結算）
+function processWeeklyRewards() {
+    const today = new Date().toISOString().split('T')[0];
+    if (lastWeeklyReset === today) return; // 今天已結算
+    
+    // 檢查是否週一（ISO weekday: 1 = Monday）
+    const dayOfWeek = new Date().getDay();
+    if (dayOfWeek !== 1) return; // 不是週一不結算
+    
+    console.log('🎁 開始結算每週排行榜獎勵...');
+    
+    if (LOCAL_TEST_MODE) {
+        // 本地模式：取前三名發獎
+        const sorted = Object.entries(localPlayers)
+            .map(([username, data]) => ({ username, score: data.score || 0 }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
+        
+        const rewards = [1000, 800, 500];
+        sorted.forEach((player, i) => {
+            if (localPlayers[player.username]) {
+                localPlayers[player.username].score += rewards[i];
+                console.log(`每週獎勵: ${player.username} +${rewards[i]}`);
+            }
+        });
+    } else if (rouletteDbAvailable) {
+        // 資料庫模式：查前三名並發獎
+        rouletteDb.execute({
+            sql: `SELECT username, score FROM players ORDER BY score DESC LIMIT 3`
+        }).then(result => {
+            const rewards = [1000, 800, 500];
+            (result.rows || []).forEach((player, i) => {
+                rouletteDb.execute({
+                    sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+                    args: [rewards[i], player.username]
+                }).then(() => {
+                    console.log(`每週獎勵: ${player.username} +${rewards[i]}`);
+                    // 發 Discord 公告
+                    fetch(DISCORD_WEBHOOK, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: `🏆 **每週排行榜獎勵**\n🥇 ${result.rows[0]?.username || '-'} +1000分\n🥈 ${result.rows[1]?.username || '-'} +800分\n🥉 ${result.rows[2]?.username || '-'} +500分`
+                        })
+                    });
+                });
+            });
+        });
+    }
+    
+    lastWeeklyReset = today;
+    
+    // 重置所有玩家的 weekly_bet（每週重新計算階級）
+    if (LOCAL_TEST_MODE) {
+        Object.keys(localPlayers).forEach(u => { localPlayers[u].weekly_bet = 0; });
+    } else if (rouletteDbAvailable) {
+        rouletteDb.execute({ sql: 'UPDATE roulette_player_stats SET weekly_bet = 0' }).catch(e => console.log('重置週投注失敗:', e.message));
+    }
+    console.log('🔄 每週階級已重置');
+}
+
+// 每小時檢查一次是否需要結算
+setInterval(processWeeklyRewards, 3600000);
+processWeeklyRewards(); // 啟動時也檢查一次
+
+// 輪盤遊戲 - 更新余額
+app.post('/api/roulette/update-score', async (req, res) => {
+    const { username, newScore } = req.body;
+    if (!username || typeof newScore !== 'number') {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            localPlayers[username].score = newScore;
+        }
+        return res.json({ success: true });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = ? WHERE username = ?`,
+            args: [newScore, username]
+        });
+        console.log('更新余額成功, username:', username, 'newScore:', newScore);
+        res.json({ success: true });
+    } catch(e) {
+        console.log('更新余額失敗:', e.message);
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+// 輪盤遊戲 - 管理員：修改玩家餘額（老闆用）
+app.post('/api/roulette/admin/update-score', async (req, res) => {
+    const { username, amount } = req.body;
+    if (!username || amount === undefined) {
+        return res.json({ success: false, message: '請提供 username 和 amount' });
+    }
+    
+    const delta = parseInt(amount);
+    if (isNaN(delta)) {
+        return res.json({ success: false, message: 'amount 必須是數字' });
+    }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[username]) {
+            localPlayers[username].score += delta;
+        }
+        return res.json({ success: true, message: `已將 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}` });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    
+    try {
+        // 先取得目前分數
+        const current = await rouletteDb.execute({
+            sql: `SELECT score FROM players WHERE username = ?`,
+            args: [username]
+        });
+        await rouletteDb.execute({
+            sql: `UPDATE players SET score = score + ? WHERE username = ?`,
+            args: [delta, username]
+        });
+        const newScore = current.rows && current.rows.length > 0 ? current.rows[0].score + delta : delta;
+        console.log(`管理員更新 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}`);
+        res.json({ success: true, message: `已將 ${username} 的餘額${delta >= 0 ? '加' : '減'}${Math.abs(delta)}`, newScore });
+    } catch(e) {
+        console.log('更新餘額失敗:', e.message);
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+// 管理員設定寵物等級
+app.post('/api/roulette/admin/set-pet-level', async (req, res) => {
+    const { username, pet_level } = req.body;
+    if (!username || pet_level === undefined) {
+        return res.json({ success: false, message: '請提供 username 和 pet_level' });
+    }
+    
+    const level = parseInt(pet_level);
+    if (isNaN(level) || level < 1) {
+        return res.json({ success: false, message: 'pet_level 必須是大於 0 的數字' });
+    }
+    
+    try {
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_pets SET pet_level = ?, pet_xp = 0 WHERE username = ?`,
+            args: [level, username]
+        });
+        res.json({ success: true, message: `已將 ${username} 的寵物等級設為 ${level}` });
+    } catch(e) {
+        res.json({ success: false, message: '更新失敗: ' + e.message });
+    }
+});
+
+// 玩家上報中獎結果，伺服器廣播給所有人
+async function saveWinnerState() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('lastWinner', ?)`, args: [JSON.stringify(rouletteState.lastWinner)] });
+        await rouletteDb.execute({ sql: `INSERT OR REPLACE INTO game_config (key, value) VALUES ('bigWinner', ?)`, args: [JSON.stringify(rouletteState.bigWinner)] });
+    } catch(e) { console.log('保存贏家狀態失敗:', e.message); }
+}
+
+async function loadWinnerState() {
+    if (LOCAL_TEST_MODE || !rouletteDb) return;
+    try {
+        const lw = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['lastWinner'] });
+        if (lw.rows && lw.rows.length > 0 && lw.rows[0].value && lw.rows[0].value !== 'null') {
+            try { rouletteState.lastWinner = JSON.parse(lw.rows[0].value); } catch(e) {}
+        }
+        const bw = await rouletteDb.execute({ sql: 'SELECT value FROM game_config WHERE key = ?', args: ['bigWinner'] });
+        if (bw.rows && bw.rows.length > 0 && bw.rows[0].value && bw.rows[0].value !== 'null') {
+            try { rouletteState.bigWinner = JSON.parse(bw.rows[0].value); } catch(e) {}
+        }
+    } catch(e) { console.log('載入贏家狀態失敗:', e.message); }
+}
+
+app.post('/api/roulette/report-winner', async (req, res) => {
+    const { username, winAmount, type } = req.body;
+    if (!username || winAmount === undefined) return res.json({ success: false });
+    
+    if (type === 'mystery') {
+        rouletteState.lastWinner = { username, amount: winAmount, type: 'mystery', winnersCount: 1, winnersList: username };
+        console.log('🎁 神秘中獎廣播:', username, 'win', winAmount);
+    }
+    if (winAmount >= 1000) {
+        rouletteState.bigWinner = { username, amount: winAmount };
+        console.log('🏆 大贏家廣播:', username, 'win', winAmount);
+    }
+    await saveWinnerState();
+    res.json({ success: true });
+});
+
+// 輪盤遊戲 - 管理員：修補資料庫（新增lastVideoClaim欄位）
+app.post('/api/roulette/admin/fix-video-claim', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    try {
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN lastVideoClaim TEXT DEFAULT ''`
+        });
+        console.log('已新增 lastVideoClaim 欄位');
+        res.json({ success: true, message: '已新增 lastVideoClaim 欄位' });
+    } catch(e) {
+        if (e.message.includes('duplicate column') || e.message.includes('already exists')) {
+            res.json({ success: true, message: 'lastVideoClaim 欄位已存在' });
+        } else {
+            console.log('修補失敗:', e.message);
+            res.json({ success: false, message: '修補失敗: ' + e.message });
+        }
+    }
+});
+
+// 輪盤遊戲 - 管理員：修補資料庫（新增lastLogin欄位）
+app.post('/api/roulette/admin/fix-daily-bonus', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    try {
+        // 嘗試新增 lastLogin 欄位（如果已存在會失敗，但這是預期的）
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN lastLogin TEXT DEFAULT ''`
+        });
+        console.log('已新增 lastLogin 欄位');
+        
+        // 嘗試新增 mood 欄位（如果已存在會失敗，但這是預期的）
+        await rouletteDb.execute({
+            sql: `ALTER TABLE players ADD COLUMN mood TEXT DEFAULT ''`
+        });
+        console.log('已新增 mood 欄位');
+        res.json({ success: true, message: '已新增 lastLogin 欄位' });
+    } catch(e) {
+        if (e.message.includes('duplicate column')) {
+            res.json({ success: true, message: 'lastLogin 欄位已存在' });
+        } else {
+            console.log('修補失敗:', e.message);
+            res.json({ success: false, message: '修補失敗: ' + e.message });
+        }
+    }
+});
+
+// 輪盤遊戲 - 管理員：修改玩家帳號名稱
+
+// 管理員手動設定彩池
+app.post('/api/roulette/admin/set-pool', async (req, res) => {
+    const { amount } = req.body;
+    if (typeof amount !== 'number' || amount < 0) {
+        return res.json({ success: false, message: '無效金額' });
+    }
+    rouletteState.mysteryPool = amount;
+    await saveMysteryPool();
+    console.log('管理員設定彩池為:', amount);
+    res.json({ success: true, message: '彩池已設為 $' + amount, mysteryPool: amount });
+});
+
+app.post('/api/roulette/admin/update-username', async (req, res) => {
+    const { oldUsername, newUsername } = req.body;
+    if (!oldUsername || !newUsername) {
+        return res.json({ success: false, message: '請提供 oldUsername 和 newUsername' });
+    }
+    
+    if (LOCAL_TEST_MODE) {
+        if (localPlayers[oldUsername]) {
+            localPlayers[newUsername] = { ...localPlayers[oldUsername] };
+            delete localPlayers[oldUsername];
+        }
+        return res.json({ success: true, message: `已將 ${oldUsername} 改為 ${newUsername}` });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) {
+        return res.json({ success: false, message: '資料庫不可用' });
+    }
+    
+    try {
+        // 檢查新帳號是否已存在
+        const check = await rouletteDb.execute({
+            sql: `SELECT id FROM players WHERE username = ?`,
+            args: [newUsername]
+        });
+        if (check.rows && check.rows.length > 0) {
+            return res.json({ success: false, message: '新帳號已存在' });
+        }
+        
+        await rouletteDb.execute({
+            sql: `UPDATE players SET username = ? WHERE username = ?`,
+            args: [newUsername, oldUsername]
+        });
+        console.log(`管理員將 ${oldUsername} 改為 ${newUsername}`);
+        res.json({ success: true, message: `已將 ${oldUsername} 改為 ${newUsername}` });
+    } catch(e) {
+        console.log('修改帳號失敗:', e.message);
+        res.json({ success: false, message: '修改失敗' });
+    }
+});
+
+// 輪盤遊戲 - 保存歷史記錄
+app.post('/api/roulette/save-history', async (req, res) => {
+    const { username, result, color, win, amount } = req.body;
+    if (!username) {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        localHistory.unshift({ username, result, color, win, amount });
+        if (localHistory.length > 100) localHistory.pop();
+        return res.json({ success: true });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await rouletteDb.execute({
+            sql: `INSERT INTO roulette_history (username, result, color, win, amount) VALUES (?, ?, ?, ?, ?)`,
+            args: [username, result, color, win ? 1 : 0, amount]
+        });
+        // 更新玩家統計資料表
+        try {
+            await rouletteDb.execute({
+                sql: `INSERT INTO roulette_player_stats (username, total_bets, total_wins, total_losses, total_win_amount, total_lose_amount) VALUES (?, 1, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET total_bets = total_bets + 1, total_wins = total_wins + ?, total_losses = total_losses + ?, total_win_amount = total_win_amount + ?, total_lose_amount = total_lose_amount + ?`,
+                args: [username, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount, win ? 1 : 0, win ? 0 : 1, win ? amount : 0, win ? 0 : amount]
+            });
+            // 更新每日任務勝利次數
+            if (win) {
+                rouletteDb.execute({
+                    sql: 'UPDATE roulette_player_stats SET wins_today = wins_today + 1 WHERE username = ?',
+                    args: [username]
+                }).catch(e3 => console.log('更新勝利計數失敗:', e3.message));
+            }
+        } catch(e2) {
+            console.log('更新玩家統計失敗:', e2.message);
+        }
+        res.json({ success: true });
+    } catch(e) {
+        console.log('保存歷史失敗:', e.message);
+        res.json({ success: false, message: '保存失敗' });
+    }
+});
+
+// 輪盤遊戲 - 玩家反饋（發送到 Discord）
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1491323033952473098/OYa经营活动/PhCXZ4K_gREhKGjd1YPaXp0nGdCXa4xYqJqJ8SpW7Y1lvNM3sMh-FqLGRm3Z4qZq';
+
+app.post('/api/roulette/feedback', async (req, res) => {
+    const { username, feedback } = req.body;
+    if (!username || !feedback) {
+        return res.json({ success: false, message: '參數錯誤' });
+    }
+    
+    console.log('收到玩家反饋:', username, '-', feedback);
+    
+    // 本地模式：存入 localFeedback
+    if (LOCAL_TEST_MODE) {
+        localFeedback.unshift({ username, feedback, time: new Date().toISOString() });
+    } else if (rouletteDbAvailable) {
+        // 存入資料庫
+        try {
+            await rouletteDb.execute({
+                sql: `INSERT INTO roulette_feedback (username, feedback, createdAt) VALUES (?, ?, ?)`,
+                args: [username, feedback, new Date().toISOString()]
+            });
+        } catch(e) {
+            // 表格可能不存在，先建立
+            try {
+                await rouletteDb.execute({
+                    sql: `CREATE TABLE IF NOT EXISTS roulette_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, feedback TEXT, createdAt TEXT)`
+                });
+                await rouletteDb.execute({
+                    sql: `INSERT INTO roulette_feedback (username, feedback, createdAt) VALUES (?, ?, ?)`,
+                    args: [username, feedback, new Date().toISOString()]
+                });
+            } catch(e2) {
+                console.log('儲存反饋失敗:', e2.message);
+            }
+        }
+    }
+    
+    // 發送到 Discord
+    try {
+        await fetch(DISCORD_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: `📩 **輪盤遊戲反饋**\n👤 玩家：**${username}**\n💬 內容：${feedback}`
+            })
+        });
+    } catch(e) {
+        console.log('發送 Discord 失敗:', e.message);
+    }
+    
+    res.json({ success: true });
+});
+
+// 輪盤遊戲 - 管理員：查看所有玩家輸贏統計
+app.get('/api/roulette/admin/stats', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        return res.json({ success: true, stats: [] });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, COUNT(*) as total_bets, SUM(amount) as total_staked, SUM(win) as net_profit FROM roulette_history GROUP BY username ORDER BY net_profit DESC`
+        });
+        res.json({ success: true, stats: result.rows || [] });
+    } catch(e) {
+        console.log('查詢統計失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
+    }
+});
+
+// 輪盤遊戲 - 管理員：查看所有反饋
+app.get('/api/roulette/admin/feedback', async (req, res) => {
+    if (LOCAL_TEST_MODE) {
+        return res.json({ success: true, feedback: localFeedback.slice(0, 50) });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_feedback ORDER BY id DESC LIMIT 100`
+        });
+        res.json({ success: true, feedback: result.rows || [] });
+    } catch(e) {
+        console.log('查詢反饋失敗:', e.message);
+        res.json({ success: false, message: '查詢失敗' });
+    }
+});
+
+// 輪盤遊戲 - 清理過多歷史（最多保留1000筆）
+async function cleanupOldHistory() {
+    if (!rouletteDbAvailable) return;
+    try {
+        // 取得1000筆之後的ID並刪除
+        const result = await rouletteDb.execute({
+            sql: `SELECT id FROM roulette_history ORDER BY id DESC LIMIT 1 OFFSET 1000`
+        });
+        if (result.rows && result.rows.length > 0) {
+            const cutoffId = result.rows[0].id;
+            await rouletteDb.execute({
+                sql: `DELETE FROM roulette_history WHERE id < ?`,
+                args: [cutoffId]
+            });
+            console.log('清理了舊歷史記錄');
+        }
+    } catch(e) {
+        console.log('清理歷史失敗:', e.message);
+    }
+}
+
+// 每小時清理一次
+setInterval(cleanupOldHistory, 3600000);
+
+// 輪盤遊戲 - 取得歷史記錄
+app.get('/api/roulette/history/:username', async (req, res) => {
+    const { username } = req.params;
+    
+    // 本地測試模式
+    if (LOCAL_TEST_MODE) {
+        const userHistory = localHistory.filter(h => h.username === username).slice(0, 100);
+        return res.json({ history: userHistory });
+    }
+    
+    if (!rouletteDbAvailable) return res.json({ history: [] });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_history WHERE username = ? ORDER BY id DESC LIMIT 100`,
+            args: [username]
+        });
+        res.json({ history: result.rows || [] });
+    } catch(e) {
+        console.log('取得歷史失敗:', e.message);
+        res.json({ history: [] });
+    }
+});
+
+// 骰子遊戲 API（使用 Turso 資料庫）
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.json({ success: false, message: '請填寫帳號和密碼' });
+    if (!dbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        await db.execute({
+            sql: `INSERT INTO players (username, password, score) VALUES (?, ?, 100)`,
+            args: [username, password]
+        });
+        res.json({ success: true, message: '註冊成功！' });
+    } catch(e) {
+        res.json({ success: false, message: '帳號已存在' });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!dbAvailable) return res.json({ success: false, message: '伺服器維護中' });
+    
+    try {
+        const result = await db.execute({
+            sql: `SELECT * FROM players WHERE username = ? AND password = ?`,
+            args: [username, password]
+        });
+        
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            res.json({ success: true, player: { id: row.id, username: row.username, score: row.score, wins: row.wins, losses: row.losses, cheat: row.cheat } });
+        } else {
+            res.json({ success: false, message: '帳號或密碼錯誤' });
+        }
+    } catch(e) {
+        res.json({ success: false, message: '登入失敗' });
+    }
+});
+
+app.get('/api/players', async (req, res) => {
+    if (!dbAvailable) return res.json({ players: [] });
+    
+    try {
+        const result = await db.execute({
+            sql: `SELECT username, score, wins, losses FROM players ORDER BY score DESC LIMIT 20`,
+            args: []
+        });
+        res.json({ players: result.rows || [] });
+    } catch(e) {
+        res.json({ players: [] });
+    }
+});
+
+// Admin: 更新玩家積分
+app.post('/api/admin/update-score', async (req, res) => {
+    const { username, change } = req.body;
+    if (!dbAvailable) return res.json({ success: false, message: '資料庫不可用' });
+    
+    try {
+        await db.execute({
+            sql: 'UPDATE players SET score = score + ? WHERE username = ?',
+            args: [change, username]
+        });
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ success: true, username, newScore: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// Admin: 獲取玩家積分
+app.get('/api/admin/score/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!dbAvailable) return res.json({ score: null });
+    
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ username, score: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ username, score: null });
+    }
+});
+
+// 獲取玩家積分（无需登录）
+app.get('/api/score/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!dbAvailable) return res.json({ score: null });
+    
+    try {
+        const result = await db.execute({
+            sql: 'SELECT score FROM players WHERE username = ?',
+            args: [username]
+        });
+        res.json({ username, score: result.rows?.[0]?.score ?? 0 });
+    } catch(e) {
+        res.json({ username, score: null });
+    }
+});
+
+app.get('/api/player/:username', async (req, res) => {
+    if (!dbAvailable) return res.json({ player: null });
+    
+    try {
+        const result = await db.execute({
+            sql: `SELECT username, score, wins, losses FROM players WHERE username = ?`,
+            args: [req.params.username]
+        });
+        if (result.rows && result.rows.length > 0) {
+            res.json({ player: result.rows[0] });
+        } else {
+            res.json({ player: null });
+        }
+    } catch(e) {
+        res.json({ player: null });
+    }
+});
+
+// 輪盤玩家即時分數 API
+app.get('/api/roulette/player/:username', async (req, res) => {
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ player: null });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT username, score FROM players WHERE username = ?`,
+            args: [req.params.username]
+        });
+        if (result.rows && result.rows.length > 0) {
+            res.json({ player: result.rows[0] });
+        } else {
+            res.json({ player: null });
+        }
+    } catch(e) {
+        res.json({ player: null });
+    }
+});
+
+// ========== 個人資料 API ==========
+app.get('/api/roulette/profile/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    try {
+        let player = null, weeklyBet = 0;
+        if (rouletteDb && rouletteDbAvailable) {
+            // Single JOIN query instead of two separate queries
+            const r = await rouletteDb.execute({
+                sql: `SELECT p.username, p.score, p.realname, p.phone, p.email, p.avatar_url, p.birthday, p.gender, p.personality_tag, p.interest_tag, p.badge_tag, p.mood, COALESCE(s.weekly_bet, 0) as weekly_bet FROM players p LEFT JOIN roulette_player_stats s ON p.username = s.username WHERE p.username = ?`,
+                args: [username]
+            });
+            if (r.rows && r.rows[0]) {
+                player = r.rows[0];
+                weeklyBet = player.weekly_bet || 0;
+            }
+        }
+
+        if (!player) return res.json({ success: false, message: '玩家不存在' });
+
+        let level = 1, tier = '新手', title = '菜鳥';
+        const info = getLevelInfo(weeklyBet);
+        level = info.level;
+        tier = info.tier;
+        title = info.title;
+        
+        res.json({
+            success: true,
+            profile: {
+                username: player.username,
+                score: player.score,
+                avatar_url: player.avatar_url,
+                birthday: player.birthday,
+                gender: player.gender,
+                personality_tag: player.personality_tag,
+                interest_tag: player.interest_tag,
+                badge_tag: player.badge_tag,
+                mood: player.mood || ''
+            },
+            level: level,
+            tier: tier,
+            title: title,
+            weekly_bet: weeklyBet
+        });
+    } catch (e) {
+        console.error('Profile get error:', e);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/roulette/profile', async (req, res) => {
+    const { username, avatar_url, birthday, gender, personality_tag, interest_tag, badge_tag, mood } = req.body;
+    if (!username) return res.json({ success: false, message: '缺少帳號' });
+    
+    try {
+        if (rouletteDb && rouletteDbAvailable) {
+            const fields = [];
+            const values = [];
+            if (avatar_url !== undefined) { fields.push('avatar_url = ?'); values.push(avatar_url); }
+            if (birthday !== undefined) { fields.push('birthday = ?'); values.push(birthday); }
+            if (gender !== undefined) { fields.push('gender = ?'); values.push(gender); }
+            if (personality_tag !== undefined) { fields.push('personality_tag = ?'); values.push(personality_tag); }
+            if (interest_tag !== undefined) { fields.push('interest_tag = ?'); values.push(interest_tag); }
+            if (badge_tag !== undefined) { fields.push('badge_tag = ?'); values.push(badge_tag); }
+            if (mood !== undefined) { fields.push('mood = ?'); values.push(mood); }
+            
+            if (fields.length > 0) {
+                values.push(username);
+                await rouletteDb.execute({
+                    sql: 'UPDATE players SET ' + fields.join(', ') + ' WHERE username = ?',
+                    args: values
+                });
+            }
+        }
+        
+        // Roulette player data is only stored in DB (no in-memory)
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Profile update error:', e);
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 管理員：直接執行 SQL（用於資料庫欄位新增）
+app.post('/api/roulette/admin/exec-sql', async (req, res) => {
+    const { sql } = req.body;
+    if (!sql) return res.json({ success: false, message: '請提供 SQL' });
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        const result = await rouletteDb.execute({ sql });
+        res.json({ success: true, result });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 玩家階級資料
+app.post('/api/roulette/admin/set-weekly-bet', async (req, res) => {
+    const { username, weeklyBet } = req.body;
+    if (!username || weeklyBet === undefined) return res.json({ success: false, message: '請提供 username 和 weeklyBet' });
+    
+    if (LOCAL_TEST_MODE) {
+        if (!localPlayers[username]) localPlayers[username] = {};
+        localPlayers[username].weekly_bet = weeklyBet;
+        const levelInfo = getLevelInfo(weeklyBet);
+        return res.json({ success: true, username, weeklyBet, ...levelInfo });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '資料庫不可用' });
+    try {
+        await rouletteDb.execute({
+            sql: 'UPDATE roulette_player_stats SET weekly_bet = ? WHERE username = ?',
+            args: [weeklyBet, username]
+        });
+        const levelInfo = getLevelInfo(weeklyBet);
+        res.json({ success: true, username, weeklyBet, ...levelInfo });
+    } catch(e) {
+        res.json({ success: false, message: '更新失敗' });
+    }
+});
+
+app.get('/api/roulette/player-level/:username', async (req, res) => {
+    const username = req.params.username;
+    
+    // LOCAL_TEST_MODE: 使用記憶體資料
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        const weeklyBet = localPlayers[username]?.weekly_bet || 0;
+        const levelInfo = getLevelInfo(weeklyBet);
+        return res.json({ weeklyBet, ...levelInfo });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ level: 1, tier: '青銅', title: '菜鳥', weeklyBet: 0 });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT weekly_bet, level FROM roulette_player_stats WHERE username = ?`,
+            args: [username]
+        });
+        if (result.rows && result.rows.length > 0) {
+            const weeklyBet = result.rows[0].weekly_bet || 0;
+            const levelInfo = getLevelInfo(weeklyBet);
+            res.json({ weeklyBet, ...levelInfo });
+        } else {
+            res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
+        }
+    } catch(e) {
+        res.json({ weeklyBet: 0, level: 1, tier: '青銅', title: '菜鳥' });
+    }
+});
+
+// ============ 輪盤邀請系統 API ============
+function getUsernameFromReq(req) {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ')) {
+        return auth.slice(7);
+    }
+    return req.query.username || req.body.username || null;
+}
+
+app.get('/api/roulette/invite-notifications', async (req, res) => {
+    try {
+        const username = getUsernameFromReq(req);
+        if (!username) return res.json({ success: false, message: '請先登入' });
+        if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
+        // Show ALL invites (claimed=0 AND claimed=1) so users can see their history
+        const invites = await rouletteDb.execute(
+            'SELECT invited, reward, time, claimed FROM roulette_invites WHERE inviter = ? ORDER BY time DESC LIMIT 50',
+            [username]
+        );
+        // Only count unclaimed (claimed=0) as "earnable" - but show all for transparency
+        const unclaimedInvites = (invites.rows || []).filter(i => i.claimed === 0);
+        const totalEarned = unclaimedInvites.reduce((sum, r) => sum + (r.reward || 0), 0);
+        res.json({ success: true, invites: invites.rows || [], totalEarned, count: unclaimedInvites.length });
+    } catch(e) { res.json({ success: false, message: e.message }); }
+});
+
+app.post('/api/roulette/claim-invite-reward', async (req, res) => {
+    try {
+        const username = getUsernameFromReq(req);
+        if (!username) return res.json({ success: false, message: '請先登入' });
+        if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
+        // Get unclaimed invites
+        const invites = await rouletteDb.execute('SELECT SUM(reward) as total, COUNT(*) as cnt FROM roulette_invites WHERE inviter = ? AND claimed = 0', [username]);
+        const totalEarned = (invites.rows && invites.rows[0] && invites.rows[0].total) || 0;
+        const cnt = (invites.rows && invites.rows[0] && invites.rows[0].cnt) || 0;
+        if (totalEarned <= 0) {
+            // Check if there are any invites at all (claimed or not)
+            const allInvites = await rouletteDb.execute('SELECT COUNT(*) as totalCnt FROM roulette_invites WHERE inviter = ?', [username]);
+            const totalCnt = (allInvites.rows && allInvites.rows[0] && allInvites.rows[0].totalCnt) || 0;
+            if (totalCnt > 0) {
+                return res.json({ success: false, message: '已領取過獎勵（' + totalCnt + '次邀請）', alreadyClaimed: true });
+            }
+            return res.json({ success: false, message: '還沒有可領取的邀請獎勵', alreadyClaimed: true });
+        }
+        await rouletteDb.execute('UPDATE roulette_invites SET claimed = 1 WHERE inviter = ? AND claimed = 0', [username]);
+        await rouletteDb.execute('UPDATE players SET score = score + ? WHERE username = ?', [totalEarned, username]);
+        const r = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [username]);
+        res.json({ success: true, message: '獲得 ' + totalEarned + ' 金幣獎勵！', totalEarned, newScore: r.rows?.[0]?.score || 0 });
+    } catch(e) { res.json({ success: false, message: '領取失敗: ' + e.message }); }
+});
+
+// 寵物系統 API
+const PET_TYPES = {
+    rabbit: { name: '🐰 兔子', emoji: '🐰', maxLevel: 10, ability: '幸運+5%', color: '#ffb6c1' },
+    cat: { name: '🐱 貓咪', emoji: '🐱', maxLevel: 10, ability: '直播金幣+10%', color: '#ffa500' },
+    dog: { name: '🐶 狗狗', emoji: '🐶', maxLevel: 10, ability: '下注XP+10%', color: '#8b4513' },
+    fox: { name: '🦊 狐狸', emoji: '🦊', maxLevel: 15, ability: '神秘獎池+3%', color: '#ff6600' },
+    dragon: { name: '🐉 龍', emoji: '🐉', maxLevel: 20, ability: '終極', color: '#9932cc' },
+    butterfly: { name: '🦋 蝴蝶', emoji: '🦋', maxLevel: 15, ability: '女性專屬', color: '#ff69b4' }
+};
+
+const XP_PER_LEVEL = 100; // 每級需要 100 XP
+
+// 取得所有寵物類型（需在 :username 之前定義，否則会被 /pet/types 匹配到 pet/:username）
+app.get('/api/roulette/pet-types', (req, res) => {
+    res.json({ success: true, types: PET_TYPES });
+});
+
+// 取得寵物資料
+app.get('/api/roulette/pet/:username', async (req, res) => {
+    const username = req.params.username;
+    if (!username) return res.json({ success: false, message: '請提供用戶名' });
+    
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        const pet = localPlayers[username]?.pet || { pet_type: 'none', pet_name: '', pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 };
+        return res.json({ success: true, pet, petInfo: PET_TYPES[pet.pet_type] || null });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM roulette_pets WHERE username = ?`,
+            args: [username]
+        });
+        
+        if (result.rows && result.rows.length > 0) {
+            const row = result.rows[0];
+            const pet = {
+                pet_type: row.pet_type,
+                pet_name: row.pet_name,
+                pet_level: row.pet_level,
+                pet_xp: row.pet_xp,
+                pet_hunger: row.pet_hunger,
+                pet_energy: row.pet_energy
+            };
+            res.json({ success: true, pet, petInfo: PET_TYPES[pet.pet_type] || null });
+        } else {
+            res.json({ success: true, pet: { pet_type: 'none', pet_name: '', pet_level: 0, pet_xp: 0, pet_hunger: 100, pet_energy: 100 }, petInfo: null });
+        }
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 領養寵物
+app.post('/api/roulette/pet/adopt', async (req, res) => {
+    const { username, pet_type, pet_name } = req.body;
+    if (!username || !pet_type) return res.json({ success: false, message: '缺少參數' });
+    if (!PET_TYPES[pet_type]) return res.json({ success: false, message: '無效的寵物類型' });
+    
+    // 檢查是否已有寵物
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (!localPlayers[username]) localPlayers[username] = { score: 0, weekly_bet: 0 };
+        if (localPlayers[username].pet?.pet_type !== 'none') {
+            return res.json({ success: false, message: '已有寵物' });
+        }
+        localPlayers[username].pet = { pet_type, pet_name: pet_name || PET_TYPES[pet_type].name, pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 };
+        return res.json({ success: true, pet: localPlayers[username].pet, petInfo: PET_TYPES[pet_type] });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        // 檢查是否已有寵物
+        const existResult = await rouletteDb.execute({ sql: `SELECT pet_type FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (existResult.rows && existResult.rows.length > 0 && existResult.rows[0].pet_type !== 'none') {
+            return res.json({ success: false, message: '已有寵物' });
+        }
+        
+        await rouletteDb.execute({
+            sql: `INSERT OR REPLACE INTO roulette_pets (username, pet_type, pet_name, pet_level, pet_xp, pet_hunger, pet_energy, created_at) VALUES (?, ?, ?, 1, 0, 100, 100, datetime('now'))`,
+            args: [username, pet_type, pet_name || PET_TYPES[pet_type].name]
+        });
+        
+        res.json({ success: true, pet: { pet_type, pet_name: pet_name || PET_TYPES[pet_type].name, pet_level: 1, pet_xp: 0, pet_hunger: 100, pet_energy: 100 }, petInfo: PET_TYPES[pet_type] });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 餵食寵物（消耗金幣，增加經驗）
+app.post('/api/roulette/pet/feed', async (req, res) => {
+    const { username, coins } = req.body;
+    if (!username || !coins) return res.json({ success: false, message: '缺少參數' });
+    
+    const xpGain = Math.floor(coins / 10); // 每 10 金幣 = 1 XP
+    
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (!localPlayers[username]?.pet || localPlayers[username].pet.pet_type === 'none') {
+            return res.json({ success: false, message: '沒有寵物' });
+        }
+        const pet = localPlayers[username].pet;
+        pet.pet_xp += xpGain;
+        pet.pet_hunger = Math.min(100, pet.pet_hunger + 20);
+        pet.pet_energy = Math.min(100, pet.pet_energy + 10);
+        // 檢查升級
+        if (pet.pet_xp >= pet.pet_level * XP_PER_LEVEL) {
+            pet.pet_xp -= pet.pet_level * XP_PER_LEVEL;
+            pet.pet_level++;
+        }
+        return res.json({ success: true, pet, xpGain });
+    }
+    
+    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false });
+    
+    try {
+        // 取得當前寵物資料
+        const petResult = await rouletteDb.execute({ sql: `SELECT * FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (!petResult.rows || petResult.rows.length === 0 || petResult.rows[0].pet_type === 'none') {
+            return res.json({ success: false, message: '沒有寵物' });
+        }
+        
+        const pet = petResult.rows[0];
+        const newXp = pet.pet_xp + xpGain;
+        const newLevel = newXp >= (pet.pet_level * XP_PER_LEVEL) ? pet.pet_level + 1 : pet.pet_level;
+        const remainingXp = newXp >= (pet.pet_level * XP_PER_LEVEL) ? newXp - (pet.pet_level * XP_PER_LEVEL) : newXp;
+        
+        await rouletteDb.execute({
+            sql: `UPDATE roulette_pets SET pet_xp = ?, pet_level = ?, pet_hunger = MIN(100, pet_hunger + 20), pet_energy = MIN(100, pet_energy + 10), last_fed = datetime('now') WHERE username = ?`,
+            args: [remainingXp, newLevel, username]
+        });
+        
+        res.json({ success: true, pet: { ...pet, pet_xp: remainingXp, pet_level: newLevel }, xpGain });
+    } catch(e) {
+        res.json({ success: false, message: e.message });
+    }
+});
+
+// 取得所有寵物類型
+app.get('/api/roulette/pet/types', (req, res) => {
+    res.json({ success: true, types: PET_TYPES });
+});
+
+// 寵物下注加 XP（每次下注呼叫）
+async function addPetXp(username, betAmount) {
+    if (LOCAL_TEST_MODE || !rouletteDb) {
+        if (localPlayers[username]?.pet && localPlayers[username].pet.pet_type !== 'none') {
+            localPlayers[username].pet.pet_xp += Math.floor(betAmount / 100);
+            if (localPlayers[username].pet.pet_xp >= localPlayers[username].pet.pet_level * XP_PER_LEVEL) {
+                localPlayers[username].pet.pet_xp -= localPlayers[username].pet.pet_level * XP_PER_LEVEL;
+                localPlayers[username].pet.pet_level++;
+            }
+        }
+        return;
+    }
+    if (!rouletteDbAvailable || !rouletteDb) return;
+    try {
+        const petResult = await rouletteDb.execute({ sql: `SELECT pet_xp, pet_level, pet_type FROM roulette_pets WHERE username = ?`, args: [username] });
+        if (petResult.rows && petResult.rows.length > 0 && petResult.rows[0].pet_type !== 'none') {
+            const pet = petResult.rows[0];
+            const xpGain = Math.floor(betAmount / 100);
+            const newXp = pet.pet_xp + xpGain;
+            const newLevel = newXp >= (pet.pet_level * XP_PER_LEVEL) ? pet.pet_level + 1 : pet.pet_level;
+            const remainingXp = newXp >= (pet.pet_level * XP_PER_LEVEL) ? newXp - (pet.pet_level * XP_PER_LEVEL) : newXp;
+            await rouletteDb.execute({ sql: `UPDATE roulette_pets SET pet_xp = ?, pet_level = ? WHERE username = ?`, args: [remainingXp, newLevel, username] });
+        }
+    } catch(e) { console.log('addPetXp error:', e.message); }
+}
+
+// 種菜遊戲 API（開心農場偷菜遊戲）
+const farmPlayers = {};
+
+// Handle HTML form POST login
+app.post('/api/farm/login', express.urlencoded({extended:false}), (req, res) => {
+    var name = req.body.username;
+    if(!name || !name.trim()){res.redirect('/farm/entry?err=請輸入名字');return;}
+    // Use existing login logic - simulate API call
+    var username = name.trim();
+    var player = {username: username, password: '', score: 500, invitedBy: null, level: 1, coins: 500, plotCount: 6, items: {fertilizer:0,'super fertilizer':0,guard:0,expand:0,steal_protect:0},stats:{harvested:0,stolen:0,stealing:0},plots:[{},{},{},{},{},{}]};
+    res.redirect('/farm/?user='+encodeURIComponent(username));
+});
+
+app.post('/api/farm/login-json', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || username.length > 20) return res.json({ error: '無效用戶名' });
+    if (!farmPlayers[username]) {
+        farmPlayers[username] = {
+            coins: 500, level: 1, plotCount: 6,
+            plots: Array(6).fill(null).map(() => ({})),
+            password: password || '', stolenFrom: [], lastSteal: {},
+            items: { fertilizer: 0, 'super fertilizer': 0, guard: 0, expand: 0, steal_protect: 0 },
+            stats: { harvested: 0, stolen: 0, stealing: 0 },
+            loginStreak: 0, lastLogin: null
+        };
+    }
+    res.json({ success: true, username, coins: farmPlayers[username].coins, level: farmPlayers[username].level, plotCount: farmPlayers[username].plotCount, items: farmPlayers[username].items, stats: farmPlayers[username].stats });
+});
+
+app.get('/api/farm/farm/:username', (req, res) => {
+    const p = farmPlayers[req.params.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    res.json({ success: true, plots: p.plots, coins: p.coins, level: p.level, plotCount: p.plotCount, items: p.items, stats: p.stats });
+});
+
+app.post('/api/farm/plant', (req, res) => {
+    const { username, plotIndex, cropId, growthTime } = req.body;
+    const p = farmPlayers[username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    if (plotIndex >= p.plotCount) return res.json({ error: '農地不存在' });
+    p.plots[plotIndex] = { cropId, plantedAt: Date.now(), growthTime };
+    res.json({ success: true });
+});
+
+app.post('/api/farm/water', (req, res) => {
+    const p = farmPlayers[req.body.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const plot = p.plots[req.body.plotIndex];
+    if (plot && plot.growthTime) plot.plantedAt -= plot.growthTime * 1000 * 0.1;
+    res.json({ success: true });
+});
+
+app.post('/api/farm/fertilize', (req, res) => {
+    const p = farmPlayers[req.body.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const plot = p.plots[req.body.plotIndex];
+    if (plot && plot.growthTime) plot.plantedAt -= plot.growthTime * 1000 * (req.body.super ? 0.5 : 0.3);
+    res.json({ success: true });
+});
+
+app.post('/api/farm/harvest', (req, res) => {
+    const p = farmPlayers[req.body.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const plot = p.plots[req.body.plotIndex];
+    if (!plot || !plot.cropId) return res.json({ error: '農地無作物' });
+    if (Date.now() < plot.plantedAt + plot.growthTime * 1000) return res.json({ error: '作物尚未成熟' });
+    const cropValues = { carrot: 50, cabbage: 80, tomato: 120, corn: 200, eggplant: 350, pumpkin: 600, strawberry: 1000, watermelon: 1500, grape: 2500, magic: 5000 };
+    const value = cropValues[plot.cropId] || 100;
+    p.coins += value; p.plots[req.body.plotIndex] = {}; p.level = Math.floor(p.coins / 5000) + 1;
+    p.stats.harvested = (p.stats.harvested || 0) + 1;
+    res.json({ success: true, value });
+});
+
+app.post('/api/farm/buy-item', (req, res) => {
+    const p = farmPlayers[req.body.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const items = { fertilizer: 100, 'super fertilizer': 300, guard: 500, expand: 2000, steal_protect: 800 };
+    const price = items[req.body.itemId];
+    if (!price) return res.json({ error: '無效道具' });
+    if (p.coins < price) return res.json({ error: '金幣不足' });
+    p.coins -= price; p.items[req.body.itemId] = (p.items[req.body.itemId] || 0) + 1;
+    if (req.body.itemId === 'expand') { p.plotCount += 2; p.plots = [...p.plots, {}, {}]; }
+    res.json({ success: true });
+});
+
+app.get('/api/farm/weather', (_, res) => res.json({ success: true, weather: Math.random() > 0.5 ? 'sun' : 'rain' }));
+
+app.get('/api/farm/rank', (_, res) => {
+    const rank = Object.keys(farmPlayers).map(u => ({ username: u, coins: farmPlayers[u].coins || 0 })).sort((a, b) => b.coins - a.coins).slice(0, 20);
+    res.json({ success: true, rank });
+});
+
+app.get('/api/farm/daily-bonus/:username', (req, res) => {
+    const p = farmPlayers[req.params.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const today = new Date().toDateString();
+    const lastLogin = p.lastLogin ? new Date(p.lastLogin).toDateString() : null;
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    const canClaim = lastLogin !== today;
+    const streak = lastLogin === yesterday ? p.loginStreak : (lastLogin === today ? p.loginStreak : 0);
+    res.json({ success: true, canClaim, streak });
+});
+
+app.post('/api/farm/claim-bonus', (req, res) => {
+    const p = farmPlayers[req.body.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    const today = new Date().toDateString();
+    const lastLogin = p.lastLogin ? new Date(p.lastLogin).toDateString() : null;
+    if (lastLogin === today) return res.json({ error: '今日已領取' });
+    p.loginStreak = lastLogin === new Date(Date.now() - 86400000).toDateString() ? p.loginStreak + 1 : 1;
+    p.lastLogin = new Date().toISOString();
+    const bonus = Math.min(500, 100 + p.loginStreak * 50);
+    p.coins += bonus;
+    res.json({ success: true, bonus, streak: p.loginStreak });
+});
+
+app.get('/api/farm/neighbors', (_, res) => {
+    const neighbors = Object.keys(farmPlayers).filter(u => u !== 'admin').map(u => ({ username: u, level: farmPlayers[u].level || 1, plotCount: farmPlayers[u].plotCount || 6, plots: farmPlayers[u].plots || [] }));
+    res.json({ success: true, neighbors });
+});
+
+app.post('/api/farm/steal', (req, res) => {
+    const { owner, plotIndex, thief } = req.body;
+    const op = farmPlayers[owner], tp = farmPlayers[thief];
+    if (!op || !tp) return res.json({ error: '玩家不存在' });
+    const plot = op.plots[plotIndex];
+    if (!plot || !plot.cropId) return res.json({ error: '無作物可偷' });
+    if (Date.now() < plot.plantedAt + plot.growthTime * 1000) return res.json({ error: '作物尚未成熟' });
+    if (op.items?.guard > 0) { op.items.guard--; return res.json({ error: '🛡️ 該農場有守衛！守衛阻止了這次偷竊' }); }
+    const cooldown = 5 * 60 * 1000;
+    if (tp.lastSteal && tp.lastSteal[owner] && Date.now() - tp.lastSteal[owner] < cooldown) { var wait = Math.ceil((cooldown - (Date.now() - tp.lastSteal[owner]))/60000); return res.json({ error: '偷太快了！需等' + wait + '分鐘' }); }
+    const cropNames = { carrot: '胡蘿蔔', cabbage: '高麗菜', tomato: '番茄', corn: '玉米', eggplant: '茄子', pumpkin: '南瓜', strawberry: '草莓', watermelon: '西瓜', grape: '葡萄', magic: '魔法果' };
+    const cropValues = { carrot: 50, cabbage: 80, tomato: 120, corn: 200, eggplant: 350, pumpkin: 600, strawberry: 1000, watermelon: 1500, grape: 2500, magic: 5000 };
+    const value = Math.floor((cropValues[plot.cropId] || 100) * 0.7), loss = Math.floor((cropValues[plot.cropId] || 100) * 0.3);
+    tp.coins += value; tp.stats.stealing = (tp.stats.stealing || 0) + 1;
+    op.coins -= loss; op.stats.stolen = (op.stats.stolen || 0) + 1;
+    op.stolenFrom.push({ thief, value: loss, time: Date.now(), cropName: cropNames[plot.cropId] });
+    if (!tp.lastSteal) tp.lastSteal = {}; tp.lastSteal[owner] = Date.now();
+    op.plots[plotIndex] = {};
+    res.json({ success: true, value, cropName: cropNames[plot.cropId] });
+});
+
+app.get('/api/farm/notifications/:username', (req, res) => {
+    const p = farmPlayers[req.params.username];
+    if (!p) return res.json({ error: '玩家不存在' });
+    res.json({ success: true, notifications: p.stolenFrom || [] });
+});
+
+// 靜態檔案
+app.use('/dice', express.static(path.join(__dirname, 'public/dice')));
+app.use('/roulette', express.static(path.join(__dirname, 'public/roulette')));
+app.use('/mahjong', express.static(path.join(__dirname, 'public')));
+app.use('/poker', express.static(path.join(__dirname, 'public/poker')));
+app.use('/farm', express.static(path.join(__dirname, 'public/farm')));
+app.get('/farm/login-page', (_, res) => {
+    res.send('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>登入</title></head><body style="background:#C8E6C9;font-family:Arial,sans-serif;padding:40px;text-align:center"><h2 style="color:#2E7D32">🌻 T-LO 開心農場</h2><p style="color:#888">新玩家送 500 金幣</p><div style="margin:20px auto;max-width:300px"><form id="f" onsubmit="event.preventDefault();var n=document.getElementById(\'name\').value.trim();if(!n){alert(\'請輸入名字\');return;}fetch(\'/api/farm/login\',{method:\'POST\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({username:n})}).then(r=>r.json()).then(d=>{if(d.error)alert(d.error);else{window.location.href=\'/farm/?loggedin=1\'}}).catch(e=>alert(e.message))"><input id="name" type="text" placeholder="輸入名字" required style="width:100%;padding:12px;font-size:16px;border:2px solid #ccc;border-radius:8px;box-sizing:border-box"><button type="submit" style="width:100%;padding:14px;margin-top:10px;background:#4CAF50;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer">🌱 進入農場</button></form></div></body></html>');
+});
+app.get('/farm/entry', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.type('text/html; charset=utf-8').send('<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>T-LO 開心農場</title><style>body{font-family:Arial,sans-serif;background:linear-gradient(180deg,#87CEEB 0%,#98FB98 100%);min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center}.card{background:white;border-radius:20px;padding:40px 30px;width:90%;max-width:320px;box-shadow:0 10px 40px rgba(0,0,0,.15);text-align:center}h2{color:#228B22;margin:0 0 10px}p{color:#888}input{width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-size:16px;box-sizing:border-box;display:block;margin:15px 0}button{width:100%;padding:14px;background:#228B22;color:white;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer}</style></head><body><div class="card"><h2>🌻 T-LO 開心農場</h2><p>新玩家送 💰 500 金幣</p><form action="/farm/go" method="GET"><input type="text" name="name" placeholder="輸入你的名字" maxlength="20" required autocomplete="off"><button type="submit">🌱 進入農場</button></form></div></body></html>');
+});
+
+// Simple GET handler - redirects with user param
+app.get('/farm/go', (req, res) => {
+    var name = req.query.name;
+    if(!name || !name.trim()){res.redirect('/farm/entry');return;}
+    res.redirect('/farm/?user='+encodeURIComponent(name.trim()));
+})
+    // Proxy API calls from farm-game format to unified-games format
+    // Auto-create player helper
+    function ensurePlayer(username) {
+        if (!farmPlayers[username]) {
+            farmPlayers[username] = {
+                coins: 500, level: 1, plotCount: 36,
+                plots: Array(36).fill(null).map(() => ({})),
+                password: '', stolenFrom: [], lastSteal: {},
+                items: { fertilizer: 0, 'super fertilizer': 0, guard: 0, expand: 0, steal_protect: 0 },
+                stats: { harvested: 0, stolen: 0, stealing: 0 },
+                loginStreak: 0, lastLogin: null
+            };
+        }
+        return farmPlayers[username];
+    }
+    
+    // /api/buy-seed -> buys seeds for the player
+    app.post('/api/buy-seed', (req, res) => {
+        const { username, seedType, quantity = 1 } = req.body;
+        const p = ensurePlayer(username);
+        
+        const prices = { wheat: 5, corn: 10, strawberry: 20, tomato: 35, rare: 100 };
+        const price = (prices[seedType] || 0) * quantity;
+        
+        if (p.coins < price) return res.json({ success: false, message: '金幣不足' });
+        p.coins -= price;
+        if (!p.items) p.items = {};
+        if (!p.items.seed) p.items.seed = {};
+        p.items.seed[seedType] = (p.items.seed[seedType] || 0) + quantity;
+        
+        res.json({ success: true, message: `購買 ${seedType} x${quantity} 成功！` });
+    });
+    
+    // /api/sell-crop -> sells crops for coins
+    app.post('/api/sell-crop', (req, res) => {
+        const { username, cropType, quantity = 1 } = req.body;
+        const p = ensurePlayer(username);
+        
+        const prices = { wheat: 5, corn: 15, strawberry: 30, tomato: 50, rare: 150 };
+        const price = (prices[cropType] || 0) * quantity;
+        
+        if (!p.items || !p.items.crop || !p.items.crop[cropType] || p.items.crop[cropType] < quantity) {
+            return res.json({ success: false, message: '背包裡沒有足夠的作物' });
+        }
+        
+        p.items.crop[cropType] -= quantity;
+        p.coins += price;
+        
+        res.json({ success: true, message: `賣出 ${cropType} x${quantity}，獲得 ${price} 金幣！` });
+    });
+    
+    
+    // /api/plant -> plants a crop
+    app.post('/api/plant', (req, res) => {
+        const { username, plotIndex, cropType } = req.body;
+        const p = ensurePlayer(username);
+        
+        // Check seeds
+        if (!p.items || !p.items.seed || !p.items.seed[cropType] || p.items.seed[cropType] < 1) {
+            return res.json({ success: false, message: '沒有足夠的種子' });
+        }
+        
+        // Check plot
+        if (plotIndex >= p.plotCount) return res.json({ success: false, message: '農地不存在' });
+        if (p.plots[plotIndex] && p.plots[plotIndex].cropId) {
+            return res.json({ success: false, message: '這格已經有東西了' });
+        }
+        
+        // Use seed
+        p.items.seed[cropType]--;
+        if (p.items.seed[cropType] <= 0) delete p.items.seed[cropType];
+        
+        // Plant
+        const growthTimes = { wheat: 30, corn: 60, strawberry: 120, tomato: 180, rare: 300 };
+        p.plots[plotIndex] = { cropId: cropType, plantedAt: Date.now(), growthTime: growthTimes[cropType] || 30 };
+        
+        res.json({ success: true, message: `播種 ${cropType} 成功！` });
+    });
+    
+    // /api/water -> waters a plot
+    app.post('/api/water', (req, res) => {
+        const { username, plotIndex } = req.body;
+        const p = ensurePlayer(username);
+        
+        const plot = p.plots[plotIndex];
+        if (!plot || !plot.cropId) return res.json({ success: false, message: '這格沒有作物' });
+        if (plot.watered) return res.json({ success: false, message: '已經澆過水了' });
+        
+        plot.watered = true;
+        plot.growthTime = Math.floor((plot.growthTime || 30) * 0.8);
+        
+        res.json({ success: true, message: '澆水成功！生長加速 20%！' });
+    });
+    
+    // /api/harvest -> harvests a crop
+    app.post('/api/harvest', (req, res) => {
+        const { username, plotIndex } = req.body;
+        const p = ensurePlayer(username);
+        
+        const plot = p.plots[plotIndex];
+        if (!plot || !plot.cropId) return res.json({ success: false, message: '這格沒有作物' });
+        
+        const elapsed = Date.now() - plot.plantedAt;
+        const growTime = (plot.growthTime || 30) * 1000;
+        
+        if (elapsed < growTime) {
+            const remaining = Math.ceil((growTime - elapsed) / 1000);
+            return res.json({ success: false, message: `還要等 ${remaining} 秒才能收成` });
+        }
+        
+        // Add crop to inventory
+        if (!p.items.crop) p.items.crop = {};
+        p.items.crop[plot.cropId] = (p.items.crop[plot.cropId] || 0) + 1;
+        
+        // Clear plot
+        p.plots[plotIndex] = {};
+        
+        // Simple level up based on harvests
+        p.stats = p.stats || { harvested: 0, stolen: 0, stealing: 0 };
+        p.stats.harvested++;
+        
+        res.json({ success: true, message: `收成 ${plot.cropId}！` });
+    });
+    
+    // /api/plots/:username -> returns plots data
+    app.get('/api/plots/:username', (req, res) => {
+        const username = req.params.username;
+        const p = ensurePlayer(username);
+        res.json({ success: true, plots: p.plots });
+    });
+    
+    // /api/leaderboard -> returns leaderboard
+    app.get('/api/leaderboard', (req, res) => {
+        const leaderboard = Object.keys(farmPlayers)
+            .map(u => ({ username: u, level: farmPlayers[u].level || 1, exp: farmPlayers[u].stats?.harvested || 0 }))
+            .sort((a, b) => b.exp - a.exp)
+            .slice(0, 20);
+        res.json({ success: true, leaderboard });
+    });    // /api/inventory/:username -> returns player items in farm-game format
+    app.get('/api/inventory/:username', (req, res) => {
+        const username = req.params.username;
+        const p = ensurePlayer(username);
+        
+        const items = {};
+        if (p.items) {
+            if (p.items.seed) {
+                Object.keys(p.items.seed).forEach(seedType => {
+                    items[seedType] = { type: 'seed', name: seedType, quantity: p.items.seed[seedType] };
+                });
+            }
+            if (p.items.crop) {
+                Object.keys(p.items.crop).forEach(cropType => {
+                    items[cropType] = { type: 'crop', name: cropType, quantity: p.items.crop[cropType] };
+                });
+            }
+        }
+        
+        res.json({ success: true, items });
+    });
+    
+    // Direct game page - reads game.html and injects pre-logged-in user data    // Direct game page - reads game.html and injects pre-logged-in user data
+    app.get('/farm/play', (req, res) => {
+        var name = req.query.name;
+        if(!name || !name.trim()){
+            res.redirect('/farm/entry');return;
+        }
+        var username = name.trim();
+
+        // Auto-create player if not exists
+        if (!farmPlayers[username]) {
+            farmPlayers[username] = {
+                coins: 500, level: 1, plotCount: 36,
+                plots: Array(36).fill(null).map(() => ({})),
+                password: '', stolenFrom: [], lastSteal: {},
+                items: { fertilizer: 0, 'super fertilizer': 0, guard: 0, expand: 0, steal_protect: 0 },
+                stats: { harvested: 0, stolen: 0, stealing: 0 },
+                loginStreak: 0, lastLogin: null
+            };
+        }
+
+        // Read the game.html file
+        var gamePath = path.join(__dirname, 'public/farm/game.html');
+        var gameHtml;
+        try {
+            gameHtml = require('fs').readFileSync(gamePath, 'utf8');
+        } catch(e) {
+            res.status(500).send('Game file missing');
+            return;
+        }
+
+        // Inject currentUser with username as id (string-based for unified-games)
+        var userData = {
+            id: username,
+            username: username,
+            coins: farmPlayers[username].coins,
+            level: farmPlayers[username].level,
+            exp: 0,
+            plotCount: farmPlayers[username].plotCount
+        };
+
+        gameHtml = gameHtml.replace(
+            "let currentUser = null;",
+            "let currentUser = " + JSON.stringify(userData) + ";"
+        );
+
+        // Replace userId: currentUser.id with username: currentUser.username for unified-games API
+        gameHtml = gameHtml.replace(
+            /userId: currentUser\.id/g,
+            "username: currentUser.username"
+        );
+
+        res.setHeader('Cache-Control', 'no-store');
+        res.type('text/html; charset=utf-8').send(gameHtml);
+    });// 撲克遊戲 Poker
+app.get('/', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>T-LO 遊戲大廳</title>
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+                h1 { color: #ffd700; font-size: 2.5rem; margin-bottom: 30px; }
+                .games { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+                .game-card { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; text-align: center; }
+                .game-card h2 { color: #ffd700; margin-bottom: 15px; }
+                .game-card a { display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <h1>🎮 T-LO 遊戲大廳</h1>
+            <div class="games">
+                <div class="game-card">
+                    <h2>🎲 骰子大作戰</h2>
+                    <p>PvP 對戰遊戲</p>
+                    <a href="/dice">開始玩</a>
+                </div>
+                <div class="game-card">
+                    <h2>🎰 俄羅斯輪盤</h2>
+                    <p>單人對戰</p>
+                    <a href="/roulette">開始玩</a>
+                </div>
+                <div class="game-card">
+                    <h2>🃏 T-LO 德州撲克</h2>
+                    <p>單人對戰 AI</p>
+                    <a href="/poker">開始玩</a>
+                </div>
+                <div class="game-card">
+                    <h2>🌱 開心農場</h2>
+                    <p>種菜偷菜遊戲</p>
+                    <a href="/farm">開始玩</a>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🎮 T-LO 遊戲大廳已啟動!`);
+    console.log(`   首頁: http://localhost:${PORT}/`);
+    console.log(`   骰子遊戲: http://localhost:${PORT}/dice`);
+    console.log(`   俄羅斯輪盤: http://localhost:${PORT}/roulette`);
+    console.log(`   T-LO德州撲克: http://localhost:${PORT}/poker`);
+});
+// Fri Apr 17 23:08:45 CST 2026
+// deploy 1776439288
+// force 1776439667
+// deploy 1776440618
+// force deploy Fri Apr 17 23:52:59 CST 2026
+// redeploy 1776441433
+// deploy 1776491172
+// force deploy 1776492179
+// fix 1776492794
+<!-- force deploy -->
+
+
+// =====================================================

@@ -1,8 +1,8 @@
 FROM node:20-slim
-ENV PORT=3001
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --ignore-scripts
 COPY . .
 EXPOSE 3001
-CMD ["node", "server/server.js"]
+ENV PORT=3001
+CMD ["node", "server.js"]

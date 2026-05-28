@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=/farm/entry">
+  <title>跳轉中...</title>
+</head>
+<body>
+  <p>跳轉到 <a href="/farm/entry">農場登入頁面</a>...</p>
+  <script>
+    // 檢查 URL 參數，如果有 user 就直接導向遊戲
+    const params = new URLSearchParams(window.location.search);
+    const user = params.get('user');
+    if (user) {
+      window.location.replace('/farm/play?name=' + encodeURIComponent(user));
+    } else {
+      window.location.replace('/farm/entry');
+    }
+  </script>
+</body>
+</html>

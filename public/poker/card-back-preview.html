@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T-LO Card Back Design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #1a0a0f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Cinzel', serif;
+}
+
+.card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.card {
+  width: 120px;
+  height: 168px;
+  border-radius: 12px;
+  position: relative;
+  background: radial-gradient(ellipse at 30% 30%, #a01830 0%, #7B112C 40%, #4a0a1a 100%);
+  box-shadow:
+    0 0 0 2px #D4AF37,
+    0 0 20px rgba(212, 175, 55, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.8),
+    inset 0 0 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+/* === Outer decorative border === */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* === Inner shadow for depth === */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* === Center burst glow === */
+.card .burst {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* === Central emblem === */
+.card .emblem {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow:
+    0 0 12px rgba(212, 175, 55, 0.15),
+    inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.card .emblem::before {
+  content: '';
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 50%;
+}
+
+.card .emblem::after {
+  content: '';
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 50%;
+}
+
+/* === T-LO Monogram === */
+.card .tlo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #D4AF37;
+  letter-spacing: 4px;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(212, 175, 55, 0.4),
+    0 0 40px rgba(212, 175, 55, 0.15);
+  z-index: 4;
+  white-space: nowrap;
+}
+
+/* === Top ornament === */
+.card .top-ornament {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 28px;
+  z-index: 3;
+}
+
+/* Diamond top center */
+.card .top-ornament::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: #D4AF37;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+}
+
+/* Left filigree */
+.card .top-ornament::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #D4AF37 30%, #D4AF37 70%, transparent);
+  box-shadow: 0 0 4px rgba(212, 175, 55, 0.4);
+}
+
+/* Top filigree arcs - left */
+.card .filigree-tl {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  border-top: 1px solid rgba(212, 175, 55, 0.5);
+  border-left: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 3px 0 0 0;
+  z-index: 3;
+}
+
+.card .filigree-tl::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+  border-left: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 2px 0 0 0;
+}
+
+/* Top filigree arcs - right */
+.card .filigree-tr {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-top: 1px solid rgba(212, 175, 55, 0.5);
+  border-right: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 0 3px 0 0;
+  z-index: 3;
+}
+
+.card .filigree-tr::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+  border-right: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 0 2px 0 0;
+}
+
+/* Bottom filigree arcs - left */
+.card .filigree-bl {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.5);
+  border-left: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 0 0 0 3px;
+  z-index: 3;
+}
+
+.card .filigree-bl::before {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  border-left: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 0 0 0 2px;
+}
+
+/* Bottom filigree arcs - right */
+.card .filigree-br {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.5);
+  border-right: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 0 0 3px 0;
+  z-index: 3;
+}
+
+.card .filigree-br::before {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  border-right: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 0 0 2px 0;
+}
+
+/* === Bottom ornament === */
+.card .bottom-ornament {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 28px;
+  z-index: 3;
+}
+
+.card .bottom-ornament::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: #D4AF37;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+}
+
+.card .bottom-ornament::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #D4AF37 30%, #D4AF37 70%, transparent);
+  box-shadow: 0 0 4px rgba(212, 175, 55, 0.4);
+}
+
+/* === Crown motif - top === */
+.card .crown {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card .crown::before {
+  content: '';
+  width: 4px;
+  height: 6px;
+  background: rgba(212, 175, 55, 0.6);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.card .crown::after {
+  content: '';
+  width: 16px;
+  height: 1px;
+  background: rgba(212, 175, 55, 0.5);
+}
+
+/* === Vertical side ornaments === */
+.card .side-ornament-left {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60px;
+  z-index: 3;
+  overflow: visible;
+}
+
+.card .side-ornament-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.4) 30%, rgba(212, 175, 55, 0.4) 70%, transparent);
+}
+
+.card .side-ornament-left::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.card .side-ornament-right {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60px;
+  z-index: 3;
+}
+
+.card .side-ornament-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.4) 30%, rgba(212, 175, 55, 0.4) 70%, transparent);
+}
+
+.card .side-ornament-right::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* === Small corner diamonds === */
+.card .corner-tl {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.4);
+  transform: rotate(45deg);
+  z-index: 3;
+}
+.card .corner-tr {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.4);
+  transform: rotate(45deg);
+  z-index: 3;
+}
+.card .corner-bl {
+  position: absolute;
+  bottom: 22px;
+  left: 22px;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.4);
+  transform: rotate(45deg);
+  z-index: 3;
+}
+.card .corner-br {
+  position: absolute;
+  bottom: 22px;
+  right: 22px;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.4);
+  transform: rotate(45deg);
+  z-index: 3;
+}
+
+/* === Horizontal divider lines === */
+.card .divider-top {
+  position: absolute;
+  top: 48px;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.3) 20%, rgba(212, 175, 55, 0.3) 80%, transparent);
+  z-index: 3;
+}
+
+.card .divider-bottom {
+  position: absolute;
+  bottom: 48px;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.3) 20%, rgba(212, 175, 55, 0.3) 80%, transparent);
+  z-index: 3;
+}
+
+/* === Label at top and bottom === */
+.card .label-top {
+  position: absolute;
+  top: 26px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 6px;
+  color: rgba(212, 175, 55, 0.5);
+  letter-spacing: 6px;
+  z-index: 3;
+}
+
+.card .label-bottom {
+  position: absolute;
+  bottom: 26px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 6px;
+  color: rgba(212, 175, 55, 0.5);
+  letter-spacing: 6px;
+  z-index: 3;
+}
+
+/* === Demo label === */
+.label {
+  color: rgba(212, 175, 55, 0.7);
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="card-wrapper">
+  <div class="label">T-LO POKER · CARD BACK</div>
+
+  <!-- The actual card back element -->
+  <div class="card" style="transform: rotate(0deg);">
+    <div class="burst"></div>
+
+    <!-- Four corner filigree ornaments -->
+    <div class="filigree-tl"></div>
+    <div class="filigree-tr"></div>
+    <div class="filigree-bl"></div>
+    <div class="filigree-br"></div>
+
+    <!-- Small corner diamonds -->
+    <div class="corner-tl"></div>
+    <div class="corner-tr"></div>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+
+    <!-- Horizontal dividers -->
+    <div class="divider-top"></div>
+    <div class="divider-bottom"></div>
+
+    <!-- Side ornaments -->
+    <div class="side-ornament-left"></div>
+    <div class="side-ornament-right"></div>
+
+    <!-- Top and bottom labels -->
+    <div class="label-top">T</div>
+    <div class="label-bottom">L O</div>
+
+    <!-- Crown motif -->
+    <div class="crown"></div>
+
+    <!-- Central emblem with T-LO -->
+    <div class="emblem">
+      <div class="tlo">T-LO</div>
+    </div>
+
+    <!-- Top and bottom ornaments -->
+    <div class="top-ornament"></div>
+    <div class="bottom-ornament"></div>
+  </div>
+
+  <div class="label">Rotates perfectly · Symmetrical · Balanced</div>
+</div>
+
+</body>
+</html>

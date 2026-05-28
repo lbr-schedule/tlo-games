@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🀄 T-LO 麻將 - 台灣16張</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            display: flex; flex-direction: column;
+            height: 100vh;
+        }
+        
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: rgba(255,255,255,0.08); border-radius: 10px; margin: 5px;
+        }
+        .coins { color: #ffd700; font-weight: bold; }
+        
+        .table-zone {
+            flex: 1; position: relative; overflow: hidden;
+            background: radial-gradient(ellipse at center, #2d6a27 0%, #1f4a1a 100%);
+            border-radius: 10px; margin: 0 5px;
+        }
+        
+        /* 四個對手位置 */
+        .opponent-area { position: absolute; display: flex; gap: 3px; }
+        .opponent-area.top { top: 8px; left: 50%; transform: translateX(-50%); }
+        .opponent-area.right { top: 50%; right: 8px; transform: translateY(-50%) rotate(90deg); }
+        .opponent-area.bottom { bottom: 8px; left: 50%; transform: translateX(-50%); }
+        .opponent-area.left { top: 50%; left: 8px; transform: translateY(-50%) rotate(-90deg); }
+        
+        .opp-tile {
+            width: 20px; height: 28px;
+            background: linear-gradient(135deg, #2a4a6a, #1a2a3a);
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            border: 1px solid #3a5a7a;
+        }
+        .opp-name { font-size: 0.6rem; text-align: center; color: #aaa; margin-bottom: 2px; }
+        
+        .center-info {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .turn-indicator { font-size: 0.85rem; color: #ffd700; margin-bottom: 5px; }
+        .wall-count { font-size: 0.65rem; color: #aaa; }
+        .discard-pile { 
+            display: flex; flex-wrap: wrap; max-width: 80px; gap: 1px; 
+            margin-top: 8px; justify-content: center;
+        }
+        .discard-tile {
+            width: 16px; height: 22px; background: #666; border-radius: 2px;
+            font-size: 9px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .player-action-bar {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px; border: none; border-radius: 16px; font-size: 0.75rem;
+            font-weight: bold; cursor: pointer; transition: all 0.15s;
+        }
+        .action-btn.chi { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .action-btn.peng { background: linear-gradient(135deg, #27ae60, #1e8449); color: white; }
+        .action-btn.gang { background: linear-gradient(135deg, #e67e22, #d35400); color: white; }
+        .action-btn.hu { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .action-btn.pass { background: rgba(255,255,255,0.15); color: white; }
+        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .action-btn:hover:not(:disabled) { transform: scale(1.05); }
+        
+        .player-zone {
+            padding: 8px 5px; background: rgba(0,0,0,0.3);
+        }
+        .player-label { font-size: 0.65rem; color: #aaa; text-align: center; margin-bottom: 4px; }
+        .player-hand { display: flex; gap: 2px; justify-content: center; flex-wrap: wrap; }
+        
+        .mahjong-tile {
+            width: 36px; height: 52px; flex-shrink: 0; cursor: pointer;
+            transition: transform 0.1s; position: relative;
+        }
+        .mahjong-tile:hover { transform: translateY(-8px); }
+        .mahjong-tile.selected { transform: translateY(-14px); }
+        .mahjong-tile canvas { width: 100%; height: 100%; display: block; }
+        
+        /* 登入 */
+        .login-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 200;
+        }
+        .login-screen h1 { font-size: 2.2rem; margin-bottom: 15px; }
+        .login-screen input {
+            padding: 14px; border: 2px solid #667eea; border-radius: 12px;
+            width: 220px; font-size: 1.1rem; text-align: center; margin-bottom: 15px;
+        }
+        .login-screen .btn {
+            padding: 14px 40px; border: none; border-radius: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        }
+        
+        .result-modal, .broke-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 300;
+        }
+        .result-modal.show, .broke-modal.show { display: flex; }
+        .result-modal h2 { font-size: 1.6rem; margin-bottom: 15px; }
+        .result-modal .score-table { width: 280px; margin: 15px 0; }
+        .result-modal .row {
+            display: flex; justify-content: space-between; padding: 8px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .result-modal .row.winner { color: #ffd700; }
+        .result-modal .btn, .broke-modal .btn {
+            margin-top: 15px; padding: 12px 30px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+            font-size: 1rem; cursor: pointer;
+        }
+        .broke-modal h2 { color: #ffd700; margin-bottom: 10px; }
+        .broke-modal p { color: #aaa; margin-bottom: 20px; text-align: center; padding: 0 30px; }
+        
+        .toast {
+            position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; padding: 10px 20px;
+            border-radius: 20px; z-index: 400; font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-screen" id="loginScreen">
+        <h1>🀄 T-LO 麻將</h1>
+        <p style="color:#aaa;margin-bottom:20px;">台灣16張 · 線上對戰</p>
+        <input type="text" id="usernameInput" placeholder="輸入帳號" value="">
+        <button class="btn" onclick="doLogin()">進入遊戲</button>
+        <p style="color:#666;font-size:0.8rem;margin-top:15px;">免費試玩 · 註冊即送1000金幣</p>
+    </div>
+    
+    <div id="gameUI" style="display:none; height:100vh; display:flex; flex-direction:column;">
+        <div class="top-bar">
+            <span id="playerNameDisplay">玩家</span>
+            <span id="roundInfo" style="font-size:0.8rem;color:#aaa;">東風圈</span>
+            <span class="coins">🪙 <span id="coinDisplay">1000</span></span>
+        </div>
+        
+        <div class="table-zone" id="tableZone">
+            <div class="opponent-area top">
+                <div class="opp-name" id="opp-top-name">電腦2</div>
+                <div style="display:flex;gap:2px;" id="opp-top-hand"></div>
+            </div>
+            <div class="opponent-area right">
+                <div class="opp-name" id="opp-right-name">電腦3</div>
+                <div style="display:flex;gap:2px;" id="opp-right-hand"></div>
+            </div>
+            <div class="opponent-area bottom">
+                <div class="opp-name" id="opp-bottom-name">電腦1</div>
+                <div style="display:flex;gap:2px;" id="opp-bottom-hand"></div>
+            </div>
+            <div class="opponent-area left">
+                <div class="opp-name" id="opp-left-name">電腦4</div>
+                <div style="display:flex;gap:2px;" id="opp-left-hand"></div>
+            </div>
+            
+            <div class="center-info">
+                <div class="turn-indicator" id="turnIndicator">等待開始</div>
+                <div class="wall-count">牌牆: <span id="wallCount">64</span>張</div>
+                <div class="discard-pile" id="discardPile"></div>
+            </div>
+            
+            <div class="player-action-bar" id="actionBar" style="display:none;">
+                <button class="action-btn chi" id="btnChi" onclick="doAction('chi')" disabled>吃</button>
+                <button class="action-btn peng" id="btnPeng" onclick="doAction('peng')" disabled>碰</button>
+                <button class="action-btn gang" id="btnGang" onclick="doAction('gang')" disabled>槓</button>
+                <button class="action-btn hu" id="btnHu" onclick="doAction('hu')" disabled>胡</button>
+                <button class="action-btn pass" onclick="doAction('pass')">過</button>
+            </div>
+        </div>
+        
+        <div class="player-zone">
+            <div class="player-label">你的手牌（點擊出牌）</div>
+            <div class="player-hand" id="playerHand"></div>
+        </div>
+        
+        <div style="text-align:center;padding:8px;">
+            <button class="action-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;" id="startBtn" onclick="startGame()">🎮 開始新遊戲 ($100)</button>
+        </div>
+    </div>
+    
+    <div class="result-modal" id="resultModal">
+        <h2 id="resultTitle">結算</h2>
+        <div class="score-table" id="scoreTable"></div>
+        <button class="btn" onclick="closeResult()">確定</button>
+    </div>
+    
+    <div class="broke-modal" id="brokeModal">
+        <h2>🪙 金幣不足</h2>
+        <p>請聯繫 LINE 客服儲值</p>
+        <button class="btn" onclick="contactLINE()">📱 LINE 聯繫</button>
+    </div>
+
+    <script>
+    // ============================================================
+    // T-LO 麻將 — 仿真麻將牌視覺
+    // ============================================================
+    
+    const TILE_W = 36, TILE_H = 52;
+    
+    const WAN = ['1m','2m','3m','4m','5m','6m','7m','8m','9m'];
+    const TONG = ['1p','2p','3p','4p','5p','6p','7p','8p','9p'];
+    const TIAO = ['1s','2s','3s','4s','5s','6s','7s','8s','9s'];
+    const ZI = ['E','S','W','N','C','F','P'];
+    const FLOWERS = ['H1','H2','H3','H4','H5','H6','H7','H8'];
+    
+    const ALL_TILES = [
+        ...WAN.flatMap(t => [t,t,t,t]),
+        ...TONG.flatMap(t => [t,t,t,t]),
+        ...TIAO.flatMap(t => [t,t,t,t]),
+        ...ZI.flatMap(t => [t,t,t,t]),
+        ...FLOWERS
+    ];
+    
+    const TILE_NAMES = {
+        '1m':'一萬','2m':'二萬','3m':'三萬','4m':'四萬','5m':'五萬','6m':'六萬','7m':'七萬','8m':'八萬','9m':'九萬',
+        '1p':'一筒','2p':'二筒','3p':'三筒','4p':'四筒','5p':'五筒','6p':'六筒','7p':'七筒','8p':'八筒','9p':'九筒',
+        '1s':'一條','2s':'二條','3s':'三條','4s':'四條','5s':'五條','6s':'六條','7s':'七條','8s':'八條','9s':'九條',
+        'E':'東','S':'南','W':'西','N':'北','C':'中','F':'發','P':'白',
+        'H1':'春','H2':'夏','H3':'秋','H4':'冬','H5':'梅','H6':'蘭','H7':'竹','H8':'菊'
+    };
+    
+    // 仿真麻將牌顏色
+    const SUIT_COLOR = {
+        m: '#c41e3a',  // 萬子 - 紅色
+        p: '#1e3a8a',  // 筒子 - 藍色  
+        s: '#065f46',  // 條子 - 綠色
+        E:'#1a5276', S:'#1a5276', W:'#1a5276', N:'#1a5276',
+        C:'#c41e3a', F:'#27ae60', P:'#ecf0f1'
+    };
+    
+    let gameState = null;
+    let myUsername = '';
+    let myCoins = 1000;
+    let selectedTileIndex = -1;
+    let pendingAction = null;
+    
+    // ========== 仿真麻將牌繪製 ==========
+    function drawRealisticTile(value, selected) {
+        const canvas = document.createElement('canvas');
+        canvas.width = TILE_W;
+        canvas.height = TILE_H;
+        canvas.className = 'mahjong-tile' + (selected ? ' selected' : '');
+        
+        const ctx = canvas.getContext('2d');
+        
+        // === 3D 立體效果 ===
+        
+        // 牌的陰影
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
+        
+        // 牌身主體 - 米白色
+        const bodyGrad = ctx.createLinearGradient(0, 0, TILE_W, TILE_H);
+        bodyGrad.addColorStop(0, '#ffffff');
+        bodyGrad.addColorStop(0.3, '#f8f8f8');
+        bodyGrad.addColorStop(0.7, '#f0f0f0');
+        bodyGrad.addColorStop(1, '#e8e8e8');
+        
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.roundRect(2, 2, TILE_W - 4, TILE_H - 4, 5);
+        ctx.fill();
+        
+        // 清除陰影，畫內部陰影
+        ctx.shadowColor = 'transparent';
+        
+        // 牌的厚度效果（左上細線）
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(3, TILE_H - 3);
+        ctx.lineTo(3, 3);
+        ctx.lineTo(TILE_W - 3, 3);
+        ctx.stroke();
+        
+        // 右下厚度效果
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.beginPath();
+        ctx.moveTo(TILE_W - 3, 3);
+        ctx.lineTo(TILE_W - 3, TILE_H - 3);
+        ctx.lineTo(3, TILE_H - 3);
+        ctx.stroke();
+        
+        // 牌的邊框
+        ctx.strokeStyle = selected ? '#ffd700' : '#d0d0d0';
+        ctx.lineWidth = selected ? 2 : 1.5;
+        ctx.beginPath();
+        ctx.roundRect(2, 2, TILE_W - 4, TILE_H - 4, 5);
+        ctx.stroke();
+        
+        // 內框裝飾線
+        ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.roundRect(4, 4, TILE_W - 8, TILE_H - 8, 3);
+        ctx.stroke();
+        
+        // === 牌面裝飾 ===
+        // 右上角小三角裝飾
+        ctx.fillStyle = 'rgba(0,0,0,0.03)';
+        ctx.beginPath();
+        ctx.moveTo(TILE_W - 5, 5);
+        ctx.lineTo(TILE_W - 12, 5);
+        ctx.lineTo(TILE_W - 5, 12);
+        ctx.closePath();
+        ctx.fill();
+        
+        // === 牌面文字 ===
+        const type = getTileType(value);
+        const suit = value.slice(-1);
+        let color = '#333';
+        let text = '';
+        let subtext = '';
+        
+        if (type === 'suited') {
+            const num = parseInt(value);
+            color = SUIT_COLOR[suit];
+            text = num.toString();
+            subtext = { m:'萬', p:'筒', s:'條' }[suit];
+        } else if (type === 'honor') {
+            color = SUIT_COLOR[value] || '#333';
+            text = { E:'東', S:'南', W:'西', N:'北', C:'中', F:'發', P:'白' }[value] || '?';
+        } else if (type === 'flower') {
+            color = '#059669';
+            text = { H1:'春', H2:'夏', H3:'秋', H4:'冬', H5:'梅', H6:'蘭', H7:'竹', H8:'菊' }[value] || '?';
+        }
+        
+        // 主文字
+        ctx.fillStyle = color;
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, TILE_W / 2, TILE_H / 2 - 3);
+        
+        // 副文字
+        if (subtext) {
+            ctx.font = '8px Arial';
+            ctx.fillText(subtext, TILE_W / 2, TILE_H - 10);
+        }
+        
+        // 字牌的背景圓形裝飾
+        if (type === 'honor' && value !== 'P') {
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.1;
+            ctx.beginPath();
+            ctx.arc(TILE_W / 2, TILE_H / 2, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+        
+        return canvas;
+    }
+    
+    function getTileType(value) {
+        if (value.startsWith('H')) return 'flower';
+        if (ZI.includes(value)) return 'honor';
+        return 'suited';
+    }
+    
+    // ========== 遊戲狀態 ==========
+    function createGameState() {
+        return {
+            phase: 'idle',
+            dealer: 0,
+            currentPlayer: 0,
+            round: 1,
+            wall: [],
+            wallIndex: 0,
+            players: [
+                { name: myUsername, hand: [], exposed: [], discards: [], flowers: [], ready: false },
+                { name: '電腦1', hand: [], exposed: [], discards: [], flowers: [], ready: false },
+                { name: '電腦2', hand: [], exposed: [], discards: [], flowers: [], ready: false },
+                { name: '電腦3', hand: [], exposed: [], discards: [], flowers: [], ready: false }
+            ],
+            lastDiscard: null,
+            lastDiscardBy: -1,
+            lastDrawBy: -1,
+            scores: [0,0,0,0],
+            gameScores: [0,0,0,0]
+        };
+    }
+    
+    function shuffle(tiles) {
+        for (let i = tiles.length-1; i>0; i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+        }
+        return tiles;
+    }
+    
+    function initGame() {
+        gameState = createGameState();
+        let tiles = shuffle([...ALL_TILES]);
+        
+        for (let p = 0; p < 4; p++) {
+            const count = (p === gameState.dealer) ? 17 : 16;
+            for (let i = 0; i < count; i++) {
+                gameState.players[p].hand.push(tiles.pop());
+            }
+        }
+        
+        gameState.wall = tiles.slice(0, -16);
+        gameState.wallIndex = 0;
+        
+        // 處理花牌
+        for (let p = 0; p < 4; p++) {
+            const hand = gameState.players[p].hand;
+            for (let f of FLOWERS) {
+                const idx = hand.indexOf(f);
+                if (idx >= 0) {
+                    hand.splice(idx, 1);
+                    gameState.players[p].flowers.push(f);
+                    const newTile = tiles.pop();
+                    if (newTile) hand.push(newTile);
+                }
+            }
+            hand.sort(tileSort);
+        }
+        
+        gameState.phase = 'playing';
+        gameState.currentPlayer = gameState.dealer;
+        
+        renderAll();
+        updateTurn();
+    }
+    
+    function tileSort(a, b) {
+        const typeA = getTileType(a), typeB = getTileType(b);
+        if (typeA !== typeB) {
+            const order = {suited:0, honor:1, flower:2};
+            return order[typeA] - order[typeB];
+        }
+        if (typeA === 'suited') {
+            const sA = a.slice(-1), sB = b.slice(-1);
+            if (sA !== sB) return ({m:0, p:1, s:2})[sA] - ({m:0, p:1, s:2})[sB];
+            return parseInt(a) - parseInt(b);
+        }
+        return a.localeCompare(b);
+    }
+    
+    function drawTileForPlayer(playerIndex) {
+        if (gameState.wallIndex >= gameState.wall.length) return false;
+        const tile = gameState.wall[gameState.wallIndex++];
+        gameState.players[playerIndex].hand.push(tile);
+        
+        if (tile.startsWith('H')) {
+            gameState.players[playerIndex].flowers.push(tile);
+            gameState.players[playerIndex].hand.splice(-1, 1);
+        }
+        
+        gameState.players[playerIndex].hand.sort(tileSort);
+        gameState.lastDrawBy = playerIndex;
+        return true;
+    }
+    
+    function discardTile(playerIndex, tileIndex) {
+        const player = gameState.players[playerIndex];
+        const tile = player.hand.splice(tileIndex, 1)[0];
+        player.discards.push(tile);
+        gameState.lastDiscard = tile;
+        gameState.lastDiscardBy = playerIndex;
+        selectedTileIndex = -1;
+        
+        if (playerIndex !== 0) {
+            checkOpponentAction(playerIndex);
+        }
+        
+        gameState.currentPlayer = (playerIndex + 1) % 4;
+        
+        if (gameState.currentPlayer === 0) {
+            renderAll();
+            updateTurn();
+        } else {
+            setTimeout(computerPlay, 800);
+        }
+    }
+    
+    function checkOpponentAction(fromPlayer) {
+        const tile = gameState.lastDiscard;
+        const nextPlayer = (fromPlayer + 1) % 4;
+        
+        if (nextPlayer === 0) {
+            const hand = gameState.players[0].hand;
+            const canPeng = checkPeng(hand, tile);
+            const canGang = checkGang(hand, tile);
+            const canHu = checkHu(hand);
+            
+            if (canPeng || canGang || canHu) {
+                pendingAction = { tile, fromPlayer };
+                showActionButtons({ peng: canPeng, gang: canGang, hu: canHu });
+            }
+        }
+    }
+    
+    function showActionButtons(actions) {
+        const bar = document.getElementById('actionBar');
+        bar.style.display = 'flex';
+        document.getElementById('btnPeng').disabled = !actions.peng;
+        document.getElementById('btnGang').disabled = !actions.gang;
+        document.getElementById('btnHu').disabled = !actions.hu;
+        document.getElementById('btnChi').disabled = true;
+    }
+    
+    function doAction(action) {
+        document.getElementById('actionBar').style.display = 'none';
+        
+        if (action === 'pass') {
+            pendingAction = null;
+            drawTileForPlayer(0);
+            renderAll();
+            return;
+        }
+        
+        if (!pendingAction) return;
+        const { tile } = pendingAction;
+        const hand = gameState.players[0].hand;
+        
+        if (action === 'peng') {
+            const idxs = hand.reduce((acc, t, i) => { if (t === tile) acc.push(i); return acc; }, []);
+            if (idxs.length >= 2) {
+                gameState.players[0].exposed.push({ type: 'peng', tiles: [tile, tile, tile] });
+                idxs.sort((a,b) => b-a).slice(0,2).forEach(i => hand.splice(i,1));
+                hand.sort(tileSort);
+            }
+        } else if (action === 'gang') {
+            const idxs = hand.reduce((acc, t, i) => { if (t === tile) acc.push(i); return acc; }, []);
+            if (idxs.length >= 3) {
+                gameState.players[0].exposed.push({ type: 'gang', tiles: [tile, tile, tile, tile] });
+                idxs.sort((a,b) => b-a).slice(0,3).forEach(i => hand.splice(i,1));
+                hand.sort(tileSort);
+                drawTileForPlayer(0);
+            }
+        } else if (action === 'hu') {
+            endGame(0);
+            return;
+        }
+        
+        pendingAction = null;
+        renderAll();
+        updateTurn();
+    }
+    
+    function checkPeng(hand, tile) {
+        return hand.filter(t => t === tile).length >= 2;
+    }
+    
+    function checkGang(hand, tile) {
+        return hand.filter(t => t === tile).length >= 3;
+    }
+    
+    function checkHu(hand) {
+        return false; // 簡化版
+    }
+    
+    function computerPlay() {
+        const player = gameState.players[gameState.currentPlayer];
+        const hand = player.hand;
+        
+        if (hand.length === 0) {
+            endGame(gameState.currentPlayer);
+            return;
+        }
+        
+        // 簡化AI：打出生張
+        let discardIdx = 0;
+        hand.forEach((t, i) => {
+            if (ZI.includes(t)) discardIdx = i;
+        });
+        
+        discardTile(gameState.currentPlayer, discardIdx);
+    }
+    
+    function endGame(winner) {
+        gameState.phase = 'ended';
+        
+        const baseScore = 8;
+        const selfDraw = (gameState.lastDrawBy === winner) ? 2 : 0;
+        const totalScore = baseScore + selfDraw;
+        
+        const results = [];
+        for (let p = 0; p < 4; p++) {
+            if (p === winner) {
+                const winAmount = totalScore * 3;
+                gameState.gameScores[p] = winAmount;
+                myCoins += winAmount;
+                results.push({ name: gameState.players[p].name, score: winAmount, winner: true });
+            } else {
+                const loseAmount = -totalScore;
+                gameState.gameScores[p] = loseAmount;
+                if (p === 0) myCoins += loseAmount;
+                results.push({ name: gameState.players[p].name, score: loseAmount, winner: false });
+            }
+        }
+        
+        showResult(winner, results);
+        saveCoins();
+    }
+    
+    function showResult(winner, results) {
+        const modal = document.getElementById('resultModal');
+        const table = document.getElementById('scoreTable');
+        const title = document.getElementById('resultTitle');
+        
+        title.textContent = winner === 0 ? '🎉 你胡了！' : `💬 ${gameState.players[winner].name} 胡牌`;
+        
+        table.innerHTML = results.map(r => 
+            `<div class="row ${r.winner ? 'winner' : ''}">
+                <span>${r.name}</span>
+                <span>${r.score >= 0 ? '+' : ''}${r.score}</span>
+            </div>`
+        ).join('');
+        
+        modal.classList.add('show');
+    }
+    
+    function closeResult() {
+        document.getElementById('resultModal').classList.remove('show');
+        document.getElementById('startBtn').style.display = 'block';
+        gameState.phase = 'idle';
+    }
+    
+    function renderAll() {
+        renderPlayerHand();
+        renderOpponents();
+        renderDiscard();
+        renderWallCount();
+        document.getElementById('coinDisplay').textContent = myCoins;
+    }
+    
+    function renderPlayerHand() {
+        const hand = gameState ? gameState.players[0].hand : [];
+        const container = document.getElementById('playerHand');
+        container.innerHTML = '';
+        
+        hand.forEach((tile, index) => {
+            const tileDiv = document.createElement('div');
+            const type = getTileType(tile);
+            const canvas = drawRealisticTile(tile, selectedTileIndex === index);
+            canvas.onclick = () => {
+                if (gameState && gameState.phase === 'playing' && gameState.currentPlayer === 0) {
+                    selectedTileIndex = index;
+                    renderPlayerHand();
+                }
+            };
+            tileDiv.appendChild(canvas);
+            container.appendChild(tileDiv);
+        });
+    }
+    
+    function renderOpponents() {
+        const oppIds = ['opp-top-hand', 'opp-right-hand', 'opp-bottom-hand', 'opp-left-hand'];
+        const playerIndices = [2, 3, 1, 0];
+        
+        oppIds.forEach((id, i) => {
+            const playerIdx = playerIndices[i];
+            const container = document.getElementById(id);
+            const hand = gameState ? gameState.players[playerIdx].hand : [];
+            
+            container.innerHTML = '';
+            hand.forEach(() => {
+                const div = document.createElement('div');
+                div.className = 'opp-tile';
+                container.appendChild(div);
+            });
+        });
+    }
+    
+    function renderDiscard() {
+        const pile = document.getElementById('discardPile');
+        pile.innerHTML = '';
+        
+        for (let p = 0; p < 4; p++) {
+            gameState.players[p].discards.slice(-3).forEach(tile => {
+                const div = document.createElement('div');
+                div.className = 'discard-tile';
+                div.textContent = TILE_NAMES[tile] ? TILE_NAMES[tile][0] : '?';
+                pile.appendChild(div);
+            });
+        }
+    }
+    
+    function renderWallCount() {
+        if (!gameState) return;
+        const remaining = gameState.wall.length - gameState.wallIndex;
+        document.getElementById('wallCount').textContent = remaining;
+    }
+    
+    function updateTurn() {
+        if (!gameState) return;
+        const names = ['', '電腦1', '電腦2', '電腦3'];
+        const current = gameState.currentPlayer;
+        
+        if (current === 0) {
+            document.getElementById('turnIndicator').textContent = '👆 你的回合 — 點擊出牌';
+            document.getElementById('startBtn').style.display = 'none';
+        } else {
+            document.getElementById('turnIndicator').textContent = `🤖 ${names[current]} 思考中...`;
+        }
+        
+        document.getElementById('actionBar').style.display = 'none';
+    }
+    
+    function startGame() {
+        if (myCoins < 100) {
+            document.getElementById('brokeModal').classList.add('show');
+            return;
+        }
+        
+        myCoins -= 100;
+        document.getElementById('coinDisplay').textContent = myCoins;
+        saveCoins();
+        
+        initGame();
+        
+        if (gameState.currentPlayer !== 0) {
+            setTimeout(computerPlay, 1000);
+        }
+    }
+    
+    function contactLINE() {
+        window.open('https://line.me/ti/p/@HAPPYNEWYA', '_blank');
+    }
+    
+    function doLogin() {
+        const name = document.getElementById('usernameInput').value.trim();
+        if (!name) { alert('請輸入帳號'); return; }
+        
+        myUsername = name;
+        myCoins = parseInt(localStorage.getItem('mahjong_coins_' + name)) || 1000;
+        
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('gameUI').style.display = 'flex';
+        document.getElementById('playerNameDisplay').textContent = name;
+        document.getElementById('coinDisplay').textContent = myCoins;
+        
+        gameState = createGameState();
+        renderAll();
+    }
+    
+    function saveCoins() {
+        if (myUsername) localStorage.setItem('mahjong_coins_' + myUsername, myCoins);
+    }
+    </script>
+</body>
+</html>

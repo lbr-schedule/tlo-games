@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#1a1a2e"/>
+  <circle cx="96" cy="96" r="80" fill="#ffd700" stroke="#ff8c00" stroke-width="4"/>
+  <circle cx="96" cy="96" r="60" fill="none" stroke="#1a1a2e" stroke-width="2"/>
+  <!-- 輪盤分隔線 -->
+  <line x1="96" y1="16" x2="96" y2="36" stroke="#1a1a2e" stroke-width="2"/>
+  <line x1="96" y1="156" x2="96" y2="176" stroke="#1a1a2e" stroke-width="2"/>
+  <line x1="16" y1="96" x2="36" y2="96" stroke="#1a1a2e" stroke-width="2"/>
+  <line x1="156" y1="96" x2="176" y2="96" stroke="#1a1a2e" stroke-width="2"/>
+  <!-- 紅色區塊 -->
+  <path d="M96,36 A60,60 0 0,1 156,96 L96,96 Z" fill="#ff4444"/>
+  <path d="M156,96 A60,60 0 0,1 96,156 L96,96 Z" fill="#ff4444"/>
+  <path d="M96,156 A60,60 0 0,1 36,96 L96,96 Z" fill="#ff4444"/>
+  <path d="M36,96 A60,60 0 0,1 96,36 L96,96 Z" fill="#ff4444"/>
+  <!-- 指標 -->
+  <polygon points="96,8 90,20 102,20" fill="#fff"/>
+  <!-- 中心點 -->
+  <circle cx="96" cy="96" r="8" fill="#1a1a2e"/>
+  <text x="96" y="100" text-anchor="middle" font-size="12" fill="#ffd700">T</text>
+</svg>
