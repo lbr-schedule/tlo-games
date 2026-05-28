@@ -3006,7 +3006,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
     console.log(`🎮 T-LO 遊戲大廳已啟動!`);
     console.log(`   首頁: http://localhost:${PORT}/`);
