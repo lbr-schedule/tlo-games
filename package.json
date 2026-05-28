@@ -1,0 +1,11 @@
+{
+  "name": "tlo-games-placeholder",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'no build needed'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
