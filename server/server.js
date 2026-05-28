@@ -4,12 +4,14 @@ const WebSocket = require('ws');
 const path = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// 遊戲狀態
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 let gamePhase = 'idle';
 let currentBets = [];
 let lastResult = null;
@@ -48,58 +50,43 @@ function showResult(result, color) {
     const losers = [];
 
     for (const bet of currentBets) {
-        let win = false;
-        if (bet.type === 'color' && bet.color === color) win = true;
-        if (bet.type === 'odd_even') {
-            if (bet.choice === 'odd' && result % 2 === 1 && result !== 0) win = true;
-            if (bet.choice === 'even' && result % 2 === 0 && result !== 0) win = true;
-        }
-        if (bet.type === 'number' && bet.number === result) win = true;
-
-        if (win) {
-            const prize = bet.type === 'number' ? bet.amount * 10 : bet.amount * 2;
-            bet.balance += prize;
-            winners.push({ username: bet.username, amount: bet.amount, prize });
+        if (bet.type === 'straight' && bet.number === result) {
+            winners.push({ player: bet.player, amount: bet.amount * 35 });
+        } else if (bet.type === 'color' && bet.color === color) {
+            winners.push({ player: bet.player, amount: bet.amount * 2 });
         } else {
-            bet.balance -= bet.amount;
-            losers.push({ username: bet.username, amount: bet.amount });
+            losers.push({ player: bet.player, amount: bet.amount });
         }
     }
 
     broadcast({ type: 'result', result, color, winners, losers });
+    currentBets = [];
     setTimeout(startBetting, 5000);
 }
 
 wss.on('connection', (ws) => {
     ws.on('message', (data) => {
         try {
-            const msg = JSON.parse(data);
-            const username = msg.username || 'Player';
-
-            if (msg.type === 'join') {
-                ws._balance = 1000;
-                ws._username = username;
-                ws._profile = msg.profile || {};
-                console.log('玩家加入:', username, '| 姓名:', ws._profile.realname || '-', '| 電話:', ws._profile.phone || '-', '| 信箱:', ws._profile.email || '-');
-                broadcast({ type: 'joined', balance: ws._balance, phase: gamePhase, result: lastResult });
-                if (gamePhase === 'idle') startBetting();
-            }
-
-            if (msg.type === 'bet' && gamePhase === 'betting') {
-                currentBets.push({
-                    username,
-                    balance: ws._balance,
-                    type: msg.betType,
-                    amount: parseInt(msg.amount),
-                    color: msg.color,
-                    choice: msg.choice,
-                    number: msg.number
-                });
-                broadcast({ type: 'bets_update', bets: currentBets });
+            const message = JSON.parse(data);
+            if (gamePhase === 'betting') {
+                if (message.type === 'bet') {
+                    currentBets.push({
+                        player: message.player,
+                        type: message.betType,
+                        color: message.color,
+                        number: message.number,
+                        amount: message.amount
+                    });
+                    ws.send(JSON.stringify({ type: 'bet_confirmed', bet: message }));
+                    broadcast({ type: 'bets_update', bets: currentBets });
+                }
+            } else if (message.type === 'join') {
+                ws.send(JSON.stringify({ type: 'game_state', phase: gamePhase, lastResult }));
             }
         } catch(e) { console.log('Error:', e.message); }
     });
 });
 
-console.log('🎰 T-LO 俄羅斯輪盤 http://localhost:3001');
-server.listen(3001);
+server.listen(PORT, () => {
+    console.log('🎰 T-LO 俄羅斯輪盤 http://localhost:' + PORT);
+});

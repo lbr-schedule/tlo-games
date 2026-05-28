@@ -1,4 +1,5 @@
 FROM node:20-slim
+ENV PORT=3001
 WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
