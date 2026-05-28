@@ -1,6 +1,7 @@
 FROM node:20-slim
 WORKDIR /app
-RUN npm install -g serve
+COPY package*.json ./
+RUN npm install --omit=dev
 COPY . .
 EXPOSE 3001
-CMD ["serve", "-l", "3001", "."]
+CMD ["node", "server/server.js"]
