@@ -300,6 +300,9 @@
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         🎁 <span id="broadcastText"></span>
     </div>
+    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:rgba(255,255,255,0.08);color:#aaffaa;text-align:center;padding:6px 10px;font-size:0.85rem;margin-bottom:5px;border-radius:6px;">
+        <span id="fakeAnnounceText"></span>
+    </div>
     <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
     
     <div class="container">
@@ -732,6 +735,69 @@
             void el.offsetWidth;
             el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
             setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        // ========== 假的繁榮系統 ==========
+        const fakeNames = ['Alex','Mike','Kevin','David','Andy','Jason','Ryan','Ben','Chris','Tom','Lisa','Amy','Emma','Sophia','Oliver','Lucas','Noah','Ethan','Mason','Luna','Zoe','Lily','Lucy','Grace','Max','Sam','Leo','Ian','Hugo','Finn','Jack','James','William','Henry','Charlie','George','Oscar','Mia','Ella','Ava','Chloe','Mila'];
+        const fakeActions = [
+            { msg: ' 押 Red 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 Black 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 Odd 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 Even 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 #${num} 中了！ +${amt}', types: ['number'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 神秘下注 $500 獎金 $${pool}', types: ['mystery'], poolRange: [1000, 3000] },
+            { msg: ' 連贏 3 把！ +${amt}', types: ['streak'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 抽到每日任務獎勵 +${amt}', types: ['task'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 登入領取 $${amt}', types: ['login'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 彩池被領走 $${pool}！', types: ['pool'], poolRange: [1000, 3000] },
+        ];
+        let fakeAnnounceTimer = null, fakeQueue = [], fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
+        function randomAmt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function generateFakeAnnounce() {
+            const name = randomPick(fakeNames);
+            const action = randomPick(fakeActions);
+            let msg = name + action.msg;
+            if (action.types[0] === 'mystery' || action.types[0] === 'pool') {
+                const pool = randomAmt(action.poolRange[0], action.poolRange[1]);
+                msg = msg.replace('${pool}', pool);
+            } else if (action.types[0] === 'number') {
+                const num = randomAmt(1, 36), amt = randomAmt(action.minAmt, action.maxAmt);
+                msg = msg.replace('#${num}', num).replace('${amt}', amt);
+            } else {
+                const amt = randomAmt(action.minAmt, action.maxAmt);
+                msg = msg.replace('${amt}', amt);
+            }
+            return msg;
+        }
+        function pushFakeAnnounce() {
+            if (!fakeBarEl) return;
+            fakeQueue.push(generateFakeAnnounce());
+            if (!fakeScrolling) processNextFake();
+        }
+        function processNextFake() {
+            if (fakeQueue.length === 0) { fakeScrolling = false; return; }
+            fakeScrolling = true;
+            const msg = fakeQueue.shift();
+            if (fakeBarTextEl) fakeBarTextEl.textContent = '🔔 ' + msg;
+            fakeBarEl.style.display = 'block';
+            fakeBarEl.style.opacity = '1';
+            setTimeout(() => {
+                fakeBarEl.style.transition = 'opacity 0.5s';
+                fakeBarEl.style.opacity = '0';
+                setTimeout(() => {
+                    fakeBarEl.style.display = 'none';
+                    fakeBarEl.style.transition = '';
+                    setTimeout(processNextFake, 800);
+                }, 500);
+            }, 3500);
+        }
+        function startFakeAnnounces() {
+            if (fakeAnnounceTimer) clearInterval(fakeAnnounceTimer);
+            fakeBarEl = document.getElementById('fakeAnnounceBar');
+            fakeBarTextEl = document.getElementById('fakeAnnounceText');
+            for (let i = 0; i < 3; i++) setTimeout(() => pushFakeAnnounce(), i * 2000);
+            fakeAnnounceTimer = setInterval(() => { if (Math.random() < 0.7) pushFakeAnnounce(); }, randomAmt(8000, 20000));
         }
 
         // 播放音效（通用）
@@ -1265,6 +1331,7 @@ function closeProfileModal(){
             loadHistoryFromDB();
             pollStatus();
             pollInterval = setInterval(pollStatus, 1000);
+            startFakeAnnounces();
             // 通知伺服器玩家上線
             fetch('/api/roulette/ping', { method: 'POST' });
             
@@ -1329,6 +1396,7 @@ function closeProfileModal(){
                     pollStatus();
                     console.log('Setting up poll interval');
                     pollInterval = setInterval(pollStatus, 1000);
+                    startFakeAnnounces();
 
                     // 啟動背景音樂（使用者已經看到遊戲，有操作意圖）
                     initAudio();
@@ -2271,6 +2339,8 @@ function closeProfileModal(){
             // 不要在betting中清除，否則用戶下注後馬上又消失
             // 自動啟動背景音樂
             if (soundEnabled && !bgMusicPlaying && myName) startBgMusic();
+            // 每回合開始有更高機率觸發假的繁榮公告
+            if (Math.random() < 0.5) pushFakeAnnounce();
         }
         
         function clearSelected() {
