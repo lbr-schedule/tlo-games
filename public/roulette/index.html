@@ -300,7 +300,7 @@
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         🎁 <span id="broadcastText"></span>
     </div>
-    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:rgba(255,255,255,0.08);color:#aaffaa;text-align:center;padding:6px 10px;font-size:0.85rem;margin-bottom:5px;border-radius:6px;">
+    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         <span id="fakeAnnounceText"></span>
     </div>
     <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
@@ -740,53 +740,52 @@
         // ========== 假的繁榮系統 ==========
         const fakeNames = ['Alex','Mike','Kevin','David','Andy','Jason','Ryan','Ben','Chris','Tom','Lisa','Amy','Emma','Sophia','Oliver','Lucas','Noah','Ethan','Mason','Luna','Zoe','Lily','Lucy','Grace','Max','Sam','Leo','Ian','Hugo','Finn','Jack','James','William','Henry','Charlie','George','Oscar','Mia','Ella','Ava','Chloe','Mila'];
         const fakeActions = [
-            { msg: ' is betting on Red...', types: ['color'] },
-            { msg: ' is betting on Black...', types: ['color'] },
-            { msg: ' is betting on Odd...', types: ['odd_even'] },
-            { msg: ' is betting on Even...', types: ['odd_even'] },
-            { msg: ' placed a number bet!', types: ['number'] },
-            { msg: ' placed a mystery bet!', types: ['mystery'] },
-            { msg: ' won a round!', types: ['win'] },
-            { msg: ' completed a daily task!', types: ['task'] },
-            { msg: ' just logged in!', types: ['login'] },
-            { msg: ' claimed the mystery pool!', types: ['pool'] },
+            { msg: ' 押 🔴 Red 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 ⚫ Black 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 Odd 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 Even 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 押 #${num} 中了！ +${amt}', types: ['number'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 神秘下注 $500 獎金 $${pool}', types: ['mystery'], poolRange: [1000, 3000] },
+            { msg: ' 贏了 $${amt}！', types: ['win'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 抽到每日任務獎勵 $${amt}！', types: ['task'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 登入領取 $${amt}！', types: ['login'], minAmt: 1000, maxAmt: 3000 },
+            { msg: ' 彩池被領走 $${pool}！', types: ['pool'], poolRange: [1000, 3000] },
         ];
-        let fakeAnnounceTimer = null, fakeQueue = [], fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
+        let fakeAnnounceTimer = null, fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
         function randomAmt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
         function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateFakeAnnounce() {
             const name = randomPick(fakeNames);
             const action = randomPick(fakeActions);
-            return name + action.msg;
+            let msg = name + action.msg;
+            if (action.poolRange) {
+                msg = msg.replace('${pool}', randomAmt(action.poolRange[0], action.poolRange[1]));
+            } else if (action.types[0] === 'number') {
+                msg = msg.replace('#${num}', randomAmt(1, 36)).replace('${amt}', randomAmt(action.minAmt, action.maxAmt));
+            } else if (action.minAmt) {
+                msg = msg.replace('${amt}', randomAmt(action.minAmt, action.maxAmt));
+            }
+            return msg;
         }
         function pushFakeAnnounce() {
-            if (!fakeBarEl) return;
-            fakeQueue.push(generateFakeAnnounce());
-            if (!fakeScrolling) processNextFake();
-        }
-        function processNextFake() {
-            if (fakeQueue.length === 0) { fakeScrolling = false; return; }
+            if (!fakeBarEl || fakeScrolling) return;
             fakeScrolling = true;
-            const msg = fakeQueue.shift();
-            if (fakeBarTextEl) fakeBarTextEl.textContent = '🔔 ' + msg;
+            const msg = generateFakeAnnounce();
+            if (fakeBarTextEl) fakeBarTextEl.textContent = '🎁 ' + msg;
             fakeBarEl.style.display = 'block';
-            fakeBarEl.style.opacity = '1';
+            fakeBarEl.style.animation = 'none';
+            void fakeBarEl.offsetWidth;
+            fakeBarEl.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
             setTimeout(() => {
-                fakeBarEl.style.transition = 'opacity 0.5s';
-                fakeBarEl.style.opacity = '0';
-                setTimeout(() => {
-                    fakeBarEl.style.display = 'none';
-                    fakeBarEl.style.transition = '';
-                    setTimeout(processNextFake, 800);
-                }, 500);
-            }, 3500);
+                fakeBarEl.style.display = 'none';
+                fakeScrolling = false;
+            }, 5000);
         }
         function startFakeAnnounces() {
             if (fakeAnnounceTimer) clearInterval(fakeAnnounceTimer);
             fakeBarEl = document.getElementById('fakeAnnounceBar');
             fakeBarTextEl = document.getElementById('fakeAnnounceText');
-            for (let i = 0; i < 3; i++) setTimeout(() => pushFakeAnnounce(), i * 2000);
-            fakeAnnounceTimer = setInterval(() => { if (Math.random() < 0.7) pushFakeAnnounce(); }, randomAmt(8000, 20000));
+            fakeAnnounceTimer = setInterval(() => { if (!fakeScrolling && Math.random() < 0.5) pushFakeAnnounce(); }, randomAmt(10000, 25000));
         }
 
         // 播放音效（通用）
