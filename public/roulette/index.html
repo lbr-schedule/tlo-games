@@ -740,16 +740,16 @@
         // ========== 假的繁榮系統 ==========
         const fakeNames = ['Alex','Mike','Kevin','David','Andy','Jason','Ryan','Ben','Chris','Tom','Lisa','Amy','Emma','Sophia','Oliver','Lucas','Noah','Ethan','Mason','Luna','Zoe','Lily','Lucy','Grace','Max','Sam','Leo','Ian','Hugo','Finn','Jack','James','William','Henry','Charlie','George','Oscar','Mia','Ella','Ava','Chloe','Mila'];
         const fakeActions = [
-            { msg: ' 押 Red 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 押 Black 中了！ +${amt}', types: ['color'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 押 Odd 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 押 Even 中了！ +${amt}', types: ['odd_even'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 押 #${num} 中了！ +${amt}', types: ['number'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 神秘下注 $500 獎金 $${pool}', types: ['mystery'], poolRange: [1000, 3000] },
-            { msg: ' 連贏 3 把！ +${amt}', types: ['streak'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 抽到每日任務獎勵 +${amt}', types: ['task'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 登入領取 $${amt}', types: ['login'], minAmt: 1000, maxAmt: 3000 },
-            { msg: ' 彩池被領走 $${pool}！', types: ['pool'], poolRange: [1000, 3000] },
+            { msg: ' is betting on Red...', types: ['color'] },
+            { msg: ' is betting on Black...', types: ['color'] },
+            { msg: ' is betting on Odd...', types: ['odd_even'] },
+            { msg: ' is betting on Even...', types: ['odd_even'] },
+            { msg: ' placed a number bet!', types: ['number'] },
+            { msg: ' placed a mystery bet!', types: ['mystery'] },
+            { msg: ' won a round!', types: ['win'] },
+            { msg: ' completed a daily task!', types: ['task'] },
+            { msg: ' just logged in!', types: ['login'] },
+            { msg: ' claimed the mystery pool!', types: ['pool'] },
         ];
         let fakeAnnounceTimer = null, fakeQueue = [], fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
         function randomAmt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -757,18 +757,7 @@
         function generateFakeAnnounce() {
             const name = randomPick(fakeNames);
             const action = randomPick(fakeActions);
-            let msg = name + action.msg;
-            if (action.types[0] === 'mystery' || action.types[0] === 'pool') {
-                const pool = randomAmt(action.poolRange[0], action.poolRange[1]);
-                msg = msg.replace('${pool}', pool);
-            } else if (action.types[0] === 'number') {
-                const num = randomAmt(1, 36), amt = randomAmt(action.minAmt, action.maxAmt);
-                msg = msg.replace('#${num}', num).replace('${amt}', amt);
-            } else {
-                const amt = randomAmt(action.minAmt, action.maxAmt);
-                msg = msg.replace('${amt}', amt);
-            }
-            return msg;
+            return name + action.msg;
         }
         function pushFakeAnnounce() {
             if (!fakeBarEl) return;
