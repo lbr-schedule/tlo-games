@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#ffd700">
+    <meta name="theme-color" content="#00b900">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="T-LO轉盤">
-    <meta name="description" content="🎰 T-LO大轉盤 - 輪盤遊戲，每日登入送金幣，排行榜競賽赢獎品">
+    <meta name="apple-mobile-web-app-title" content="T-LO世界盃">
+    <meta name="description" content="🏆 T-LO 世界盃限定轉盤 - 世足賽限定活動，恭喜發財，大獎等你拿！">
     <link rel="manifest" href="/roulette/manifest.json">
     <link rel="apple-touch-icon" href="/roulette/favicon.png">
     <link rel="icon" type="image/x-icon" href="/roulette/favicon.ico">
@@ -15,14 +15,14 @@
     <link rel="preload" as="image" href="/roulette/ad1.jpg">
     <link rel="preload" as="image" href="/roulette/ad2.jpg">
     <link rel="preload" as="image" href="/roulette/ad3.jpg">
-    <title>🎰 T-LO大轉盤</title>
+    <title>🏆 T-LO 世界盃限定轉盤 🏆</title>
     <style>
         .winner-marquee {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+            background: linear-gradient(90deg, #00b900, #ffd700, #00b900);
             color: #1a1a2e;
             padding: 8px 0;
             font-weight: bold;
@@ -30,10 +30,10 @@
             z-index: 999;
             display: none;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(255,215,0,0.5);
+            box-shadow: 0 2px 10px rgba(0,185,0,0.5);
         }
         .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; }
-        @keyframes broadcast-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+        @keyframes broadcast-pulse { 0%,100% { opacity: 1; text-shadow: 0 0 10px #ffd700; } 50% { opacity: 0.8; text-shadow: 0 0 20px #ffd700; } }
         .winner-marquee.show {
             display: block;
             animation: marquee-slide 8s linear forwards;
@@ -46,7 +46,7 @@
         html { height: 100%; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            background: linear-gradient(135deg, #0a3d0a, #1a5c1a, #0d4d0d); 
             height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
             height: 100%; /* fallback */
             color: white; 
@@ -54,6 +54,25 @@
             display: flex;
             flex-direction: column;
             touch-action: manipulation;
+        }
+        /* 世界盃草地條紋效果 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 20px,
+                rgba(0,100,0,0.08) 20px,
+                rgba(0,100,0,0.08) 40px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
             -webkit-overflow-scrolling: touch;
         }
         .container { 
@@ -71,27 +90,29 @@
         
         h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(0,100,0,0.4); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; border: 2px solid rgba(255,215,0,0.3); }
         #playerNameDisplay { display: flex; align-items: center; height: 100%; }
         #balanceBox { display: flex; align-items: center; height: 100%; }
         .balance { font-size: 0.95rem; }
         .balance span { color: #ffd700; font-weight: bold; }
         .result-badge { padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 0.85rem; min-width: 60px; text-align: center; display: none; }
         .result-badge.show { display: inline-block; }
-        .result-badge.win { background: rgba(0,200,100,0.4); color: #00ff00; }
+        .result-badge.win { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; text-shadow: 0 0 10px #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
         .result-badge.lose { background: rgba(255,100,100,0.4); color: #ff6666; }
         .result-badge.neutral { background: rgba(255,255,255,0.1); color: #aaa; }
-        .result-badge.result { background: rgba(255,215,0,0.4); color: #ffd700; }
+        .result-badge.result { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; text-shadow: 0 0 10px #ffd700; }
         
         .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; }
         
         .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
-        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
+        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 8px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; box-shadow: 0 0 30px rgba(255,215,0,0.8), inset 0 0 20px rgba(255,215,0,0.3); background: linear-gradient(135deg, #ffd700, #00b900); padding: 4px; }
         .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
         .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
-        .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-pointer { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 40px solid #ffd700; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7)); }
+        .trophy-icon { position: absolute; top: -38px; left: 50%; transform: translateX(-50%); font-size: 1.8rem; animation: trophy-bounce 1s ease-in-out infinite; }
+        @keyframes trophy-bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
         
         .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
@@ -149,7 +170,7 @@
         .ad-close { position: absolute; top: 5px; right: 10px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; }
         .ad-text { color: #333; font-size: 0.85rem; margin: 8px 0 5px; }
         .ad-line { background: #00b900; color: white; padding: 8px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
-        .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
+        .result-display.betting { background: linear-gradient(135deg, rgba(0,185,0,0.4), rgba(255,215,0,0.3)); border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
         .result-display.red { background: rgba(180,0,0,0.7); border: 2px solid #ff4444; font-size: 1.1rem; }
@@ -161,12 +182,12 @@
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .modal-overlay.show { display: flex; }
-        .modal { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; }
-        .modal h2 { color: #ffd700; text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
-        .modal h3 { color: #ffd700; margin: 12px 0 8px; font-size: 1rem; }
+        .modal { background: linear-gradient(135deg, #0a3d0a, #1a5c1a, #0d4d0d); border: 3px solid #ffd700; border-radius: 15px; padding: 20px; max-width: 350px; width: 90%; color: white; box-shadow: 0 0 25px rgba(255,215,0,0.4); }
+        .modal h2 { color: #ffd700; text-align: center; margin-bottom: 15px; font-size: 1.2rem; text-shadow: 0 0 15px rgba(255,215,0,0.5); }
+        .modal h3 { color: #ffd700; margin: 12px 0 8px; font-size: 1rem; text-shadow: 0 0 10px rgba(255,215,0,0.4); }
         .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin: 5px 0; }
-        .modal .close-btn { width: 100%; padding: 12px; background: #ffd700; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 15px; }
-        .modal .close-btn:hover { background: #ffdd44; }
+        .modal .close-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #00b900); border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 15px; box-shadow: 0 3px 15px rgba(255,215,0,0.4); }
+        .modal .close-btn:hover { background: linear-gradient(135deg, #ffdd44, #00c864); }
         .modal .bet-demo { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 8px 0; }
         .modal .bet-demo span { display: inline-block; padding: 5px 10px; border-radius: 5px; margin: 2px; font-size: 0.85rem; }
         .modal .bet-demo .red { background: #cc0000; }
@@ -176,7 +197,7 @@
         .modal .bet-demo .even { background: #660066; }
         .modal .bet-demo .num { background: #ffd700; color: #1a1a2e; }
         
-        .bet-section { background: rgba(255,255,255,0.05); padding: clamp(8px, 2vw, 12px); border-radius: 12px; margin-bottom: 8px; }
+        .bet-section { background: rgba(0,100,0,0.3); padding: clamp(8px, 2vw, 12px); border-radius: 12px; margin-bottom: 8px; border: 2px solid rgba(255,215,0,0.3); }
         .bet-section h3 { color: #ffd700; margin-bottom: 8px; font-size: clamp(0.9rem, 3vw, 1rem); }
         
         .bet-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(4px, 1vw, 6px); margin-bottom: clamp(4px, 1vw, 6px); }
@@ -189,15 +210,15 @@
         .bet-btn.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; }
         .bet-btn.odd { background: linear-gradient(135deg, #0066cc, #00aaff); color: white; }
         .bet-btn.even { background: linear-gradient(135deg, #660066, #aa00aa); color: white; }
-        .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+        .bet-btn.number-btn { background: linear-gradient(135deg, #ffd700, #00b900); color: #1a1a2e; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
         .bet-btn.disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
         .bet-btn .multi { display: block; font-size: clamp(0.6rem, 1.8vw, 0.65rem); opacity: 0.8; }
-        .bet-btn.selected { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,215,0,0.8); border: 2px solid #ffd700; }
+        .bet-btn.selected { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,215,0,0.9); border: 3px solid #ffd700; }
         
         .quick-bet { display: flex; gap: clamp(4px, 1vw, 6px); margin-bottom: 8px; justify-content: center; flex-wrap: wrap; }
         .quick-bet button { padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 15px); background: #333; border: 2px solid #555; border-radius: 8px; color: white; cursor: pointer; font-size: clamp(0.85rem, 2.5vw, 0.9rem); font-weight: bold; }
-        .quick-bet button:hover { background: #444; }
-        .quick-bet button.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
+        .quick-bet button:hover { background: linear-gradient(135deg, #ffd700, #00b900); color: #1a1a2e; }
+        .quick-bet button.active { background: linear-gradient(135deg, #ffd700, #00b900); color: #1a1a2e; border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
         
         .number-bet { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .number-bet input { padding: 10px; border: 2px solid #555; border-radius: 8px; background: #2a2a4a; color: white; font-size: 0.95rem; transition: all 0.2s; }
@@ -206,20 +227,20 @@
         .number-bet input.active { border-color: #ffd700; background: #3a3a5a; }
         .number-bet button { padding: 10px 15px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; color: #1a1a2e; }
         .number-bet button.disabled { opacity: 0.4; cursor: not-allowed; }
-        .number-bet button:hover:not(.disabled) { background: #ffdd44; }
+        .number-bet button:hover:not(.disabled) { background: linear-gradient(135deg, #ffdd44, #00c864); }
         
         .bets-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .current-bets-box { background: rgba(0,200,100,0.15); border: 3px solid rgba(0,200,100,0.4); padding: 8px; border-radius: 12px; margin: 6px 0; transition: all 0.3s ease; flex-shrink: 0; }
-        .current-bets-box.has-bets { border-color: #00c864; box-shadow: 0 0 20px rgba(0,200,100,0.3); animation: pulse-bets 2s infinite; }
+        .current-bets-box { background: rgba(0,100,0,0.3); border: 3px solid rgba(255,215,0,0.4); padding: 8px; border-radius: 12px; margin: 6px 0; transition: all 0.3s ease; flex-shrink: 0; }
+        .current-bets-box.has-bets { border-color: #ffd700; box-shadow: 0 0 25px rgba(255,215,0,0.5); animation: pulse-bets 2s infinite; }
         .title-shine { position: relative; overflow: hidden; display: inline-block; }
         .title-shine::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent); animation: title-shine-slide 1.5s linear infinite; }
         @keyframes title-shine-slide {
             0% { left: -50%; }
             100% { left: 150%; }
         }
-        .current-bets-box h4 { color: #00ff88; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; }
-        @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 15px rgba(0,200,100,0.3); } 50% { box-shadow: 0 0 25px rgba(0,200,100,0.5); } }
-        .history-bets-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; width: 316px; height: 180px; overflow-y: auto; flex-shrink: 0; box-sizing: border-box; }
+        .current-bets-box h4 { color: #ffd700; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        @keyframes pulse-bets { 0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.4); } 50% { box-shadow: 0 0 35px rgba(255,215,0,0.7); } }
+        .history-bets-box { background: rgba(0,100,0,0.2); border: 2px solid rgba(255,215,0,0.2); padding: 8px; border-radius: 10px; width: 316px; height: 180px; overflow-y: auto; flex-shrink: 0; box-sizing: border-box; }
         .history-bets-box h4 { color: #888; margin-bottom: 5px; font-size: 0.85rem; }
         
         .bet-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem); }
@@ -230,7 +251,7 @@
         .history-row.win { color: #00ff00; }
         .history-row.lose { color: #ff6666; }
         
-        .auth-section { background: rgba(255,255,255,0.1); padding: clamp(15px, 4vw, 25px); border-radius: 15px; text-align: center; }
+        .auth-section { background: rgba(0,100,0,0.3); padding: clamp(15px, 4vw, 25px); border-radius: 15px; text-align: center; border: 2px solid rgba(255,215,0,0.3); }
         .auth-tabs { display: flex; margin-bottom: 15px; }
         .auth-tab { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none; color: #aaa; cursor: pointer; font-size: clamp(0.9rem, 3vw, 1rem); }
         .auth-tab:first-child { border-radius: 10px 0 0 10px; }
@@ -240,8 +261,8 @@
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #555; border-radius: 10px; background: #2a2a4a; color: white; font-size: clamp(0.9rem, 3vw, 1rem); text-align: center; }
         .auth-form input:focus { border-color: #ffd700; outline: none; }
-        .auth-form button { width: 100%; padding: clamp(12px, 3vw, 14px); background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; }
-        .auth-form button:hover { background: linear-gradient(135deg, #ffdd44, #ffa020); }
+        .auth-form button { width: 100%; padding: clamp(12px, 3vw, 14px); background: linear-gradient(135deg, #ffd700, #00b900); border: none; border-radius: 10px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 3px 15px rgba(255,215,0,0.4); }
+        .auth-form button:hover { background: linear-gradient(135deg, #ffdd44, #00c864); }
         .auth-form button:disabled { opacity: 0.5; cursor: not-allowed; }
         .auth-msg { color: #ff6666; margin-top: 10px; font-size: 0.9rem; }
         .auth-msg.success { color: #00ff00; }
@@ -251,7 +272,7 @@
         
         .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; width: 316px; height: 45px; box-sizing: border-box; }
         .game-tab { width: 155.5px; height: 45px; padding: 0; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        .game-tab.active { background: #ffd700; color: #1a1a2e; }
+        .game-tab.active { background: linear-gradient(135deg, #ffd700, #00b900); color: #1a1a2e; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
@@ -265,7 +286,7 @@
         
         .broke-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
         .broke-overlay.show { display: flex; }
-        .broke-overlay > div { text-align: center; padding: clamp(20px, 5vw, 40px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ff6666; border-radius: 20px; max-width: clamp(280px, 90vw, 320px); box-shadow: 0 0 30px rgba(255,100,100,0.3); }
+        .broke-overlay > div { text-align: center; padding: clamp(20px, 5vw, 40px); background: linear-gradient(135deg, #0a3d0a, #1a5c1a, #0d4d0d); border: 3px solid #ff6666; border-radius: 20px; max-width: clamp(280px, 90vw, 320px); box-shadow: 0 0 30px rgba(255,100,100,0.3); }
         .broke-overlay h2 { color: #ff6666; font-size: clamp(1.5rem, 5vw, 2rem); margin-bottom: 15px; text-shadow: 0 0 20px rgba(255,100,100,0.5); }
         .broke-overlay p { color: #ccc; margin-bottom: 25px; text-align: center; font-size: clamp(1rem, 3vw, 1.1rem); line-height: 1.6; }
         .broke-overlay button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ff6600, #ff9900); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,100,0,0.4); transition: transform 0.2s; }
@@ -274,15 +295,78 @@
         /* 結算彈窗 */
         .result-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; justify-content: center; align-items: center; }
         .result-popup-overlay.show { display: flex; }
-        .result-popup-box { text-align: center; padding: clamp(25px, 6vw, 45px); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffd700; border-radius: 20px; max-width: clamp(280px, 90vw, 350px); box-shadow: 0 0 30px rgba(255,215,0,0.3); }
-        .result-popup-box p { font-size: clamp(1.2rem, 4vw, 1.5rem); margin-bottom: 25px; line-height: 1.6; font-weight: bold; }
-        .result-popup-box button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ffd700, #ffaa00); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,215,0,0.4); transition: transform 0.2s; }
+        .result-popup-box { text-align: center; padding: clamp(25px, 6vw, 45px); background: linear-gradient(135deg, #0a3d0a, #1a5c1a, #0d4d0d); border: 3px solid #ffd700; border-radius: 20px; max-width: clamp(280px, 90vw, 350px); box-shadow: 0 0 40px rgba(255,215,0,0.6); }
+        .result-popup-box p { font-size: clamp(1.2rem, 4vw, 1.5rem); margin-bottom: 25px; line-height: 1.6; font-weight: bold; color: #ffd700; text-shadow: 0 0 15px rgba(255,215,0,0.5); }
+        .result-popup-box button { padding: clamp(12px, 3vw, 15px) clamp(30px, 8vw, 40px); background: linear-gradient(135deg, #ffd700, #ffaa00); border: none; border-radius: 25px; font-size: clamp(1rem, 3vw, 1.1rem); font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 25px rgba(255,215,0,0.6); transition: transform 0.2s; }
         .result-popup-box button:hover { transform: scale(1.05); }
         
         .modal .guide-step h3 { color: #ffd700; margin-bottom: 12px; font-size: 1.1rem; }
         .modal .guide-step p { color: #ddd; margin: 8px 0; line-height: 1.6; font-size: 0.95rem; }
         .modal .guide-step p strong { color: #fff; }
 
+        /* 世界盃限定標籵 */
+        .worldcup-badge {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a2e;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: badge-pulse 2s infinite;
+        }
+        @keyframes badge-pulse { 0%,100% { box-shadow: 0 0 5px #ffd700; } 50% { box-shadow: 0 0 15px #ffd700; } }
+        /* 中獎慶祝動畫 */
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        .celebration-overlay.show { display: block; }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .win-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px #ffd700, 0 0 60px #ff8c00;
+            z-index: 1001;
+            display: none;
+            animation: win-text-pop 2s ease-out forwards;
+        }
+        @keyframes win-text-pop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+        .win-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%);
+            z-index: 999;
+            display: none;
+            animation: glow-fade 2s ease-out forwards;
+        }
+        @keyframes glow-fade { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
         /* 桌面設備隱藏滾動条（滑鼠用戶不需要） */
         @media (hover: hover) and (pointer: fine) {
             * {
@@ -296,6 +380,9 @@
     </style>
 </head>
 <body>
+    <div class="win-glow" id="winGlow"></div>
+    <div class="win-text" id="winText">🎉 恭喜發財！🎉</div>
+    <div class="celebration-overlay" id="celebrationOverlay"></div>
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         🎁 <span id="broadcastText"></span>
@@ -303,7 +390,7 @@
     <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         <span id="fakeAnnounceText"></span>
     </div>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🏆 T-LO 世界盃限定轉盤 🏆</span><span class="worldcup-badge">世界盃限定</span><span class="help-toggle" onclick="toggleSound()" id="soundBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -354,7 +441,7 @@
                 
                 <div class="wheel-container">
                     <div class="wheel-border"></div>
-                    <div class="wheel-pointer"></div>
+                    <div class="wheel-pointer"><span class="trophy-icon">🏆</span></div>
                     <div class="wheel-outer">
                         <div class="wheel" id="wheel">
                             <canvas id="wheelCanvas" width="300" height="300"></canvas>
@@ -510,7 +597,7 @@
 
     <div class="modal-overlay" id="helpModal">
         <div class="modal">
-            <h2>🎰 T-LO大轉盤 玩法</h2>
+            <h2>🏆 T-LO 世界盃限定轉盤 🏆 玩法</h2>
             
             <div id="helpPage1">
                 <h3>📌 遊戲流程</h3>
@@ -691,6 +778,42 @@
             bgMusicGain = audioCtx.createGain();
             bgMusicGain.gain.value = 0.15;
             bgMusicGain.connect(masterGain);
+        }
+
+        // ========== 世界盃中獎慶祝系統 ==========
+        function triggerCelebration() {
+            // 顯示金光效果
+            const glow = document.getElementById('winGlow');
+            if (glow) {
+                glow.style.display = 'block';
+                setTimeout(() => { glow.style.display = 'none'; }, 2000);
+            }
+            // 顯示恭喜文字
+            const winText = document.getElementById('winText');
+            if (winText) {
+                winText.style.display = 'block';
+                setTimeout(() => { winText.style.display = 'none'; }, 2000);
+            }
+            // 彩紙掉落
+            const overlay = document.getElementById('celebrationOverlay');
+            if (overlay) {
+                overlay.innerHTML = '';
+                overlay.classList.add('show');
+                const colors = ['#ffd700', '#ff8c00', '#00b900', '#ff4444', '#00ffff', '#ff69b4'];
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    overlay.appendChild(confetti);
+                }
+                setTimeout(() => {
+                    overlay.innerHTML = '';
+                    overlay.classList.remove('show');
+                }, 3000);
+            }
         }
         
         function toggleSound() {
@@ -2108,6 +2231,7 @@ function closeProfileModal(){
                 // 播放贏或輸的音效
                 if (netWin > 0) {
                     setTimeout(() => playSound('win'), 100);
+                    setTimeout(() => triggerCelebration(), 100);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
                 }
@@ -2930,7 +3054,7 @@ function showMyInviteCode() {
                 popup.id = 'bonusPopup';
                 popup.style.cssText = `
                     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                    background: linear-gradient(135deg, #1a1a2e, #16213e);
+                    background: linear-gradient(135deg, #0a3d0a, #1a5c1a, #0d4d0d);
                     border: 3px solid #ffd700; border-radius: 20px;
                     padding: 30px 40px; text-align: center; z-index: 10000;
                     box-shadow: 0 0 50px rgba(255,215,0,0.5);
