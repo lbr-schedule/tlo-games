@@ -1906,11 +1906,17 @@ function closeProfileModal(){
                 ctx.save();
                 ctx.translate(textX, textY);
                 ctx.rotate(textAngle + Math.PI / 2);
-                ctx.fillStyle = 'white';
+                // 根據背景顏色調整文字顏色
+                const textColor = (item.color === 'gold' || item.color === 'black') ? '#ffd700' : '#ffffff';
+                ctx.fillStyle = textColor;
                 ctx.font = item.num === 0 ? 'bold 14px Arial' : 'bold 11px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
+                // 加文字外框增加對比度
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
                 const displayText = item.num === 0 ? '★' : item.num;
+                ctx.strokeText(displayText, 0, 0);
                 ctx.fillText(displayText, 0, 0);
                 ctx.restore();
             });
