@@ -293,9 +293,70 @@
                 display: none; /* Chrome/Safari/Opera */
             }
         }
+
+        /* 中獎恭喜動畫 */
+        .win-celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+        }
+        .win-celebration.show { display: block; }
+        .win-celebration .glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%);
+            animation: glow-pulse 1s ease-out forwards;
+        }
+        @keyframes glow-pulse {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        .win-celebration .text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px #ffd700, 0 0 60px #ff8c00, 2px 2px 4px #000;
+            white-space: nowrap;
+            animation: text-pop 1.5s ease-out forwards;
+        }
+        @keyframes text-pop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            50% { transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+        }
+        .win-celebration .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti-drop 2s ease-out forwards;
+        }
+        @keyframes confetti-drop {
+            0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
+    <div class="win-celebration" id="winCelebration">
+        <div class="glow"></div>
+        <div class="text">🎉 恭喜發財！🎉</div>
+    </div>
+
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         🎁 <span id="broadcastText"></span>
@@ -682,6 +743,26 @@
         let bgmAudio = null;
         let bgMusicBlocked = false;
         
+
+        // 中獎恭喜特效
+        function showWinCelebration() {
+            const el = document.getElementById('winCelebration');
+            if (!el) return;
+            el.innerHTML = '<div class="glow"></div><div class="text">🎉 恭喜發財！🎉</div>';
+            const colors = ['#ffd700', '#ff8c00', '#ff4444', '#00ff00', '#00ffff', '#ff69b4'];
+            for (let i = 0; i < 30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + '%';
+                c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                c.style.animationDelay = Math.random() * 0.5 + 's';
+                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                el.appendChild(c);
+            }
+            el.classList.add('show');
+            setTimeout(() => { el.classList.remove('show'); el.innerHTML = ''; }, 2000);
+        }
+
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2108,6 +2189,7 @@ function closeProfileModal(){
                 // 播放贏或輸的音效
                 if (netWin > 0) {
                     setTimeout(() => playSound('win'), 100);
+                    setTimeout(() => showWinCelebration(), 100);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
                 }
