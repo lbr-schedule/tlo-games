@@ -2071,9 +2071,26 @@ function closeProfileModal(){
             
             let currentRotation = 0;
             let done = false;
+            let lastTickSlot = -1;
             
             wheel.style.willChange = 'transform';
             window.rouletteAnimating = true;
+            
+            function playTick() {
+                if (!sfxEnabled) return;
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(sfxGain);
+                osc.type = 'square';
+                osc.frequency.value = 800;
+                gain.gain.value = 0.15;
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
             
             function animate() {
                 if (done) return;
@@ -2088,6 +2105,13 @@ function closeProfileModal(){
                 // 用 easeOut 計算總旋轉角度（積分）
                 // 因為速度是遞減的，角度 = initialV * (1 - (1-t)^2) * duration
                 currentRotation = easeOut * (finalRotation);
+                
+                // 每經過一個 slot 就發出點擊聲
+                const currentSlot = Math.floor(currentRotation / slotAngle);
+                if (currentSlot > lastTickSlot) {
+                    playTick();
+                    lastTickSlot = currentSlot;
+                }
                 
                 wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
                 
