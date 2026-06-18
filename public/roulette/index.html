@@ -2109,8 +2109,11 @@ function closeProfileModal(){
                 // 每經過一個 slot 就發出點擊聲
                 const currentSlot = Math.floor(currentRotation / slotAngle);
                 if (currentSlot > lastTickSlot) {
-                    playTick();
-                    lastTickSlot = currentSlot;
+                    // 每3格才响一次，讓節奏慢一點
+                    if ((currentSlot - lastTickSlot) >= 3) {
+                        playTick();
+                        lastTickSlot = currentSlot;
+                    }
                 }
                 
                 wheel.style.transform = 'rotate(' + currentRotation + 'deg)';
