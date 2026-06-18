@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/roulette/favicon.png">
     <link rel="icon" type="image/x-icon" href="/roulette/favicon.ico">
     <link rel="icon" type="image/png" href="/roulette/favicon.png">
-    <link rel="preload" as="image" href="/roulette/ad1.jpg">
+    <link rel="preload" as="image" href="/roulette/ad1.png">
     <link rel="preload" as="image" href="/roulette/ad2.jpg">
     <link rel="preload" as="image" href="/roulette/ad3.jpg">
     <title>🎰 T-LO大轉盤</title>
@@ -3131,7 +3131,7 @@ function showMyInviteCode() {
         // 廣告彈窗（LBR-STUDIO）
         function showAdPopup() {
             // Pick a random ad each time from the 5 local images
-            const adImages = ['/roulette/ad1.jpg', '/roulette/ad2.jpg', '/roulette/ad3.jpg', '/roulette/ad4.png', '/roulette/ad5.jpg', '/roulette/ad6.png', '/roulette/ad7.jpg', '/roulette/ad8.jpg', '/roulette/ad9.jpg', '/roulette/ad10.jpg', '/roulette/ad11.jpg', '/roulette/ad12.jpg', '/roulette/ad13.jpg', '/roulette/ad14.jpg', '/roulette/ad15.jpg', '/roulette/ad16.jpg'];
+            const adImages = ['/roulette/ad1.png', '/roulette/ad2.png', '/roulette/ad3.png', '/roulette/ad4.png', '/roulette/ad5.png', '/roulette/ad6.png', '/roulette/ad7.png', '/roulette/ad8.png', '/roulette/ad9.png', '/roulette/ad10.png', '/roulette/ad11.png', '/roulette/ad12.png', '/roulette/ad13.png', '/roulette/ad14.png', '/roulette/ad15.png', '/roulette/ad16.png'];
             const randomImg = adImages[Math.floor(Math.random() * adImages.length)];
             let modal = document.getElementById('adModal');
             if (!modal) {
@@ -3150,22 +3150,22 @@ function showMyInviteCode() {
             }
             document.getElementById('adModalImg').src = randomImg;
             const adTexts = {
-                '/roulette/ad1.jpg': '你到底會不會玩啦？😏🎮',
-                '/roulette/ad2.jpg': '你是最棒的～加油！🥹💪',
-                '/roulette/ad3.jpg': '加油！贏多一點唷！💰🏆',
-                '/roulette/ad4.png': '快來試試手氣！🎰🔥',
-                '/roulette/ad5.jpg': '每天玩一下，金幣滾滾來！💰✨',
-                '/roulette/ad6.png': '挑戰大獎，運氣就是你！🎯🚀',
-                '/roulette/ad7.jpg': '下注一下，驚喜等你拿！🎁🎮',
-                '/roulette/ad8.jpg': '成為轉盤之王！👑🏆',
-                '/roulette/ad9.jpg': '好運正在等著你！🍀💫',
-                '/roulette/ad10.jpg': '贏錢的祕密？繼續玩就知道了！💎🎰',
-                '/roulette/ad11.jpg': '翻轉命運的時刻到了！🎲✨',
-                '/roulette/ad12.jpg': '每一次旋轉都是驚喜！🎰🎉',
-                '/roulette/ad13.jpg': '你的運氣今天特別旺！🌟💰',
-                '/roulette/ad14.jpg': '來一場勝利的旋轉！🏅🎮',
-                '/roulette/ad15.jpg': '黃金轉盤等你來挑戰！🥇🎰',
-                '/roulette/ad16.jpg': '今天你就是那個幸運兒！🍀🎯'
+                '/roulette/ad1.png': 'AJ 💫',
+                '/roulette/ad2.png': '以凡 ✨',
+                '/roulette/ad3.png': '凌凌 🌟',
+                '/roulette/ad4.png': '千思語 💕',
+                '/roulette/ad5.png': '喬喬 🎀',
+                '/roulette/ad6.png': '夢璃 🌸',
+                '/roulette/ad7.png': '小光 ☀️',
+                '/roulette/ad8.png': '小舞 💃',
+                '/roulette/ad9.png': '小艾 🎯',
+                '/roulette/ad10.png': '書宏 📚',
+                '/roulette/ad11.png': '林小蔚 🌊',
+                '/roulette/ad12.png': '氣鵝 🦆',
+                '/roulette/ad13.png': '燒酒 🍶',
+                '/roulette/ad14.png': '瑄瑄 💎',
+                '/roulette/ad15.png': '萌欣 🌻',
+                '/roulette/ad16.png': '阿宗 🎮'
             };
             document.getElementById('adModalText').textContent = adTexts[randomImg] || '來挑戰吧！🎮';
             modal.style.display = 'flex';
