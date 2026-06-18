@@ -909,15 +909,51 @@
                 osc.start(now);
                 osc.stop(now + 0.03);
             } else if (type === 'win') {
-                // 贏錢音效：上升音調（柔和）
+                // 贏錢音效：硬幣收集風格（多音符上揚）
+                // 第一個音符
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.connect(gain1);
+                gain1.connect(gain);
+                osc1.type = 'sine';
+                osc1.frequency.value = 988; // B5
+                gain1.gain.setValueAtTime(0.11, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc1.start(now);
+                osc1.stop(now + 0.1);
+                // 第二個音符（高八度）
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(gain);
+                osc2.type = 'sine';
+                osc2.frequency.value = 1319; // E6
+                gain2.gain.setValueAtTime(0, now);
+                gain2.gain.setValueAtTime(0.11, now + 0.08);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.2);
+                // 第三個音符（更高）
+                const osc3 = audioCtx.createOscillator();
+                const gain3 = audioCtx.createGain();
+                osc3.connect(gain3);
+                gain3.connect(gain);
+                osc3.type = 'sine';
+                osc3.frequency.value = 1568; // G6
+                gain3.gain.setValueAtTime(0, now + 0.16);
+                gain3.gain.setValueAtTime(0.11, now + 0.16);
+                gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc3.start(now + 0.16);
+                osc3.stop(now + 0.35);
+                // 最後一個長音符結束
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(350, now);
-                osc.frequency.exponentialRampToValueAtTime(700, now + 0.15);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.3);
-                gain.gain.setValueAtTime(0.11, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.4);
+                osc.frequency.setValueAtTime(1976, now + 0.24); // B6
+                gain.gain.setValueAtTime(0, now + 0.24);
+                gain.gain.setValueAtTime(0.08, now + 0.24);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.start(now + 0.24);
+                osc.stop(now + 0.6);
+                return;
             } else if (type === 'lose') {
                 // 輸錢音效：下降音調（柔和）
                 osc.type = 'sine';
