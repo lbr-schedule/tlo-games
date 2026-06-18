@@ -772,7 +772,7 @@
             masterGain.gain.value = 1;
             masterGain.connect(audioCtx.destination);
             bgMusicGain = audioCtx.createGain();
-            bgMusicGain.gain.value = bgmEnabled ? 0.12 : 0;
+            bgMusicGain.gain.value = bgmEnabled ? 0.08 : 0;
             bgMusicGain.connect(masterGain);
             sfxGain = audioCtx.createGain();
             sfxGain.gain.value = sfxEnabled ? 1 : 0;
@@ -896,7 +896,7 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(600, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-                gain.gain.setValueAtTime(0.24, now);
+                gain.gain.setValueAtTime(0.16, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                 osc.start(now);
                 osc.stop(now + 0.1);
@@ -904,7 +904,7 @@
                 // 轉盤滴答聲
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(1000, now);
-                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.setValueAtTime(0.03, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
                 osc.start(now);
                 osc.stop(now + 0.03);
@@ -914,7 +914,7 @@
                 osc.frequency.setValueAtTime(400, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
                 osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-                gain.gain.setValueAtTime(0.24, now);
+                gain.gain.setValueAtTime(0.16, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 osc.start(now);
                 osc.stop(now + 0.4);
@@ -923,7 +923,7 @@
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(400, now);
                 osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
-                gain.gain.setValueAtTime(0.16, now);
+                gain.gain.setValueAtTime(0.10, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 osc.start(now);
                 osc.stop(now + 0.4);
@@ -932,7 +932,7 @@
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-                gain.gain.setValueAtTime(0.16, now);
+                gain.gain.setValueAtTime(0.10, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc.start(now);
                 osc.stop(now + 0.2);
@@ -946,7 +946,7 @@
                 bgmAudio = new Audio();
                 bgmAudio.src = '/roulette/bg-music.mp3';
                 bgmAudio.loop = true;
-                bgmAudio.volume = 0.32;
+                bgmAudio.volume = 0.24;
             }
             // Unmute in case it was muted before
             bgmAudio.muted = false;
@@ -981,7 +981,7 @@
             gain.connect(sfxGain);
             osc.type = 'sine';
             osc.frequency.value = 1200;
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
             osc.start(audioCtx.currentTime);
             osc.stop(audioCtx.currentTime + 0.03);
@@ -2086,7 +2086,7 @@ function closeProfileModal(){
                 gain.connect(sfxGain);
                 osc.type = 'square';
                 osc.frequency.value = 800;
-                gain.gain.value = 0.12;
+                gain.gain.value = 0.08;
                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
                 osc.start(audioCtx.currentTime);
                 osc.stop(audioCtx.currentTime + 0.05);
