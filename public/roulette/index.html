@@ -2086,8 +2086,8 @@ function closeProfileModal(){
                 gain.connect(sfxGain);
                 osc.type = 'sine';
                 osc.frequency.value = 600;
-                gain.gain.value = 0.05;
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+                gain.gain.value = 0.03;
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
                 osc.start(audioCtx.currentTime);
                 osc.stop(audioCtx.currentTime + 0.05);
             }
