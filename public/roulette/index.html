@@ -744,8 +744,6 @@
         let sfxEnabled = true;
         let bgmAudio = null;
         let bgMusicBlocked = false;
-        let spinWhirrNode = null;
-        let spinWhirrGain = null;
         
 
         // 中獎恭喜特效
@@ -812,41 +810,6 @@
             // 立即靜音/取消靜音 SFX
             if (sfxGain) {
                 sfxGain.gain.setValueAtTime(sfxEnabled ? 1 : 0, audioCtx.currentTime);
-            }
-        }
-        
-        // 轉盤旋轉持續音效（嗡嗡聲）
-        function startSpinWhirr() {
-            if (!sfxEnabled) return;
-            if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') return;
-            stopSpinWhirr();
-            
-            // 使用多個振盪器產生嗡嗡聲
-            spinWhirrNode = audioCtx.createOscillator();
-            spinWhirrGain = audioCtx.createGain();
-            spinWhirrNode.type = 'sawtooth';
-            spinWhirrNode.frequency.value = 80; // 低頻嗡嗡聲
-            spinWhirrGain.gain.value = 0;
-            spinWhirrNode.connect(spinWhirrGain);
-            spinWhirrGain.connect(sfxGain);
-            spinWhirrNode.start();
-            
-            // 漸入
-            spinWhirrGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.3);
-        }
-        
-        function stopSpinWhirr() {
-            if (spinWhirrNode) {
-                try {
-                    spinWhirrGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
-                    setTimeout(() => {
-                        try { spinWhirrNode.stop(); } catch(e) {}
-                        spinWhirrNode = null;
-                    }, 250);
-                } catch(e) {
-                    spinWhirrNode = null;
-                }
             }
         }
         
@@ -1997,7 +1960,6 @@ function closeProfileModal(){
             wheel.style.animation = '';
             switch(data.phase) {
                 case 'waiting':
-                    stopSpinWhirr();
                     badge.style.display = 'none';
                     disableBtns();
                     if (!window.rouletteAnimating) {
@@ -2033,7 +1995,6 @@ function closeProfileModal(){
                     resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
                     playSound('spin'); // 播放開始旋轉音效
-                    startSpinWhirr(); // 開始轉動持續音效
                     
                     // 開始轉盤減速動畫（由快到慢）
                     // 更新神秘彩池顯示
@@ -2075,7 +2036,6 @@ function closeProfileModal(){
                     wheel.style.animation = 'none';
                     disableBtns();
                     resultDisplay.style.display = 'block';
-                    stopSpinWhirr(); // 停止轉動音效
                     break;
                     
                 default:
