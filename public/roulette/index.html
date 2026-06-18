@@ -892,48 +892,48 @@
             const now = audioCtx.currentTime;
             
             if (type === 'bet') {
-                // 下注音效：短促的嗶聲
+                // 下注音效：短促的柔和嗶聲
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-                gain.gain.setValueAtTime(0.16, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.08);
+                gain.gain.setValueAtTime(0.11, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 osc.start(now);
                 osc.stop(now + 0.1);
             } else if (type === 'tick') {
-                // 轉盤滴答聲
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(1000, now);
-                gain.gain.setValueAtTime(0.03, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+                // 轉盤滴答聲（柔和）
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.02, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.start(now);
                 osc.stop(now + 0.03);
             } else if (type === 'win') {
-                // 贏錢音效：上升音調
+                // 贏錢音效：上升音調（柔和）
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-                gain.gain.setValueAtTime(0.16, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.15);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.3);
+                gain.gain.setValueAtTime(0.11, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc.start(now);
                 osc.stop(now + 0.4);
             } else if (type === 'lose') {
-                // 輸錢音效：下降音調
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
-                gain.gain.setValueAtTime(0.10, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                // 輸錢音效：下降音調（柔和）
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.4);
+                gain.gain.setValueAtTime(0.07, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc.start(now);
                 osc.stop(now + 0.4);
             } else if (type === 'spin') {
-                // 開始旋轉音效
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-                gain.gain.setValueAtTime(0.10, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                // 開始旋轉音效（柔和）
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(500, now + 0.2);
+                gain.gain.setValueAtTime(0.07, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                 osc.start(now);
                 osc.stop(now + 0.2);
             }
@@ -981,7 +981,7 @@
             gain.connect(sfxGain);
             osc.type = 'sine';
             osc.frequency.value = 1200;
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
             osc.start(audioCtx.currentTime);
             osc.stop(audioCtx.currentTime + 0.03);
@@ -2084,10 +2084,10 @@ function closeProfileModal(){
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(sfxGain);
-                osc.type = 'square';
-                osc.frequency.value = 800;
-                gain.gain.value = 0.08;
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.type = 'sine';
+                osc.frequency.value = 600;
+                gain.gain.value = 0.05;
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
                 osc.start(audioCtx.currentTime);
                 osc.stop(audioCtx.currentTime + 0.05);
             }
