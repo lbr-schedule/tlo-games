@@ -1289,7 +1289,12 @@ app.post('/api/roulette/bet', async (req, res) => {
             args: [amount, username]
         }).catch(e => console.log('更新下注失敗:', e.message));
     }
-    
+
+    // 追蹤下注到 roulette_bets（用於神秘彩池分發）
+    if (rouletteState.currentRoundId) {
+        trackBet(username, rouletteState.currentRoundId, betType, choice || String(number), amount).catch(e => console.log('追蹤下注失敗:', e.message));
+    }
+
     // 寵物經驗值加成
     addPetXp(username, amount);
     
