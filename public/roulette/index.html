@@ -157,6 +157,8 @@
         .result-display.green { background: rgba(0,120,0,0.7); border: 2px solid #00ff00; font-size: 1.1rem; }
         
         .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 2px 4px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 2px; border: 1px solid rgba(255,255,255,0.25); width: 30px; height: 26px; box-sizing: border-box; }
+        .top-buttons { display:flex; align-items:center; gap:12px; }
+        .top-buttons .help-toggle { width:42px !important; height:42px !important; font-size:1.1rem !important; border-radius:10px !important; flex-shrink:0; }
         .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -364,7 +366,15 @@
     <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         <span id="fakeAnnounceText"></span>
     </div>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleBGM()" id="bgmBtn" style="position:absolute;right:70px;">🎵</span><span class="help-toggle" onclick="toggleSFX()" id="sfxBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
+    <header style="display:flex;align-items:center;justify-content:space-between;width:316px;margin:0 auto;height:40px;box-sizing:border-box;flex-shrink:0;">
+        <button onclick="leaveGame()" class="header-btn">🚪</button>
+        <span style="font-size:1.05rem;color:#ffd700;font-weight:bold;">🎰 T-LO大轉盤</span>
+        <div class="top-buttons">
+            <span class="help-toggle" onclick="toggleBGM()" id="bgmBtn">🎵</span>
+            <span class="help-toggle" onclick="toggleSFX()" id="sfxBtn">🔊</span>
+            <span class="help-toggle" onclick="showPlayerMenu()">☰</span>
+        </div>
+    </header>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -488,9 +498,9 @@
             </div>
             
             <!-- 公告 Tab -->
-            <div class="tab-content" id="announceTab" style="padding:10px;">
-                <h4 style="color:#ffd700;margin-bottom:12px;text-align:center;">📢 獎品公告</h4>
-                <div id="announceInfo" style="text-align:center;font-size:0.9rem;line-height:1.8;"></div>
+            <div class="tab-content" id="announceTab" style="padding:10px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;">
+                <h4 style="color:#ffd700;font-size:30px;font-weight:700;margin-bottom:20px;text-align:center;flex-shrink:0;">📢 獎品公告</h4>
+                <div id="announceInfo" style="flex:1;overflow-y:auto;text-align:left;padding-right:10px;line-height:2;font-size:22px;"></div>
             </div>
         </div>
     </div>
@@ -1586,30 +1596,26 @@ function closeProfileModal(){
         // 公告系統
         function loadAnnouncement() {
             const html = `
-                <div style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:left;line-height:1.8;">
-                    <div style="text-align:center;color:#ffd700;font-weight:bold;margin-bottom:12px;font-size:1rem;">🏆 獎品兌換列表</div>
-                    
-                    <div style="margin-bottom:12px;color:#ff69b4;font-weight:bold;">👕 LBR潮流服飾兌換</div>
-                    <div style="margin-bottom:6px;">🥉 30,000積分 → LBR襪子</div>
-                    <div style="margin-bottom:6px;">🥈 60,000積分 → LBR短袖</div>
-                    <div style="margin-bottom:6px;">🥈 80,000積分 → LBR帽子</div>
-                    <div style="margin-bottom:12px;">👑 150,000積分 → LBR限定戒指</div>
-                    
-                    <div style="margin-bottom:12px;color:#ff69b4;font-weight:bold;">✨ MIYA用戶限定兌換區</div>
-                    <div style="margin-bottom:6px;">15,000積分 → T-LO卡牌盲盒抽卡次數*1</div>
-                    <div style="margin-bottom:6px;">125,000 MIYA → 9900 虛寶</div>
-                    <div style="margin-bottom:6px;">250,000 MIYA → 18800 虛寶</div>
-                    <div style="margin-bottom:12px;">1,250,000 MIYA → 10萬 虛寶</div>
-                    
-                    <div style="margin-bottom:12px;color:#ffd700;font-weight:bold;">💰 單筆儲值滿額送</div>
-                    <div style="margin-bottom:6px;">NT 1,000 → 7-11 50元 禮品卡</div>
-                    <div style="margin-bottom:6px;">NT 3,000 → 7-11 100元 禮品卡</div>
-                    <div style="margin-bottom:12px;">NT 5,000 → 7-11 500元 禮品卡</div>
-                    
-                    <div style="margin-top:16px;padding-top:12px;border-top:1px solid #444;font-size:0.75rem;color:#888;line-height:1.6;">
-                        <div style="margin-bottom:6px;">1. 定型化契約與服務條款：「儲值之積分僅供平台內娛樂與兌換指定禮品使用，不提供將積分逆向兌換回現金（回兌/出金）之服務」。</div>
-                        <div>2. 「禁止帳號買賣、禁止玩家間私下轉讓積分」</div>
-                    </div>
+                <div style="margin-bottom:30px;color:#ff69b4;font-weight:bold;">👕 LBR潮流服飾兌換</div>
+                <div style="margin-bottom:6px;">🥉 30,000積分 → LBR襪子</div>
+                <div style="margin-bottom:6px;">🥈 60,000積分 → LBR短袖</div>
+                <div style="margin-bottom:6px;">🥈 80,000積分 → LBR帽子</div>
+                <div style="margin-bottom:30px;">👑 150,000積分 → LBR限定戒指</div>
+                
+                <div style="margin-bottom:30px;color:#ff69b4;font-weight:bold;">✨ MIYA用戶限定兌換區</div>
+                <div style="margin-bottom:6px;">15,000積分 → T-LO卡牌盲盒抽卡次數*1</div>
+                <div style="margin-bottom:6px;">125,000 MIYA → 9900 虛寶</div>
+                <div style="margin-bottom:6px;">250,000 MIYA → 18800 虛寶</div>
+                <div style="margin-bottom:30px;">1,250,000 MIYA → 10萬 虛寶</div>
+                
+                <div style="margin-bottom:30px;color:#ffd700;font-weight:bold;">💰 單筆儲值滿額送</div>
+                <div style="margin-bottom:6px;">NT 1,000 → 7-11 50元 禮品卡</div>
+                <div style="margin-bottom:6px;">NT 3,000 → 7-11 100元 禮品卡</div>
+                <div style="margin-bottom:30px;">NT 5,000 → 7-11 500元 禮品卡</div>
+                
+                <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:12px;font-size:14px;color:#999;line-height:1.8;">
+                    <div style="margin-bottom:6px;">1. 定型化契約與服務條款：「儲值之積分僅供平台內娛樂與兌換指定禮品使用，不提供將積分逆向兌換回現金（回兌/出金）之服務」。</div>
+                    <div>2. 「禁止帳號買賣、禁止玩家間私下轉讓積分」</div>
                 </div>
             `;
             document.getElementById('announceInfo').innerHTML = html;
