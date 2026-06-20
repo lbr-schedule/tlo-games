@@ -157,6 +157,8 @@
         .result-display.green { background: rgba(0,120,0,0.7); border: 2px solid #00ff00; font-size: 1.1rem; }
         
         .help-toggle, .header-btn { background: rgba(255,255,255,0.15); padding: 2px 4px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; color: rgba(255,255,255,0.9); transition: background 0.2s; margin: 0 2px; border: 1px solid rgba(255,255,255,0.25); width: 30px; height: 26px; box-sizing: border-box; }
+        .top-buttons { display:flex; align-items:center; gap:12px; position:absolute; top:8px; right:20px; z-index:100; }
+        .top-buttons .help-toggle { width:42px !important; height:42px !important; border-radius:10px !important; font-size:1.1rem !important; flex-shrink:0; }
         .help-toggle:hover, .header-btn:hover { background: rgba(255,255,255,0.3); }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; touch-action: manipulation; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -364,7 +366,15 @@
     <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         <span id="fakeAnnounceText"></span>
     </div>
-    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleBGM()" id="bgmBtn" style="position:absolute;right:70px;">🎵</span><span class="help-toggle" onclick="toggleSFX()" id="sfxBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
+    <header style="display:flex;align-items:center;justify-content:space-between;width:316px;margin:0 auto;box-sizing:border-box;position:relative;flex-shrink:0;">
+        <button onclick="leaveGame()" class="header-btn">🚪</button>
+        <span style="flex:1;text-align:center;font-size:1.05rem;color:#ffd700;font-weight:bold;">🎰 T-LO大轉盤</span>
+        <div class="top-buttons">
+            <span class="help-toggle" onclick="toggleBGM()" id="bgmBtn">🎵</span>
+            <span class="help-toggle" onclick="toggleSFX()" id="sfxBtn">🔊</span>
+            <span class="help-toggle" onclick="showPlayerMenu()">☰</span>
+        </div>
+    </header>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
