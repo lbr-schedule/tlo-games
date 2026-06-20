@@ -71,17 +71,6 @@
         
         h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .game-header { width: 100%; max-width: 430px; margin: 0 auto; padding: 8px 12px 10px; box-sizing: border-box; }
-        .title-row { display: grid; grid-template-columns: 48px 1fr 132px; align-items: center; height: 44px; }
-        .header-left { display: flex; justify-content: flex-start; align-items: center; }
-        .header-title { text-align: center; font-size: 18px; font-weight: 800; color: #ffd400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
-        .header-left button, .header-actions button { width: 38px; height: 38px; flex: 0 0 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
-        .player-row { margin-top: 4px; height: 38px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; background: rgba(80, 72, 52, 0.85); border-radius: 8px; padding: 0 10px; box-sizing: border-box; }
-        .player-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .rank-badge { background: #f1f1f1; color: #777; border-radius: 999px; padding: 4px 10px; font-weight: 700; }
-        .player-name { color: #fff; font-weight: 700; }
-        .coin-box { color: #fff; font-weight: 700; white-space: nowrap; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
         #playerNameDisplay { display: flex; align-items: center; height: 100%; }
         #balanceBox { display: flex; align-items: center; height: 100%; }
@@ -377,29 +366,20 @@
     <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
         <span id="fakeAnnounceText"></span>
     </div>
-    <header class="game-header">
-        <div class="title-row">
-            <div class="header-left">
-                <button onclick="leaveGame()">🚪</button>
-            </div>
-            <div class="header-title">🎰 T-LO大轉盤</div>
-            <div class="header-actions">
-                <button onclick="toggleBGM()" id="bgmBtn">🎵</button>
-                <button onclick="toggleSFX()" id="sfxBtn">🔊</button>
-                <button onclick="showPlayerMenu()">☰</button>
-            </div>
-        </div>
-        <div class="player-row" id="playerRow" style="display:none;">
-            <div class="player-info">
-                <span class="rank-badge" id="rankBadge">大師</span>
-                <span class="player-name" id="playerNameDisplay"></span>
-            </div>
-            <div class="coin-box">💰 <span id="balance">1000</span></div>
+    <header style="display:flex;align-items:center;justify-content:space-between;width:316px;margin:0 auto;box-sizing:border-box;position:relative;flex-shrink:0;">
+        <button onclick="leaveGame()" class="header-btn">🚪</button>
+        <span style="flex:1;text-align:center;font-size:1.05rem;color:#ffd700;font-weight:bold;">🎰 T-LO大轉盤</span>
+        <div class="top-buttons">
+            <span class="help-toggle" onclick="toggleBGM()" id="bgmBtn">🎵</span>
+            <span class="help-toggle" onclick="toggleSFX()" id="sfxBtn">🔊</span>
+            <span class="help-toggle" onclick="showPlayerMenu()">☰</span>
         </div>
     </header>
     
     <div class="container">
-        <div class="top-bar" id="topBar" style="display:none;"></div>
+        <div class="top-bar" id="topBar" style="display:none;">
+            <span id="playerNameDisplay"></span><span id="balanceBox">💰 <span id="balance">1000</span></span>
+        </div>
         
 <!-- 登入/註冊區塊 -->
         <div class="auth-section" id="authSection">
@@ -1457,7 +1437,7 @@ function closeProfileModal(){
                 });
             console.log('Restoring session for:', savedUsername);
             document.getElementById('authSection').style.display = 'none';
-            document.getElementById('playerRow').style.display = 'grid';
+            document.getElementById('topBar').style.display = 'flex';
             document.getElementById('resultDisplay').style.display = 'block';
             document.getElementById('gameSection').style.display = 'block';
             const nameEl2 = document.getElementById('playerNameDisplay');
@@ -1515,7 +1495,7 @@ function closeProfileModal(){
                     localStorage.setItem('rouletteUsername', username);
                     document.getElementById('balance').textContent = myBalance;
                     document.getElementById('authSection').style.display = 'none';
-                    document.getElementById('playerRow').style.display = 'grid';
+                    document.getElementById('topBar').style.display = 'flex';
                     const nameEl = document.getElementById('playerNameDisplay');
                     if (nameEl) nameEl.textContent = username || '';
                     document.getElementById('resultDisplay').style.display = 'block';
@@ -1868,7 +1848,7 @@ function closeProfileModal(){
             localStorage.removeItem('rouletteUsername');
             localStorage.removeItem('rouletteBalance');
             document.getElementById('authSection').style.display = 'block';
-            document.getElementById('playerRow').style.display = 'none';
+            document.getElementById('topBar').style.display = 'none';
             document.getElementById('gameSection').style.display = 'none';
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
