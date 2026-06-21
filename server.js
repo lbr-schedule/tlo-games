@@ -261,7 +261,17 @@ const ROULETTE_ADS = [
     '/roulette/ad3.jpg',
     '/roulette/ad4.png',
     '/roulette/ad5.jpg',
-    '/roulette/ad6.png'
+    '/roulette/ad6.png',
+    '/roulette/ad7.jpg',
+    '/roulette/ad8.jpg',
+    '/roulette/ad9.jpg',
+    '/roulette/ad10.jpg',
+    '/roulette/ad11.jpg',
+    '/roulette/ad12.jpg',
+    '/roulette/ad13.jpg',
+    '/roulette/ad14.jpg',
+    '/roulette/ad15.jpg',
+    '/roulette/ad16.jpg'
 ];
 let rouletteAdIndex = 0;
 const ROULETTE_AD_RATE = 0.1;

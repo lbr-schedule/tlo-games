@@ -718,6 +718,10 @@
                 🎬 看影片領獎勵
             </button>
 
+            <button id="noAdBtn" onclick="buyNoAd();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.4);border-radius:10px;color:#ffd700;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;display:none;">
+                🎫 購買免廣告 (10000 金幣)
+            </button>
+
             <button onclick="showHelp();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;">
                 ❓ 遊戲說明
             </button>
@@ -2726,8 +2730,8 @@ function showMyInviteCode() {
                     vibrateDevice([100, 50, 100, 50, 200]);
                     playSound('win');
                 }
-                // 10% 機率觸發廣告
-                if (Math.random() < 0.1) {
+                // 10% 機率觸發廣告（已購買免廣告則不顯示）
+                if (Math.random() < 0.1 && !localStorage.getItem('rouletteNoAd_' + myName)) {
                     setTimeout(() => showAdPopup(), 500);
                 }
             } catch(e) { console.log('下注失敗:', e); }
@@ -2845,8 +2849,8 @@ function showMyInviteCode() {
                     vibrateDevice([100, 50, 100, 50, 200]);
                     playSound('win');
                 }
-                // 10% 機率觸發廣告
-                if (Math.random() < 0.1) {
+                // 10% 機率觸發廣告（已購買免廣告則不顯示）
+                if (Math.random() < 0.1 && !localStorage.getItem('rouletteNoAd_' + myName)) {
                     setTimeout(() => showAdPopup(), 500);
                 }
             } catch(e) {
@@ -2871,6 +2875,42 @@ function showMyInviteCode() {
             const modal = document.getElementById('playerMenuModal');
             if (playerMenuOriginalContent) modal.querySelector('.modal').innerHTML = playerMenuOriginalContent;
             modal.classList.add('show');
+            updateNoAdButton();
+        }
+        
+        function updateNoAdButton() {
+            const btn = document.getElementById('noAdBtn');
+            if (!btn || !myName) return;
+            const noAdKey = 'rouletteNoAd_' + myName;
+            if (localStorage.getItem(noAdKey) === 'true') {
+                btn.style.display = 'block';
+                btn.innerHTML = '🎫 免廣告已享有 ✅';
+                btn.style.background = 'rgba(0,200,100,0.15)';
+                btn.style.borderColor = 'rgba(0,200,100,0.5)';
+                btn.style.color = '#00ff00';
+                btn.style.cursor = 'default';
+                btn.disabled = true;
+            } else {
+                btn.style.display = 'block';
+                btn.innerHTML = '🎫 購買免廣告 (10000 金幣)';
+            }
+        }
+        
+        function buyNoAd() {
+            if (!myName) { showToast('請先登入！', 'error'); return; }
+            const noAdKey = 'rouletteNoAd_' + myName;
+            if (localStorage.getItem(noAdKey) === 'true') {
+                showToast('你已享有免廣告！', 'success'); return;
+            }
+            if (myBalance < 10000) {
+                showToast('金幣不足！需要 10000 金幣', 'error'); return;
+            }
+            myBalance -= 10000;
+            localStorage.setItem('rouletteBalance', myBalance);
+            localStorage.setItem(noAdKey, 'true');
+            document.getElementById('balance').textContent = myBalance;
+            showToast('購買成功！廣告已關閉 🎉', 'success');
+            updateNoAdButton();
         }
         
         async function loadPlayerLevel() {
