@@ -493,6 +493,11 @@
                 <div id="announceInfo" style="text-align:center;font-size:0.9rem;line-height:1.8;"></div>
             </div>
         </div>
+        
+        <!-- 儲值按鈕 -->
+        <div style="padding:0 15px 15px;">
+            <button onclick="showTopupModal()" style="width:100%;padding:14px;background:linear-gradient(135deg,#00c853,#00e676);border:none;border-radius:12px;font-size:1rem;font-weight:bold;color:white;cursor:pointer;">💰 儲值</button>
+        </div>
     </div>
 
     <div class="broke-overlay" id="brokeOverlay">
@@ -3626,6 +3631,45 @@ document.addEventListener('click', function(e){
                     });
                 }
             })();
+        </script>
+        
+        <!-- 儲值 Modal -->
+        <div id="topupModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;align-items:center;">
+            <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:3px solid #00c853;border-radius:16px;padding:30px;max-width:320px;width:90%;text-align:center;position:relative;">
+                <div style="position:absolute;top:12px;right:16px;font-size:1.3rem;color:#666;cursor:pointer;background:none;border:none;" onclick="closeTopupModal()">✕</div>
+                <h3 style="color:#00c853;font-size:1.3rem;margin-bottom:15px;">💰 聯絡儲值</h3>
+                <p style="font-size:0.85rem;color:#aaa;margin-bottom:10px;">複製LINE ID，搜尋新增好友</p>
+                <div style="background:#0f0f1a;border:2px solid #00c853;border-radius:10px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;">
+                    <span id="lineIdText" style="color:#00ff88;font-size:1.2rem;font-weight:bold;letter-spacing:1px;">HAPPYNEWYA</span>
+                    <button id="copyBtn" onclick="copyLineId()" style="background:#00c853;color:white;border:none;padding:8px 16px;border-radius:8px;font-size:0.9rem;font-weight:bold;cursor:pointer;">複製</button>
+                </div>
+                <p style="font-size:0.85rem;color:#aaa;margin-bottom:8px;">或直接點擊連結加LINE</p>
+                <a href="https://line.me/ti/p/~happynewya" target="_blank" style="display:block;width:100%;padding:14px;background:#00c853;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:bold;text-decoration:none;margin-bottom:15px;">💬 加我LINE</a>
+                <p style="font-size:0.8rem;color:#666;line-height:1.4;">匯款後請截圖傳給管理員<br>確認後將金幣發送至您的帳戶</p>
+            </div>
+        </div>
+        <script>
+        function showTopupModal() {
+            document.getElementById('topupModal').style.display='flex';
+        }
+        function closeTopupModal() {
+            document.getElementById('topupModal').style.display='none';
+        }
+        function copyLineId() {
+            var text = document.getElementById('lineIdText').textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById('copyBtn');
+                btn.textContent='已複製!';
+                btn.style.background='#888';
+                setTimeout(function() {
+                    btn.textContent='複製';
+                    btn.style.background='#00c853';
+                }, 2000);
+            });
+        }
+        document.getElementById('topupModal').addEventListener('click', function(e) {
+            if (e.target===this) closeTopupModal();
+        });
         </script>
     </body>
 </html>
