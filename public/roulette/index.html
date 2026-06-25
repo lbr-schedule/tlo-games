@@ -512,10 +512,10 @@
     </div>
 
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
-    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;position:fixed;top:44px;left:0;width:100%;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:6px 8px;font-weight:bold;z-index:500;border-radius:0;box-sizing:border-box;">
         🎁 <span id="broadcastText"></span>
     </div>
-    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;position:fixed;top:44px;left:0;width:100%;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:6px 8px;font-weight:bold;z-index:499;box-sizing:border-box;border-radius:0;">
         <span id="fakeAnnounceText"></span>
     </div>
     <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleBGM()" id="bgmBtn" style="position:absolute;right:70px;">🎵</span><span class="help-toggle" onclick="toggleSFX()" id="sfxBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
