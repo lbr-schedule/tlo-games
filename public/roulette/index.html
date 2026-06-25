@@ -3878,6 +3878,12 @@ function showMyInviteCode() {
                 });
                 html += '</div>';
                 
+                // 神秘彩池中獎記錄
+                html += '<div style="margin-top:20px;border-top:1px solid #444;padding-top:15px;">';
+                html += '<div style="text-align:center;margin-bottom:10px;"><span style="font-size:1.2rem;">🎁</span><br><strong style="color:#ffd700;">神秘彩池中獎</strong></div>';
+                html += '<div id="mysteryWinnersList" style="max-height:180px;overflow-y:auto;"><div style="color:#888;text-align:center;">載入中...</div></div>';
+                html += '</div>';
+                
                 let modal = document.getElementById('leaderboardModal');
                 if (!modal) {
                     modal = document.createElement('div');
@@ -3891,8 +3897,34 @@ function showMyInviteCode() {
                 }
                 modal.querySelector('div').innerHTML = html + '<button onclick="document.getElementById(\x27leaderboardModal\x27).style.display=\x27none\x27" style="margin-top:15px;width:100%;padding:10px;background:#ffd700;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">關閉</button>';
                 modal.style.display = 'flex';
+                loadMysteryWinnerHistory();
             } catch(e) {
                 showToast('載入排行榜失敗', 'error');
+            }
+        }
+        
+        async function loadMysteryWinnerHistory() {
+            const list = document.getElementById('mysteryWinnersList');
+            if (!list) return;
+            try {
+                const res = await fetch('/api/roulette/mystery-winners');
+                const data = await res.json();
+                if (!data.success || !data.winners || data.winners.length === 0) {
+                    list.innerHTML = '<div style="color:#888;text-align:center;font-size:0.82rem;">還沒有中獎記錄</div>';
+                    return;
+                }
+                let html = '';
+                data.winners.forEach(w => {
+                    const time = new Date((w.created_at || 0) * 1000);
+                    const timeStr = (time.getMonth()+1) + '/' + time.getDate() + ' ' + time.getHours().toString().padStart(2,'0') + ':' + time.getMinutes().toString().padStart(2,'0');
+                    const persons = w.winners_count > 1 ? w.winners_count + '位各' : '';
+                    html += '<div style="padding:6px 0;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">';
+                    html += '<div><div style="color:#ffd700;font-weight:bold;font-size:0.85rem;">' + w.username + '</div><div style="color:#aaa;font-size:0.7rem;">' + timeStr + '</div></div>';
+                    html += '<div style="text-align:right;"><div style="color:#ffd700;font-weight:bold;">+' + w.per_person.toLocaleString() + '</div><div style="color:#888;font-size:0.65rem;">彩池 ' + w.pool_amount.toLocaleString() + '</div></div></div>';
+                });
+                list.innerHTML = html;
+            } catch(e) {
+                list.innerHTML = '<div style="color:#888;text-align:center;font-size:0.82rem;">載入失敗</div>';
             }
         }
         

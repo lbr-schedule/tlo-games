@@ -191,6 +191,12 @@ async function distributeMysteryPool(roundId, poolAmount) {
             sql: `UPDATE roulette_mystery_bets SET winners = ?, distributed = 1 WHERE round_id = ?`,
             args: [winners.length, roundId]
         });
+        // 寫入中獎記錄
+        await rouletteDb.execute({
+            sql: `INSERT INTO mystery_winners (username, pool_amount, per_person, winners_count) VALUES (?, ?, ?, ?)`,
+            args: [winnerUsernames, poolAmount, poolPerPerson, winners.length]
+        });
+        console.log('神秘彩池中獎記錄已寫入: ' + winnerUsernames + ' 各得 $' + poolPerPerson);
         // 儲存所有中獎者資訊供廣播使用
         const winnerUsernames = winners.map(w => w.username).join(', ');
         rouletteState.lastWinner = { 
@@ -1597,6 +1603,19 @@ app.get('/api/roulette/leaderboard', async (req, res) => {
     } catch(e) {
         console.log('排行榜查詢失敗:', e.message);
         res.json({ success: false, message: '查詢失敗' });
+    }
+});
+
+// 神秘彩池中獎歷史
+app.get('/api/roulette/mystery-winners', async (req, res) => {
+    if (!rouletteDbAvailable) return res.json({ success: false });
+    try {
+        const result = await rouletteDb.execute({
+            sql: `SELECT * FROM mystery_winners ORDER BY id DESC LIMIT 20`
+        });
+        res.json({ success: true, winners: result.rows || [] });
+    } catch(e) {
+        res.json({ success: false });
     }
 });
 
