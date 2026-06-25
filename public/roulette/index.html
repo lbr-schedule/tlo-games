@@ -1125,7 +1125,7 @@
         let localHistory = [];
         function addHistoryDot(color) {
             localHistory.unshift(color);
-            if (localHistory.length > 20) localHistory.pop();
+            if (localHistory.length > 15) localHistory.pop();
             renderHistoryDots();
         }
         function renderHistoryDots() {
