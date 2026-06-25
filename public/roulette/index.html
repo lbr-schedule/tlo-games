@@ -2333,10 +2333,6 @@ function closeProfileModal(){
                         cd.style.fontSize = '1.4rem';
                     }
                 }
-                // 進度條在 polling 中持續更新（不依賴 betCountdown）
-                if (data.remaining !== undefined) {
-                    updateProgressBar(data.remaining);
-                }
             } catch(e) {
                 console.log('Poll error:', e.message);
             }
@@ -2392,7 +2388,7 @@ function closeProfileModal(){
                         resultDisplay.className = 'result-display betting';
                         resultDisplay.innerHTML = '';
                     }
-                    startProgressBar(data.remaining, data.totalBettingTime || 10);
+                    stopProgressBar();
                     // 輪盤倒數
                     if (data.remaining !== undefined && data.remaining > 0) {
                         startWheelCountdown(data.remaining);
