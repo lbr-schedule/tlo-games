@@ -2332,12 +2332,10 @@ function closeProfileModal(){
                         cd.style.color = '#ffd700';
                         cd.style.fontSize = '1.4rem';
                     }
-                } else {
-                    // betCountdown not found, update resultDisplay directly
-                    const resultDisplay = document.getElementById('resultDisplay');
-                    if (resultDisplay && data.phase === 'betting') {
-                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
-                    }
+                }
+                // 進度條在 polling 中持續更新（不依賴 betCountdown）
+                if (data.remaining !== undefined) {
+                    updateProgressBar(data.remaining);
                 }
             } catch(e) {
                 console.log('Poll error:', e.message);
@@ -2390,10 +2388,9 @@ function closeProfileModal(){
                         lastProcessedSpinId = 0;
                     }
                     badge.style.display = 'none';
-                    // 如果轉盤動畫還在進行中（結果即將顯示），不要覆蓋 resultDisplay
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display betting';
-                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
+                        resultDisplay.innerHTML = '';
                     }
                     startProgressBar(data.remaining, data.totalBettingTime || 10);
                     // 輪盤倒數
