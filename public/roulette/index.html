@@ -1201,22 +1201,26 @@
         }
 
         // 全服公告廣播
+        // ========== 假的繁榮系統 ==========
+        let lastBroadcastKey = '';
+        let fakeScrolling = false;
+        let fakeAnnounceTimer = null, fakeBarEl = null, fakeBarTextEl = null;
+        const fakeNames = ['xKevin88','Miki_Taro','Joker_Wang','RubyChen','DarkKnight_7','SummerLin','WindMan','CatFood_99','LuckyStar_TW','BossHsu','FishLin','MoneyMaker','NightWolf_TW','SunnyDay_22','TigerLin','PandaKing_TW','StarDust_X','MagicWand_55','RockChen','DragonFly_33','PhoenixLin','SilverFox_TW','GoldenEgg_88','ThunderBolt_11','IceCream_TW','FireWork_66','MoonLight_X','SolarFlare_TW','ShadowCat_44','CrystalLin'];
+        const fakeAmounts = [200, 300, 500, 800, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 8000];
         function showBroadcast(message) {
             const el = document.getElementById('mysteryBroadcast');
             const text = document.getElementById('broadcastText');
             if (!el || !text) return;
+            const key = message;
+            if (key === lastBroadcastKey) return;
+            lastBroadcastKey = key;
             text.textContent = message;
             el.style.display = 'block';
             el.style.animation = 'none';
             void el.offsetWidth;
             el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
-            setTimeout(() => { el.style.display = 'none'; }, 5000);
+            setTimeout(() => { el.style.display = 'none'; lastBroadcastKey = ''; }, 5000);
         }
-
-        // ========== 假的繁榮系統 ==========
-        const fakeNames = ['xKevin88','Miki_Taro','Joker_Wang','RubyChen','DarkKnight_7','SummerLin','WindMan','CatFood_99','LuckyStar_TW','BossHsu','FishLin','MoneyMaker','NightWolf_TW','SunnyDay_22','TigerLin','PandaKing_TW','StarDust_X','MagicWand_55','RockChen','DragonFly_33','PhoenixLin','SilverFox_TW','GoldenEgg_88','ThunderBolt_11','IceCream_TW','FireWork_66','MoonLight_X','SolarFlare_TW','ShadowCat_44','CrystalLin'];
-        const fakeAmounts = [200, 300, 500, 800, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 8000];
-        let fakeAnnounceTimer = null, fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
         function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateFakeAnnounce() {
             const name = randomPick(fakeNames);
