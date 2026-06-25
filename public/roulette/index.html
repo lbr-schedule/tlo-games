@@ -3965,6 +3965,9 @@ function showMyInviteCode() {
         }
         
         // 載入排行榜（Tab內用）
+        async function loadLeaderboardWithMystery() {
+            await loadLeaderboard();
+        }
         async function loadLeaderboard() {
             const listEl = document.getElementById('leaderboardList');
             if (!listEl) return;
