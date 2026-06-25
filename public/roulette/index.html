@@ -200,6 +200,23 @@
         .toast-btn { margin-top:14px; padding:10px; background:#ffd700; border:none; border-radius:10px; font-size:0.95rem; font-weight:bold; cursor:pointer; width:100%; color:#1a1a2e; }
         .toast-btn:hover { background:#ffdd44; }
         @keyframes toastPop { 0% { transform:scale(0.7) translateY(20px); opacity:0; } 100% { transform:scale(1) translateY(0); opacity:1; } }
+        /* 升級版中獎結果 */
+        .win-result-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); display:none; justify-content:center; align-items:center; z-index:300; flex-direction:column; gap:16px; }
+        .win-result-overlay.show { display:flex; }
+        .win-result-card { background:linear-gradient(135deg,#1a1a2e,#0d0d1a); border:3px solid #ffd700; border-radius:24px; padding:28px 24px; max-width:320px; width:90%; text-align:center; animation:winCardPop 0.5s cubic-bezier(0.34,1.56,0.64,1); position:relative; overflow:visible; }
+        @keyframes winCardPop { 0%{transform:scale(0.5) translateY(30px);opacity:0;} 100%{transform:scale(1) translateY(0);opacity:1;} }
+        .win-avatar-wrap { position:relative; width:90px; height:90px; margin:0 auto 12px; }
+        .win-avatar-ring { width:90px; height:90px; border-radius:50%; position:absolute; top:0; left:0; animation:ringRotate 2s linear infinite; background:conic-gradient(from 0deg,#ffd700,#ff8c00,#ffd700,#ff8c00,#ffd700); }
+        .win-avatar-ring::before { content:''; position:absolute; inset:3px; border-radius:50%; background:linear-gradient(135deg,#1a1a2e,#0d0d1a); }
+        .win-avatar-img { width:74px; height:74px; border-radius:50%; object-fit:cover; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; }
+        @keyframes ringRotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+        .win-name-glow { font-size:1.1rem; font-weight:bold; text-shadow:0 0 8px #ffd700,0 0 20px rgba(255,215,0,0.6); color:#ffd700; }
+        .win-level-badge { display:inline-block; background:rgba(255,215,0,0.15); border:1px solid rgba(255,215,0,0.4); border-radius:20px; padding:2px 10px; font-size:0.75rem; color:#ffd700; margin-bottom:10px; }
+        .win-amount-label { font-size:0.85rem; color:#aaa; margin-bottom:4px; }
+        .win-amount-slot { font-family:'Segoe UI Black','Arial Black',sans-serif; font-size:clamp(2rem,10vw,3rem); font-weight:900; color:#ffd700; text-shadow:0 0 12px rgba(255,215,0,0.8),0 0 30px rgba(255,140,0,0.5); letter-spacing:2px; line-height:1; min-height:1.2em; }
+        .win-close-btn { margin-top:16px; padding:12px 32px; background:#ffd700; border:none; border-radius:12px; font-size:1rem; font-weight:bold; color:#1a1a2e; cursor:pointer; width:100%; }
+        .win-close-btn:hover { background:#ffdd44; }
+        .win-sparkle-particle { position:fixed; font-size:16px; pointer-events:none; z-index:301; animation:sparkleFly 1.2s ease-out forwards; }
         /* 贏家跑馬燈 */
         .winner-marquee { position:fixed; top:0; left:0; width:100%; background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700); color:#1a1a2e; padding:8px 0; font-weight:bold; font-size:0.95rem; z-index:999; display:none; text-align:center; box-shadow:0 2px 10px rgba(255,215,0,0.5); }
         /* 內容容器加 z-index */
@@ -690,6 +707,20 @@
             <button id="resultPopupBtn">確定</button>
         </div>
     </div>
+    <!-- 升級版中獎卡片 -->
+    <div class="win-result-overlay" id="winResultOverlay">
+        <div class="win-result-card" id="winResultCard">
+            <div class="win-avatar-wrap">
+                <div class="win-avatar-ring"></div>
+                <img class="win-avatar-img" id="winAvatarImg" src="/roulette/avatar1.jpg">
+            </div>
+            <div class="win-name-glow" id="winNameGlow"></div>
+            <div class="win-level-badge" id="winLevelBadge"></div>
+            <div class="win-amount-label">中獎金額</div>
+            <div class="win-amount-slot" id="winAmountSlot">$0</div>
+            <button class="win-close-btn" onclick="closeWinResult()">確定</button>
+        </div>
+    </div>
 
     <!-- 新手導引彈窗 -->
     <div class="modal-overlay" id="guideModal">
@@ -1123,6 +1154,88 @@
             setTimeout(() => el.remove(), 1500);
         }
 
+        // ── 升級版中獎卡片 ──
+        let _winResultSlotTimer = null;
+        function showWinResult(avatar, username, level, tier, amount) {
+            const overlay = document.getElementById('winResultOverlay');
+            const card = document.getElementById('winResultCard');
+            if (!overlay) return;
+            // 設定頭像
+            const avImg = document.getElementById('winAvatarImg');
+            if (avImg) avImg.src = avatar || '/roulette/avatar1.jpg';
+            // 設定名字
+            const nameEl = document.getElementById('winNameGlow');
+            if (nameEl) nameEl.textContent = username || myName || '玩家';
+            // 設定等級
+            const lvBadge = document.getElementById('winLevelBadge');
+            if (lvBadge) {
+                const tierColor = {bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',platinum:'#e5e4e2',diamond:'#b9f2ff'}[tier] || '#ffd700';
+                const tierName = {bronze:'青銅',silver:'白銀',gold:'黃金',platinum:'白金',diamond:'鑽石'}[tier] || tier || '玩家';
+                lvBadge.textContent = 'Lv.' + level + ' ' + tierName;
+                lvBadge.style.borderColor = tierColor;
+                lvBadge.style.color = tierColor;
+            }
+            // 顯示卡片
+            overlay.classList.add('show');
+            // 金額翻牌動畫
+            startSlotNumber(amount);
+            // ✨ 閃光粒子
+            spawnSparkles();
+            // 自動關閉
+            clearTimeout(_winResultSlotTimer);
+            _winResultSlotTimer = setTimeout(() => closeWinResult(), 5000);
+        }
+        function closeWinResult() {
+            const overlay = document.getElementById('winResultOverlay');
+            if (overlay) overlay.classList.remove('show');
+            clearTimeout(_winResultSlotTimer);
+        }
+        function startSlotNumber(target) {
+            const el = document.getElementById('winAmountSlot');
+            if (!el) return;
+            const duration = 1200;
+            const startTime = performance.now();
+            function tick(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(eased * target);
+                el.textContent = '$' + current;
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    el.textContent = '$' + target;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+        function spawnSparkles() {
+            const symbols = ['✨','💫','⭐','🌟','💛'];
+            const count = 18;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'win-sparkle-particle';
+                p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                const startX = window.innerWidth * 0.2 + Math.random() * window.innerWidth * 0.6;
+                const startY = window.innerHeight * 0.35;
+                p.style.left = startX + 'px';
+                p.style.top = startY + 'px';
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
+                const dist = 80 + Math.random() * 120;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist - 60;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animation = 'none';
+                void p.offsetWidth;
+                // 動態計算終點
+                const endX = startX + dx;
+                const endY = startY + dy;
+                p.animate([{transform:'translate(0,0) scale(0)',opacity:1},{transform:'translate('+dx+'px,'+dy+'px) scale(1.3)',opacity:1},{transform:'translate('+(dx*1.4)+'px,'+(dy*0.6)+'px) scale(0)',opacity:0}],{duration:1000+Math.random()*400,easing:'cubic-bezier(0.25,0.46,0.45,0.94)',fill:'forwards'});
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1600);
+            }
+        }
         // ── Toast 結算卡 ──
         function showSettleToast(netWin, totalBet, mysteryBonus) {
             const overlay = document.getElementById('toastOverlay');
@@ -2660,7 +2773,14 @@ function closeProfileModal(){
                     setTimeout(() => playSound('win'), 100);
                     setTimeout(() => triggerWinEffects(roundWin), 100);
                     setTimeout(() => showWinCelebration(), 100);
-                    setTimeout(() => { spawnFloatText(roundWin, true); showSettleToast(netWin, roundBet, wonMystery && lastSpin.perPersonPool ? lastSpin.perPersonPool : 0); }, 300);
+                    setTimeout(() => {
+                        const pd = window._profileData || {};
+                        const av = (pd.profile && pd.profile.avatar_url) || '/roulette/avatar1.jpg';
+                        const lv = pd.level || 1;
+                        const tier = pd.tier || 'bronze';
+                        spawnFloatText(roundWin, true);
+                        showWinResult(av, myName, lv, tier, roundWin);
+                    }, 300);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
                     setTimeout(() => spawnFloatText(Math.abs(netWin), false), 100);
