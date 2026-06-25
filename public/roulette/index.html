@@ -32,8 +32,12 @@
             text-align: center;
             box-shadow: 0 2px 10px rgba(255,215,0,0.5);
         }
-        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; }
-        @keyframes broadcast-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; overflow: hidden; white-space: nowrap; }
+        .mystery-broadcast .broadcast-inner { display: inline-block; white-space: nowrap; }
+        .mystery-broadcast.long-text .broadcast-inner { animation: marqueeScroll 6s linear infinite; }
+        @keyframes broadcast-pulse { 0%,100% { opacity: 1; box-shadow: 0 0 10px rgba(255,215,0,0.5); } 50% { opacity: 0.9; box-shadow: 0 0 20px rgba(255,215,0,0.8); } }
+        @keyframes broadcastIn { 0%{transform:scaleX(0);opacity:0;box-shadow:0 0 0 rgba(255,215,0,0);} 50%{transform:scaleX(1.05);box-shadow:0 0 40px rgba(255,215,0,0.9);} 100%{transform:scaleX(1);opacity:1;box-shadow:0 0 10px rgba(255,215,0,0.5);} }
+        @keyframes marqueeScroll { 0%{transform:translateX(100vw);} 100%{transform:translateX(-100%);} }
         .winner-marquee.show {
             display: block;
             animation: marquee-slide 8s linear forwards;
@@ -532,7 +536,7 @@
 
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
     <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;position:fixed;top:44px;left:0;width:100%;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:6px 8px;font-weight:bold;z-index:500;border-radius:0;box-sizing:border-box;">
-        🎁 <span id="broadcastText"></span>
+        🎁 <span class="broadcast-inner" id="broadcastText"></span>
     </div>
     <h1 style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:460px;margin:0 auto;padding:0 2px;box-sizing:border-box;">
         <button onclick="leaveGame()" class="header-btn">🚪</button>
@@ -1332,12 +1336,16 @@
             const key = message;
             if (key === lastBroadcastKey) return;
             lastBroadcastKey = key;
+            // 估計文字寬度，超過視窗就加 marquee class
             text.textContent = message;
+            el.classList.remove('long-text');
             el.style.display = 'block';
-            el.style.animation = 'none';
-            void el.offsetWidth;
-            el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
-            setTimeout(() => { el.style.display = 'none'; lastBroadcastKey = ''; }, 5000);
+            el.style.animation = 'broadcastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards, broadcast-pulse 1.5s ease-in-out 0.4s infinite';
+            if (text.scrollWidth > el.clientWidth) {
+                el.classList.add('long-text');
+            }
+            playSound('broadcast');
+            setTimeout(() => { el.style.display = 'none'; el.classList.remove('long-text'); el.style.animation = ''; lastBroadcastKey = ''; }, 3000);
         }
         function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateFakeAnnounce() {
@@ -1472,6 +1480,16 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                 osc.start(now);
                 osc.stop(now + 0.2);
+            } else if (type === 'broadcast') {
+                // 廣播音效：勝利的短號角
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523, now); // C5
+                osc.frequency.setValueAtTime(659, now + 0.08); // E5
+                osc.frequency.setValueAtTime(784, now + 0.16); // G5
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
             }
         }
         
