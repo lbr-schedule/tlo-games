@@ -393,8 +393,8 @@
         
         .no-bets { color: #666; font-style: italic; font-size: clamp(0.8rem, 2.5vw, 0.85rem); text-align: center; padding: 8px; }
         
-        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; width: 316px; height: 45px; box-sizing: border-box; }
-        .game-tab { width: 155.5px; height: 45px; padding: 0; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .game-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; width: 100%; max-width: 460px; margin: 0 auto 8px; box-sizing: border-box; }
+        .game-tab { flex: 1 1 auto; min-width: 60px; max-width: 80px; height: 40px; padding: 0 4px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
         .game-tab.active { background: #ffd700; color: #1a1a2e; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
