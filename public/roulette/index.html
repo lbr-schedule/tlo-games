@@ -210,10 +210,10 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 100%; max-width: 100%; height: 38px; box-sizing: border-box; }
         .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; width: 100%; }
         .game-section { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
-        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 100%; max-width: 316px; height: auto; aspect-ratio: 1; flex-shrink: 0; }
-        .wheel-border { width: 100%; max-width: 316px; height: auto; aspect-ratio: 1; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 50%; transform: translateX(-50%); box-sizing: border-box; z-index: 2; }
-        .wheel-outer { width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; border-radius: 50%; position: absolute; left: 50%; top: 8px; transform: translateX(-50%); overflow: hidden; z-index: 1; touch-action: none; }
-        .wheel { width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; border-radius: 50%; transform-origin: center center; transform: rotate(0deg); }
+        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
+        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
+        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
+        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
         #playerNameDisplay { display: flex; align-items: center; height: 100%; }
         #balanceBox { display: flex; align-items: center; height: 100%; }
         .balance { font-size: 0.95rem; }
