@@ -200,21 +200,6 @@
         .toast-btn { margin-top:14px; padding:10px; background:#ffd700; border:none; border-radius:10px; font-size:0.95rem; font-weight:bold; cursor:pointer; width:100%; color:#1a1a2e; }
         .toast-btn:hover { background:#ffdd44; }
         @keyframes toastPop { 0% { transform:scale(0.7) translateY(20px); opacity:0; } 100% { transform:scale(1) translateY(0); opacity:1; } }
-        /* 閃電效果 */
-        .thunder-flash { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9998; display:none; }
-        .thunder-flash.flash { display:block; animation: thunderAnim 0.6s ease-out forwards; }
-        @keyframes thunderAnim {
-            0%   { box-shadow: inset 0 0 80px 40px rgba(255,255,255,0); background: transparent; }
-            8%   { box-shadow: inset 0 0 120px 60px rgba(255,255,255,0.95); background: rgba(255,255,255,0.3); }
-            16%  { box-shadow: inset 0 0 60px 30px rgba(200,220,255,0); background: transparent; }
-            28%  { box-shadow: inset 0 0 100px 50px rgba(255,255,255,0.8); background: rgba(255,255,255,0.2); }
-            36%  { box-shadow: inset 0 0 40px 20px rgba(180,200,255,0); background: transparent; }
-            50%  { box-shadow: inset 0 0 80px 40px rgba(255,255,255,0.6); background: rgba(255,255,255,0.15); }
-            58%  { box-shadow: inset 0 0 30px 15px rgba(150,180,255,0); background: transparent; }
-            72%  { box-shadow: inset 0 0 60px 30px rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); }
-            80%  { box-shadow: inset 0 0 20px 10px rgba(100,150,255,0); background: transparent; }
-            100% { box-shadow: inset 0 0 0 0 transparent; background: transparent; }
-        }
         /* 贏家跑馬燈 */
         .winner-marquee { position:fixed; top:0; left:0; width:100%; background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700); color:#1a1a2e; padding:8px 0; font-weight:bold; font-size:0.95rem; z-index:999; display:none; text-align:center; box-shadow:0 2px 10px rgba(255,215,0,0.5); }
         /* 內容容器加 z-index */
@@ -608,7 +593,6 @@
                     </div>
                     <div class="wheel-countdown" id="wheelCountdown">8</div>
                 </div>
-                <div class="thunder-flash" id="thunderFlash"></div>
                 
                 <div class="bet-section">
                     <h3>💰 選擇下注</h3>
@@ -998,7 +982,6 @@
             triggerScreenShake();
             spawnCoinParticles(prize);
             updateBalancePop();
-            triggerThunderFlash();
         }
 
         function updateBalancePop() {
@@ -1138,17 +1121,6 @@
             }
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 1500);
-        }
-
-        // ── 閃電效果 ──
-        function triggerThunderFlash() {
-            const el = document.getElementById('thunderFlash');
-            if (!el) return;
-            el.classList.remove('flash');
-            void el.offsetWidth;
-            el.classList.add('flash');
-            playSound('thunder');
-            setTimeout(() => el.classList.remove('flash'), 700);
         }
 
         // ── Toast 結算卡 ──
@@ -1387,29 +1359,6 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                 osc.start(now);
                 osc.stop(now + 0.2);
-            } else if (type === 'thunder') {
-                // 閃電音效：低頻轟鳴 + 高頻電弧
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(80, now);
-                osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
-                gain.gain.setValueAtTime(0.18, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-                osc.start(now);
-                osc.stop(now + 0.5);
-                // 高頻電弧聲
-                const osc2 = audioCtx.createOscillator();
-                const gain2 = audioCtx.createGain();
-                osc2.connect(gain2);
-                gain2.connect(sfxGain);
-                osc2.type = 'square';
-                osc2.frequency.setValueAtTime(2000, now);
-                osc2.frequency.setValueAtTime(3500, now + 0.05);
-                osc2.frequency.setValueAtTime(1800, now + 0.1);
-                osc2.frequency.exponentialRampToValueAtTime(400, now + 0.3);
-                gain2.gain.setValueAtTime(0.08, now);
-                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                osc2.start(now);
-                osc2.stop(now + 0.3);
             }
         }
         
