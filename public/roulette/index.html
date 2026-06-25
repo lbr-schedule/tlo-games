@@ -168,6 +168,39 @@
             from { box-shadow: 0 0 20px rgba(255,215,0,0.5); }
             to { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 60px rgba(255,140,0,0.4); }
         }
+        /* 倒數進度條 */
+        .progress-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
+        .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffd700, #ff8c00, #ff4500); width: 100%; transition: width 1s linear; box-shadow: 0 0 8px rgba(255,200,0,0.5); }
+        /* 歷史圓點 */
+        .history-dot { width: 22px; height: 22px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; font-family:'Segoe UI',sans-serif; animation: dotPop 0.3s ease-out; flex-shrink:0; }
+        .history-dot.red-d { background: linear-gradient(135deg, #cc0000, #ff4444); color:white; }
+        .history-dot.black-d { background: linear-gradient(135deg, #333, #666); color:white; border:1px solid rgba(255,255,255,0.3); }
+        .history-dot.green-d { background: linear-gradient(135deg, #009900, #00cc00); color:white; }
+        @keyframes dotPop { 0% { transform: scale(0); opacity:0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
+        /* 餘額飄字 */
+        .float-text { position: fixed; font-family:'Segoe UI',sans-serif; font-size:1.2rem; font-weight:bold; pointer-events:none; z-index:9999; animation: floatUp 1.5s ease-out forwards; }
+        .float-text.win { color:#00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.8); }
+        .float-text.lose { color:#ff4444; text-shadow: 0 0 10px rgba(255,68,68,0.8); }
+        @keyframes floatUp { 0% { opacity:1; transform:translateY(0) scale(1); } 60% { opacity:1; } 100% { opacity:0; transform:translateY(-80px) scale(1.3); } }
+        /* Toast 結算卡 */
+        .toast-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:200; }
+        .toast-overlay.show { display:flex; }
+        .toast-card { background:linear-gradient(135deg,#1a1a2e,#16213e); border:2px solid #ffd700; border-radius:20px; padding:24px 20px; max-width:300px; width:85%; text-align:center; animation:toastPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+        .toast-card h3 { font-size:1.1rem; margin-bottom:12px; }
+        .toast-card.win-card { border-color:#00ff88; }
+        .toast-card.win-card h3 { color:#00ff88; }
+        .toast-card.lose-card { border-color:#ff4444; }
+        .toast-card.lose-card h3 { color:#ff4444; }
+        .toast-row { display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem; color:#ccc; border-bottom:1px solid rgba(255,255,255,0.06); }
+        .toast-row:last-child { border-bottom:none; }
+        .toast-row .val { color:#fff; font-weight:bold; }
+        .toast-row .val.pos { color:#00ff88; }
+        .toast-row .val.neg { color:#ff4444; }
+        .toast-btn { margin-top:14px; padding:10px; background:#ffd700; border:none; border-radius:10px; font-size:0.95rem; font-weight:bold; cursor:pointer; width:100%; color:#1a1a2e; }
+        .toast-btn:hover { background:#ffdd44; }
+        @keyframes toastPop { 0% { transform:scale(0.7) translateY(20px); opacity:0; } 100% { transform:scale(1) translateY(0); opacity:1; } }
+        /* 贏家跑馬燈 */
+        .winner-marquee { position:fixed; top:0; left:0; width:100%; background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700); color:#1a1a2e; padding:8px 0; font-weight:bold; font-size:0.95rem; z-index:999; display:none; text-align:center; box-shadow:0 2px 10px rgba(255,215,0,0.5); }
         /* 內容容器加 z-index */
         .container { position: relative; z-index: 1; }
         .container { 
@@ -470,6 +503,14 @@
 <div class="stars"><div class="stars-layer-1"></div><div class="stars-layer-2"></div><div class="stars-layer-3"></div></div>
 <!-- 贏錢閃光 -->
 <div class="win-flash" id="winFlash"></div>
+    <!-- Toast 結算卡 -->
+    <div class="toast-overlay" id="toastOverlay">
+        <div class="toast-card" id="toastCard">
+            <h3 id="toastTitle">結算</h3>
+            <div id="toastContent"></div>
+            <button class="toast-btn" onclick="closeToast()">確定</button>
+        </div>
+    </div>
     <div class="win-celebration" id="winCelebration">
         <div class="glow"></div>
         <div class="text">🎉 恭喜發財！🎉</div>
@@ -527,6 +568,15 @@
             
             <!-- 遊戲 Tab -->
             <div class="tab-content active" id="gameTab">
+                <!-- 進度條 -->
+                <div class="progress-bar-wrap" id="progressWrap" style="display:none;margin:6px 0 4px;">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+                <!-- 歷史路紙 -->
+                <div class="history-dots-row" id="historyDotsRow" style="display:flex;gap:5px;align-items:center;margin-bottom:6px;padding:6px 8px;background:rgba(0,0,0,0.3);border-radius:10px;flex-wrap:wrap;">
+                    <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);white-space:nowrap;margin-right:4px;">路</span>
+                    <div id="historyDots" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+                </div>
                 <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
                 <div id="mysteryPoolDisplay" style="text-align:center;color:#ffd700;font-size:0.9rem;margin-top:4px;display:none;">🎁 神秘彩池：$<span id="poolAmount">0</span></div>
                 <div class="result-badge" id="resultBadge" style="display:none"></div>
@@ -939,6 +989,95 @@
                 balEl.classList.add('pop');
             }
         }
+
+        // ── 倒數進度條 ──
+        let progressTimer = null;
+        let progressTotal = 10;
+        function startProgressBar(remaining, total) {
+            progressTotal = total || 10;
+            const wrap = document.getElementById('progressWrap');
+            const fill = document.getElementById('progressFill');
+            if (!wrap || !fill) return;
+            wrap.style.display = 'block';
+            const pct = total > 0 ? (remaining / total) * 100 : 0;
+            fill.style.transition = 'none';
+            fill.style.width = pct + '%';
+            void fill.offsetWidth;
+            fill.style.transition = 'width 1s linear';
+        }
+        function updateProgressBar(remaining) {
+            const fill = document.getElementById('progressFill');
+            if (!fill) return;
+            const pct = progressTotal > 0 ? (remaining / progressTotal) * 100 : 0;
+            fill.style.width = pct + '%';
+        }
+        function stopProgressBar() {
+            clearTimeout(progressTimer);
+            const wrap = document.getElementById('progressWrap');
+            if (wrap) wrap.style.display = 'none';
+        }
+
+        // ── 歷史路紙 ──
+        let localHistory = [];
+        function addHistoryDot(color) {
+            localHistory.unshift(color);
+            if (localHistory.length > 20) localHistory.pop();
+            renderHistoryDots();
+        }
+        function renderHistoryDots() {
+            const container = document.getElementById('historyDots');
+            if (!container) return;
+            container.innerHTML = '';
+            localHistory.forEach(color => {
+                const d = document.createElement('div');
+                d.className = 'history-dot ' + (color === 'red' ? 'red-d' : color === 'black' ? 'black-d' : 'green-d');
+                d.textContent = color === 'red' ? 'R' : color === 'black' ? 'B' : 'G';
+                container.appendChild(d);
+            });
+        }
+
+        // ── 餘額飄字 ──
+        function spawnFloatText(amount, isWin) {
+            const el = document.createElement('div');
+            el.className = 'float-text ' + (isWin ? 'win' : 'lose');
+            el.textContent = (isWin ? '+' : '-') + amount;
+            const bal = document.getElementById('balance');
+            if (bal) {
+                const rect = bal.getBoundingClientRect();
+                el.style.left = rect.left + (rect.width / 2) - 20 + 'px';
+                el.style.top = rect.top - 10 + 'px';
+            } else {
+                el.style.left = (window.innerWidth / 2) - 20 + 'px';
+                el.style.top = (window.innerHeight * 0.3) + 'px';
+            }
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        // ── Toast 結算卡 ──
+        function showSettleToast(netWin, totalBet, mysteryBonus) {
+            const overlay = document.getElementById('toastOverlay');
+            const card = document.getElementById('toastCard');
+            const title = document.getElementById('toastTitle');
+            const content = document.getElementById('toastContent');
+            if (!overlay || !card) return;
+            const isWin = netWin > 0;
+            title.textContent = isWin ? '🎉 恭喜獲勝！' : netWin < 0 ? '😢 這局输了' : '➖ 持平';
+            card.className = 'toast-card ' + (isWin ? 'win-card' : netWin < 0 ? 'lose-card' : '');
+            let html = '';
+            html += '<div class="toast-row"><span>下注總額</span><span class="val">' + totalBet + '</span></div>';
+            if (mysteryBonus) html += '<div class="toast-row"><span>神秘彩池</span><span class="val pos">+' + mysteryBonus + '</span></div>';
+            html += '<div class="toast-row"><span>結算</span><span class="val ' + (isWin ? 'pos' : 'neg') + '">' + (isWin ? '+' : '') + netWin + '</span></div>';
+            content.innerHTML = html;
+            overlay.classList.add('show');
+        }
+        function closeToast() {
+            const overlay = document.getElementById('toastOverlay');
+            if (overlay) overlay.classList.remove('show');
+        }
+        document.getElementById('toastOverlay') && document.getElementById('toastOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeToast();
+        });
 
         function initAudio() {
             if (audioCtx) return;
@@ -2120,6 +2259,7 @@ function closeProfileModal(){
                 const cd = document.getElementById('betCountdown');
                 if (cd && data.remaining !== undefined) {
                     cd.textContent = data.remaining + 's';
+                    updateProgressBar(data.remaining);
                     // 防呆：下注時間的最後3秒，顯示警示
                     if (data.remaining <= 3 && data.phase === 'betting') {
                         cd.style.color = '#ff4444';
@@ -2165,6 +2305,7 @@ function closeProfileModal(){
                 case 'waiting':
                     badge.style.display = 'none';
                     disableBtns();
+                    stopProgressBar();
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display waiting';
                         resultDisplay.textContent = '等待開始...';
@@ -2188,6 +2329,7 @@ function closeProfileModal(){
                         resultDisplay.className = 'result-display betting';
                         resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
                     }
+                    startProgressBar(data.remaining, data.totalBettingTime || 10);
                     break;
                     
                 case 'spinning':
@@ -2198,6 +2340,7 @@ function closeProfileModal(){
                     resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
                     playSound('spin'); // 播放開始旋轉音效
+                    stopProgressBar();
                     
                     // 開始轉盤減速動畫（由快到慢）
                     // 更新神秘彩池顯示
@@ -2239,6 +2382,8 @@ function closeProfileModal(){
                     wheel.style.animation = 'none';
                     disableBtns();
                     resultDisplay.style.display = 'block';
+                    stopProgressBar();
+                    if (data.lastSpin && data.lastSpin.color) addHistoryDot(data.lastSpin.color);
                     break;
                     
                 default:
@@ -2441,15 +2586,12 @@ function closeProfileModal(){
                     setTimeout(() => playSound('win'), 100);
                     setTimeout(() => triggerWinEffects(roundWin), 100);
                     setTimeout(() => showWinCelebration(), 100);
+                    setTimeout(() => { spawnFloatText(roundWin, true); showSettleToast(netWin, roundBet, wonMystery && lastSpin.perPersonPool ? lastSpin.perPersonPool : 0); }, 300);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
+                    setTimeout(() => spawnFloatText(Math.abs(netWin), false), 100);
+                    setTimeout(() => showSettleToast(netWin, roundBet, 0), 300);
                 }
-                // 神秘獎金顯示在結算彈窗
-            if (wonMystery && lastSpin.perPersonPool) {
-                setTimeout(() => showResultPopup(netWin, roundBet, lastSpin.perPersonPool), 100);
-            } else {
-                setTimeout(() => showResultPopup(netWin, roundBet), 100);
-            }
             }
             
             // 檢查餘額是否歸零
