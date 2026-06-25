@@ -4012,13 +4012,17 @@ function showMyInviteCode() {
             }
             
             try {
-                // Fetch leaderboard and mystery winners together
-                const [lbRes, mwRes] = await Promise.all([
-                    fetchWithTimeout('/api/roulette/leaderboard'),
-                    fetchWithTimeout('/api/roulette/mystery-winners?_=' + Date.now())
-                ]);
+                console.log('[LB] fetching leaderboard...');
+                const lbRes = await fetch('/api/roulette/leaderboard');
+                console.log('[LB] leaderboard status:', lbRes.status);
                 const lbData = await lbRes.json();
+                console.log('[LB] leaderboard data:', JSON.stringify(lbData).substring(0, 100));
+                
+                console.log('[LB] fetching mystery winners...');
+                const mwRes = await fetch('/api/roulette/mystery-winners?_=' + Date.now());
+                console.log('[LB] mystery status:', mwRes.status);
                 const mwData = await mwRes.json();
+                console.log('[LB] mystery data:', JSON.stringify(mwData).substring(0, 100));
                 
                 // Render leaderboard
                 if (!lbData.success || !lbData.leaderboard || lbData.leaderboard.length === 0) {
@@ -4053,6 +4057,7 @@ function showMyInviteCode() {
                     mysteryEl.innerHTML = '<div style="color:#888;text-align:center;font-size:0.82rem;">還沒有中獎記錄</div>';
                 }
             } catch(e) {
+                console.error('[LB] error:', e.message, e.name);
                 listEl.innerHTML = '<div style="color:#e74c3c;text-align:center;">載入失敗</div>';
                 mysteryEl.innerHTML = '<div style="color:#e74c3c;text-align:center;font-size:0.82rem;">載入失敗</div>';
             }
