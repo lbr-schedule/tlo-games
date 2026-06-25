@@ -868,25 +868,25 @@ async function spinWheel() {
 
             console.log('神秘彩池結算: ' + winnersCount + '人各得 $' + perPersonPool);
 
-            // 分發獎金（背景執行，不阻擋）
-            (async () => {
-                try {
-                    await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
-                    // 只有有人中獎才歸零彩池，否則彩池繼續累積
-                    const distResult = await rouletteDb.execute({
-                        sql: `SELECT distributed FROM roulette_mystery_bets WHERE round_id = ?`,
-                        args: [rouletteState.currentRoundId]
-                    });
-                    const distributed = distResult.rows?.[0]?.distributed;
-                    if (distributed === 1) {
-                        rouletteState.mysteryPool = 0;
-                        try { await saveMysteryPool(); } catch(e) {}
-                    } else {
-                        console.log('神秘彩池無人中獎，彩池累積至 $' + rouletteState.mysteryPool);
-                    }
-                } catch(e) { console.log('分發失敗:', e.message); }
-                rouletteState.currentRoundId = null;
-            })();
+            // 分發獎金（同步執行，確保寫入成功）
+            try {
+                await distributeMysteryPool(rouletteState.currentRoundId, poolBeforeResult);
+                // 只有有人中獎才歸零彩池，否則彩池繼續累積
+                const distResult = await rouletteDb.execute({
+                    sql: `SELECT distributed FROM roulette_mystery_bets WHERE round_id = ?`,
+                    args: [rouletteState.currentRoundId]
+                });
+                const distributed = distResult.rows?.[0]?.distributed;
+                if (distributed === 1) {
+                    rouletteState.mysteryPool = 0;
+                    try { await saveMysteryPool(); } catch(e) {}
+                } else {
+                    console.log('神秘彩池無人中獎，彩池累積至 $' + rouletteState.mysteryPool);
+                }
+            } catch(e) {
+                console.log('分發失敗:', e.message);
+            }
+            rouletteState.currentRoundId = null;
         } catch(e) {
             console.log('神秘彩池處理失敗:', e.message);
         }
