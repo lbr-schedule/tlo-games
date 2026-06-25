@@ -3922,7 +3922,7 @@ function showMyInviteCode() {
             }
             
             // Try fetch with timeout
-            async function fetchWithTimeout(url, timeout = 15000) {
+            async function fetchWithTimeout(url, timeout = 60000) {
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), timeout);
                 try {
@@ -3942,7 +3942,7 @@ function showMyInviteCode() {
                     data = await res.json();
                 } catch(e) {
                     // Retry once after 1s (Railway cold start)
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise(r => setTimeout(r, 2000));
                     const res = await fetchWithTimeout('/api/roulette/mystery-winners?_=' + Date.now());
                     data = await res.json();
                 }
@@ -3998,7 +3998,7 @@ function showMyInviteCode() {
             listEl.innerHTML = '載入中...';
             mysteryEl.innerHTML = '<span style="color:#888;font-size:0.82rem;">載入中...</span>';
             
-            async function fetchWithTimeout(url, timeout = 15000) {
+            async function fetchWithTimeout(url, timeout = 60000) {
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), timeout);
                 try {
