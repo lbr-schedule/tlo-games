@@ -234,6 +234,8 @@
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        /* 輪盤中央倒數 */
+        .wheel-countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(60px, 18vw, 100px); font-weight: 900; color: #fff; text-shadow: 0 0 12px rgba(255,215,0,0.8), 0 0 30px rgba(255,215,0,0.4), 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; z-index: 9; display: none; pointer-events: none; user-select: none; line-height: 1; font-family: 'Segoe UI Black', 'Arial Black', sans-serif; }
         
         .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
@@ -584,6 +586,7 @@
                             <canvas id="wheelCanvas" width="300" height="300"></canvas>
                         </div>
                     </div>
+                    <div class="wheel-countdown" id="wheelCountdown">8</div>
                 </div>
                 
                 <div class="bet-section">
@@ -984,6 +987,72 @@
                 balEl.classList.add('pop');
             }
         }
+
+        // ── 輪盤倒數計時器 ──
+        let wheelCountdownInterval = null;
+        let wheelCountdownRemaining = 0;
+        let lastDisplayedRemaining = -1;
+        function showWheelCountdown(seconds) {
+            const el = document.getElementById('wheelCountdown');
+            if (!el) return;
+            if (seconds === lastDisplayedRemaining) return; // 避免重複触發
+            lastDisplayedRemaining = seconds;
+            el.style.display = 'block';
+            el.style.opacity = '1';
+            el.textContent = seconds;
+            el.style.animation = 'none';
+            void el.offsetWidth;
+            el.style.animation = seconds === 1 ? 'countdownPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'countdownPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+            playSound('tick');
+        }
+        function hideWheelCountdown() {
+            const el = document.getElementById('wheelCountdown');
+            if (!el) return;
+            el.style.transition = 'opacity 0.2s ease-out';
+            el.style.opacity = '0';
+            setTimeout(() => {
+                el.style.display = 'none';
+                el.style.transition = '';
+                el.style.opacity = '1';
+                el.textContent = '';
+            }, 220);
+            lastDisplayedRemaining = -1;
+        }
+        function startWheelCountdown(total) {
+            if (wheelCountdownInterval && wheelCountdownRemaining === total) return; // 已在倒數中
+            stopWheelCountdown();
+            wheelCountdownRemaining = total;
+            showWheelCountdown(total);
+            wheelCountdownInterval = setInterval(() => {
+                wheelCountdownRemaining--;
+                if (wheelCountdownRemaining <= 0) {
+                    stopWheelCountdown();
+                    return;
+                }
+                showWheelCountdown(wheelCountdownRemaining);
+            }, 1000);
+        }
+        function stopWheelCountdown() {
+            clearInterval(wheelCountdownInterval);
+            wheelCountdownInterval = null;
+            wheelCountdownRemaining = 0;
+        }
+
+        /* 倒數動畫 */
+        function addCountdownAnimations() {
+            if (document.getElementById('countdown-anims')) return;
+            const style = document.createElement('style');
+            style.id = 'countdown-anims';
+            style.textContent = `
+                @keyframes countdownPop {
+                    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0.6; }
+                    60%  { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        addCountdownAnimations();
 
         // ── 倒數進度條 ──
         let progressTimer = null;
@@ -2301,6 +2370,8 @@ function closeProfileModal(){
                     badge.style.display = 'none';
                     disableBtns();
                     stopProgressBar();
+                    stopWheelCountdown();
+                    hideWheelCountdown();
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display waiting';
                         resultDisplay.textContent = '等待開始...';
@@ -2325,6 +2396,10 @@ function closeProfileModal(){
                         resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
                     }
                     startProgressBar(data.remaining, data.totalBettingTime || 10);
+                    // 輪盤倒數
+                    if (data.remaining !== undefined && data.remaining > 0) {
+                        startWheelCountdown(data.remaining);
+                    }
                     break;
                     
                 case 'spinning':
@@ -2336,6 +2411,8 @@ function closeProfileModal(){
                     resultDisplay.style.display = 'block';
                     playSound('spin'); // 播放開始旋轉音效
                     stopProgressBar();
+                    stopWheelCountdown();
+                    hideWheelCountdown();
                     
                     // 開始轉盤減速動畫（由快到慢）
                     // 更新神秘彩池顯示
@@ -2378,6 +2455,8 @@ function closeProfileModal(){
                     disableBtns();
                     resultDisplay.style.display = 'block';
                     stopProgressBar();
+                    stopWheelCountdown();
+                    hideWheelCountdown();
                     if (data.lastSpin && data.lastSpin.color) addHistoryDot(data.lastSpin.color);
                     break;
                     
