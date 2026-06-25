@@ -32,12 +32,8 @@
             text-align: center;
             box-shadow: 0 2px 10px rgba(255,215,0,0.5);
         }
-        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; overflow: hidden; white-space: nowrap; }
-        .mystery-broadcast .broadcast-inner { display: inline-block; white-space: nowrap; }
-        .mystery-broadcast.long-text .broadcast-inner { animation: marqueeScroll 6s linear infinite; }
-        @keyframes broadcast-pulse { 0%,100% { opacity: 1; box-shadow: 0 0 10px rgba(255,215,0,0.5); } 50% { opacity: 0.9; box-shadow: 0 0 20px rgba(255,215,0,0.8); } }
-        @keyframes broadcastIn { 0%{transform:scaleX(0);opacity:0;box-shadow:0 0 0 rgba(255,215,0,0);} 50%{transform:scaleX(1.05);box-shadow:0 0 40px rgba(255,215,0,0.9);} 100%{transform:scaleX(1);opacity:1;box-shadow:0 0 10px rgba(255,215,0,0.5);} }
-        @keyframes marqueeScroll { 0%{transform:translateX(100vw);} 100%{transform:translateX(-100%);} }
+        .mystery-broadcast { animation: broadcast-pulse 1s ease-in-out infinite; }
+        @keyframes broadcast-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
         .winner-marquee.show {
             display: block;
             animation: marquee-slide 8s linear forwards;
@@ -47,194 +43,35 @@
             100% { transform: translateX(-100%); }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { height: 100%; width: 100%; min-height: 100vh; margin: 0; padding: 0; }
+        html { height: 100%; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background: #050510;
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
+            height: 100%; /* fallback */
             color: white; 
-            margin: 0; padding: 0;
-            min-height: 100vh; height: 100%;
             overflow: hidden; 
             display: flex;
             flex-direction: column;
             touch-action: manipulation;
             -webkit-overflow-scrolling: touch;
-            position: relative;
-            width: 100%;
         }
-        /* ── 三層星空背景 ── */
-        .stars { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; overflow: hidden; }
-        .stars-layer-1 {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background:
-                radial-gradient(2.5px 2.5px at 8% 12%, #fff 45%, transparent 100%),
-                radial-gradient(3px 3px at 23% 45%, #ffe8c0 45%, transparent 100%),
-                radial-gradient(2px 2px at 38% 78%, #fff 45%, transparent 100%),
-                radial-gradient(2.5px 2.5px at 53% 28%, #fff 45%, transparent 100%),
-                radial-gradient(3px 3px at 68% 62%, #c8e0ff 45%, transparent 100%),
-                radial-gradient(2px 2px at 78% 8%, #fff 45%, transparent 100%),
-                radial-gradient(2.5px 2.5px at 88% 52%, #ffe0c8 45%, transparent 100%),
-                radial-gradient(2px 2px at 13% 88%, #fff 45%, transparent 100%),
-                radial-gradient(3px 3px at 33% 18%, #fff 45%, transparent 100%),
-                radial-gradient(2px 2px at 63% 92%, #c8f0ff 45%, transparent 100%),
-                radial-gradient(2.5px 2.5px at 93% 33%, #fff 45%, transparent 100%),
-                radial-gradient(2px 2px at 48% 58%, #fff 45%, transparent 100%),
-                radial-gradient(3px 3px at 3% 65%, #ffe8c0 45%, transparent 100%),
-                radial-gradient(2px 2px at 73% 42%, #fff 45%, transparent 100%),
-                radial-gradient(2.5px 2.5px at 28% 3%, #c8e0ff 45%, transparent 100%);
-            background-size: 350px 350px;
-            animation: starDrift 80s linear infinite;
+        .container { 
+            max-width: 100%; 
+            margin: 0 auto; 
+            padding: 0.5rem; 
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
-        .stars-layer-2 {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background:
-                radial-gradient(1px 1px at 5% 22%, rgba(255,255,255,0.7) 40%, transparent 100%),
-                radial-gradient(1.5px 1.5px at 18% 55%, rgba(255,255,255,0.6) 40%, transparent 100%),
-                radial-gradient(1px 1px at 32% 8%, rgba(255,255,255,0.8) 40%, transparent 100%),
-                radial-gradient(1.5px 1.5px at 47% 72%, rgba(255,255,255,0.5) 40%, transparent 100%),
-                radial-gradient(1px 1px at 62% 35%, rgba(255,255,255,0.7) 40%, transparent 100%),
-                radial-gradient(1.5px 1.5px at 77% 18%, rgba(255,255,255,0.6) 40%, transparent 100%),
-                radial-gradient(1px 1px at 92% 68%, rgba(255,255,255,0.8) 40%, transparent 100%),
-                radial-gradient(1.5px 1.5px at 42% 48%, rgba(255,255,255,0.5) 40%, transparent 100%),
-                radial-gradient(1px 1px at 57% 85%, rgba(255,255,255,0.6) 40%, transparent 100%),
-                radial-gradient(1.5px 1.5px at 72% 92%, rgba(255,255,255,0.7) 40%, transparent 100%);
-            background-size: 500px 500px;
-            animation: starDrift2 120s linear infinite reverse;
-        }
-        .stars-layer-3 {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background:
-                radial-gradient(2px 2px at 15% 35%, rgba(200,220,255,0.9) 40%, transparent 100%),
-                radial-gradient(3px 3px at 45% 15%, rgba(255,240,200,0.9) 40%, transparent 100%),
-                radial-gradient(2px 2px at 75% 65%, rgba(200,255,230,0.8) 40%, transparent 100%);
-            background-size: 280px 280px;
-            animation: starTwinkle 4s ease-in-out infinite alternate;
-        }
-        @keyframes starDrift {
-            from { background-position: 0 0; }
-            to { background-position: 350px 350px; }
-        }
-        @keyframes starDrift2 {
-            from { background-position: 0 0; }
-            to { background-position: 500px 500px; }
-        }
-        @keyframes starTwinkle {
-            0% { opacity: 0.4; }
-            100% { opacity: 1; }
-        }
-        /* 轉盤外發光 */
-        .wheel-outer {
-            box-shadow:
-                0 0 15px rgba(255,215,0,0.4),
-                0 0 30px rgba(255,140,0,0.25),
-                0 0 50px rgba(255,100,0,0.15),
-                inset 0 0 20px rgba(255,215,0,0.1);
-        }
-        .wheel-border {
-            box-shadow: 0 0 20px #ffd700, 0 0 40px rgba(255,215,0,0.5), 0 0 60px rgba(255,140,0,0.3);
-        }
-        /* 畫面震動 */
-        @keyframes screenShake {
-            0%, 100% { transform: translateX(0); }
-            15% { transform: translateX(-8px) rotate(-0.5deg); }
-            30% { transform: translateX(8px) rotate(0.5deg); }
-            45% { transform: translateX(-6px) rotate(-0.3deg); }
-            60% { transform: translateX(6px) rotate(0.3deg); }
-            75% { transform: translateX(-3px); }
-            90% { transform: translateX(3px); }
-        }
-        body.shaking { animation: screenShake 0.6s ease-out; }
-        /* 贏錢閃光 */
-        .win-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 65%); pointer-events: none; z-index: 9998; opacity: 0; }
-        .win-flash.active { opacity: 1; animation: flashBurst 0.7s ease-out forwards; }
-        @keyframes flashBurst {
-            0% { opacity: 1; transform: scale(0.8); }
-            50% { opacity: 0.8; transform: scale(1.1); }
-            100% { opacity: 0; transform: scale(1.3); }
-        }
-        /* 金幣噴射 */
-        .coin-particle { position: fixed; font-size: 1.3rem; pointer-events: none; z-index: 9997; animation: coinFly 1s ease-out forwards; filter: drop-shadow(0 0 6px #ffd700); }
-        @keyframes coinFly {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-120px) scale(0.5); }
-        }
-        /* 餘額 pop */
-        .balance span { transition: transform 0.2s, text-shadow 0.2s; display: inline-block; }
-        .balance span.pop { animation: coinPop 0.4s ease-out; }
-        @keyframes coinPop {
-            0% { transform: scale(1); }
-            40% { transform: scale(1.4) rotate(-5deg); color: #fff; text-shadow: 0 0 25px #ffd700; }
-            100% { transform: scale(1); }
-        }
-        /* 轉盤 spin 發光 */
-        .wheel.spinning-anim + .wheel-border + .wheel-outer .wheel { animation: wheelGlow 0.8s infinite alternate; }
-        @keyframes wheelGlow {
-            from { box-shadow: 0 0 20px rgba(255,215,0,0.5); }
-            to { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 60px rgba(255,140,0,0.4); }
-        }
-        /* 倒數進度條 */
-        .progress-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
-        .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffd700, #ff8c00, #ff4500); width: 100%; transition: width 1s linear; box-shadow: 0 0 8px rgba(255,200,0,0.5); }
-        /* 歷史圓點 */
-        .history-dot { width: 22px; height: 22px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; font-family:'Segoe UI',sans-serif; animation: dotPop 0.3s ease-out; flex-shrink:0; }
-        .history-dot.red-d { background: linear-gradient(135deg, #cc0000, #ff4444); color:white; }
-        .history-dot.black-d { background: linear-gradient(135deg, #333, #666); color:white; border:1px solid rgba(255,255,255,0.3); }
-        .history-dot.yellow-d { background: linear-gradient(135deg, #ffd700, #ffed4a); color:white; }
-        @keyframes dotPop { 0% { transform: scale(0); opacity:0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
-        /* 餘額飄字 */
-        .float-text { position: fixed; font-family:'Segoe UI',sans-serif; font-size:1.2rem; font-weight:bold; pointer-events:none; z-index:9999; animation: floatUp 1.5s ease-out forwards; }
-        .float-text.win { color:#00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.8); }
-        .float-text.lose { color:#ff4444; text-shadow: 0 0 10px rgba(255,68,68,0.8); }
-        @keyframes floatUp { 0% { opacity:1; transform:translateY(0) scale(1); } 60% { opacity:1; } 100% { opacity:0; transform:translateY(-80px) scale(1.3); } }
-        /* Toast 結算卡 */
-        .toast-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:200; }
-        .toast-overlay.show { display:flex; }
-        .toast-card { background:linear-gradient(135deg,#1a1a2e,#16213e); border:2px solid #ffd700; border-radius:20px; padding:24px 20px; max-width:300px; width:85%; text-align:center; animation:toastPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-        .toast-card h3 { font-size:1.1rem; margin-bottom:12px; }
-        .toast-card.win-card { border-color:#00ff88; }
-        .toast-card.win-card h3 { color:#00ff88; }
-        .toast-card.lose-card { border-color:#ff4444; }
-        .toast-card.lose-card h3 { color:#ff4444; }
-        .toast-row { display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem; color:#ccc; border-bottom:1px solid rgba(255,255,255,0.06); }
-        .toast-row:last-child { border-bottom:none; }
-        .toast-row .val { color:#fff; font-weight:bold; }
-        .toast-row .val.pos { color:#00ff88; }
-        .toast-row .val.neg { color:#ff4444; }
-        .toast-btn { margin-top:14px; padding:10px; background:#ffd700; border:none; border-radius:10px; font-size:0.95rem; font-weight:bold; cursor:pointer; width:100%; color:#1a1a2e; }
-        .toast-btn:hover { background:#ffdd44; }
-        @keyframes toastPop { 0% { transform:scale(0.7) translateY(20px); opacity:0; } 100% { transform:scale(1) translateY(0); opacity:1; } }
-        /* 升級版中獎結果 */
-        .win-result-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); display:none; justify-content:center; align-items:center; z-index:300; flex-direction:column; gap:16px; }
-        .win-result-overlay.show { display:flex; }
-        .win-result-card { background:linear-gradient(135deg,#1a1a2e,#0d0d1a); border:3px solid #ffd700; border-radius:24px; padding:28px 24px; max-width:320px; width:90%; text-align:center; animation:winCardPop 0.5s cubic-bezier(0.34,1.56,0.64,1); position:relative; overflow:visible; }
-        @keyframes winCardPop { 0%{transform:scale(0.5) translateY(30px);opacity:0;} 100%{transform:scale(1) translateY(0);opacity:1;} }
-        .win-avatar-wrap { position:relative; width:90px; height:90px; margin:0 auto 12px; }
-        .win-avatar-ring { width:90px; height:90px; border-radius:50%; position:absolute; top:0; left:0; animation:ringRotate 2s linear infinite; background:conic-gradient(from 0deg,#ffd700,#ff8c00,#ffd700,#ff8c00,#ffd700); }
-        .win-avatar-ring::before { content:''; position:absolute; inset:3px; border-radius:50%; background:linear-gradient(135deg,#1a1a2e,#0d0d1a); }
-        .win-avatar-img { width:74px; height:74px; border-radius:50%; object-fit:cover; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; }
-        @keyframes ringRotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-        .win-name-glow { font-size:1.1rem; font-weight:bold; text-shadow:0 0 8px #ffd700,0 0 20px rgba(255,215,0,0.6); color:#ffd700; }
-        .win-level-badge { display:inline-block; background:rgba(255,215,0,0.15); border:1px solid rgba(255,215,0,0.4); border-radius:20px; padding:2px 10px; font-size:0.75rem; color:#ffd700; margin-bottom:10px; }
-        .win-amount-label { font-size:0.85rem; color:#aaa; margin-bottom:4px; }
-        .win-amount-slot { font-family:'Segoe UI Black','Arial Black',sans-serif; font-size:clamp(2rem,10vw,3rem); font-weight:900; color:#ffd700; text-shadow:0 0 12px rgba(255,215,0,0.8),0 0 30px rgba(255,140,0,0.5); letter-spacing:2px; line-height:1; min-height:1.2em; }
-        .win-close-btn { margin-top:16px; padding:12px 32px; background:#ffd700; border:none; border-radius:12px; font-size:1rem; font-weight:bold; color:#1a1a2e; cursor:pointer; width:100%; }
-        .win-close-btn:hover { background:#ffdd44; }
-        .win-sparkle-particle { position:fixed; font-size:16px; pointer-events:none; z-index:301; animation:sparkleFly 1.2s ease-out forwards; }
-        /* 贏家跑馬燈 */
-        .winner-marquee { position:fixed; top:0; left:0; width:100%; background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700); color:#1a1a2e; padding:8px 0; font-weight:bold; font-size:0.95rem; z-index:999; display:none; text-align:center; box-shadow:0 2px 10px rgba(255,215,0,0.5); }
-        /* 內容容器加 z-index */
-        .container { position: relative; z-index: 1; width: 100%; max-width: 460px; margin: 0 auto; padding: 0.5rem; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-y; box-sizing: border-box; }
         
-        h1 { position: relative; text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 460px; margin: 0 auto; box-sizing: border-box; }
+        h1 { text-align: center; padding: 0.3rem; color: #ffd700; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 100%; max-width: 100%; height: 38px; box-sizing: border-box; }
-        .game-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: visible; width: 100%; }
-        .game-section { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
-        .wheel-container { text-align: center; margin: 8px auto; position: relative; width: 316px; height: 316px; flex-shrink: 0; }
-        .wheel-border { width: 316px; height: 316px; border-radius: 50%; border: 6px solid #ffd700; position: absolute; left: 0; top: 0; box-sizing: border-box; z-index: 2; }
-        .wheel-outer { width: 300px; height: 300px; border-radius: 50%; position: absolute; left: 8px; top: 8px; overflow: hidden; z-index: 1; touch-action: none; }
-        .wheel { width: 300px; height: 300px; border-radius: 50%; transform-origin: 150px 150px; transform: rotate(0deg); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 0.8rem; background: rgba(255,215,0,0.15); border-radius: 8px; margin-bottom: 0.4rem; flex-shrink: 0; width: 316px; height: 38px; box-sizing: border-box; }
         #playerNameDisplay { display: flex; align-items: center; height: 100%; }
         #balanceBox { display: flex; align-items: center; height: 100%; }
         .balance { font-size: 0.95rem; }
@@ -255,8 +92,6 @@
         .wheel.spinning-anim { animation: wheel-spin 0.2s linear infinite; }
         @keyframes wheel-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
         .wheel-pointer { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 32px solid #ffd700; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-        /* 輪盤中央倒數 */
-        .wheel-countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(60px, 18vw, 100px); font-weight: 900; color: #fff; text-shadow: 0 0 12px rgba(255,215,0,0.8), 0 0 30px rgba(255,215,0,0.4), 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; z-index: 9; display: none; pointer-events: none; user-select: none; line-height: 1; font-family: 'Segoe UI Black', 'Arial Black', sans-serif; }
         
         .result-display { text-align: center; font-size: 0.9rem; padding: 0.5rem; border-radius: 8px; margin: 0.3rem 0; font-weight: bold; min-height: 40px; transition: all 0.3s ease; flex-shrink: 0; }
         .result-display .countdown { font-size: 1.4rem; color: #ffd700; display: block; }
@@ -314,7 +149,7 @@
         .ad-close { position: absolute; top: 5px; right: 10px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; }
         .ad-text { color: #333; font-size: 0.85rem; margin: 8px 0 5px; }
         .ad-line { background: #00b900; color: white; padding: 8px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
-        .result-display.betting { background: transparent; border: none; padding: 0; min-height: 0; }
+        .result-display.betting { background: rgba(255,215,0,0.2); border: 2px solid #ffd700; }
         .result-display.waiting { background: rgba(255,255,255,0.1); }
         .result-display.spinning { background: rgba(0,0,0,0.3); }
         .result-display.red { background: rgba(180,0,0,0.7); border: 2px solid #ff4444; font-size: 1.1rem; }
@@ -414,8 +249,8 @@
         
         .no-bets { color: #666; font-style: italic; font-size: clamp(0.8rem, 2.5vw, 0.85rem); text-align: center; padding: 8px; }
         
-        .game-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; width: 100%; max-width: 460px; margin: 0 auto 8px; box-sizing: border-box; }
-        .game-tab { flex: 1 1 auto; min-width: 60px; max-width: 80px; height: 40px; padding: 0 4px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        .game-tabs { display: flex; margin-bottom: 8px; gap: 5px; width: 316px; height: 45px; box-sizing: border-box; }
+        .game-tab { width: 155.5px; height: 45px; padding: 0; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: #aaa; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .game-tab.active { background: #ffd700; color: #1a1a2e; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -517,36 +352,19 @@
     </style>
 </head>
 <body>
-<!-- 三層星空背景 -->
-<div class="stars"><div class="stars-layer-1"></div><div class="stars-layer-2"></div><div class="stars-layer-3"></div></div>
-<!-- 贏錢閃光 -->
-<div class="win-flash" id="winFlash"></div>
-    <!-- Toast 結算卡 -->
-    <div class="toast-overlay" id="toastOverlay">
-        <div class="toast-card" id="toastCard">
-            <h3 id="toastTitle">結算</h3>
-            <div id="toastContent"></div>
-            <button class="toast-btn" onclick="closeToast()">確定</button>
-        </div>
-    </div>
     <div class="win-celebration" id="winCelebration">
         <div class="glow"></div>
         <div class="text">🎉 恭喜發財！🎉</div>
     </div>
 
     <div class="winner-marquee" id="winnerMarquee">🎉 訊息載入中...</div>
-    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;position:fixed;top:44px;left:0;width:100%;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:6px 8px;font-weight:bold;z-index:500;border-radius:0;box-sizing:border-box;">
-        🎁 <span class="broadcast-inner" id="broadcastText"></span>
+    <div class="mystery-broadcast" id="mysteryBroadcast" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+        🎁 <span id="broadcastText"></span>
     </div>
-    <h1 style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:460px;margin:0 auto;padding:0 2px;box-sizing:border-box;">
-        <button onclick="leaveGame()" class="header-btn">🚪</button>
-        <span style="position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:1rem;color:#ffd700;">🎰 T-LO大轉盤</span>
-        <div style="display:flex;gap:4px;align-items:center;">
-            <span class="help-toggle" onclick="toggleBGM()" id="bgmBtn">🎵</span>
-            <span class="help-toggle" onclick="toggleSFX()" id="sfxBtn">🔊</span>
-            <span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;">☰</span>
-        </div>
-    </h1>
+    <div class="fake-announce-bar" id="fakeAnnounceBar" style="display:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:8px;font-weight:bold;margin-bottom:5px;border-radius:8px;">
+        <span id="fakeAnnounceText"></span>
+    </div>
+    <h1 style="display:flex;align-items:center;justify-content:center;gap:8px;position:relative;width:316px;height:40px;margin:0 auto;box-sizing:border-box;font-size:1.05rem;"><button onclick="leaveGame()" class="header-btn" style="position:absolute;left:0;">🚪</button><span>🎰 T-LO大轉盤</span><span class="help-toggle" onclick="toggleBGM()" id="bgmBtn" style="position:absolute;right:70px;">🎵</span><span class="help-toggle" onclick="toggleSFX()" id="sfxBtn" style="position:absolute;right:40px;">🔊</span><span class="help-toggle" onclick="showPlayerMenu()" style="font-size:1.2rem;line-height:1;position:absolute;right:0;">☰</span></h1>
     
     <div class="container">
         <div class="top-bar" id="topBar" style="display:none;">
@@ -591,15 +409,6 @@
             
             <!-- 遊戲 Tab -->
             <div class="tab-content active" id="gameTab">
-                <!-- 進度條 -->
-                <div class="progress-bar-wrap" id="progressWrap" style="display:none;margin:6px 0 4px;">
-                    <div class="progress-bar-fill" id="progressFill"></div>
-                </div>
-                <!-- 歷史路紙 -->
-                <div class="history-dots-row" id="historyDotsRow" style="display:flex;gap:5px;align-items:center;margin-bottom:6px;padding:6px 8px;background:rgba(0,0,0,0.3);border-radius:10px;">
-                    <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);white-space:nowrap;margin-right:4px;">路</span>
-                    <div id="historyDots" style="display:flex;gap:4px;overflow:hidden;"></div>
-                </div>
                 <div class="result-display waiting" id="resultDisplay" style="display:none">等待開始...</div>
                 <div id="mysteryPoolDisplay" style="text-align:center;color:#ffd700;font-size:0.9rem;margin-top:4px;display:none;">🎁 神秘彩池：$<span id="poolAmount">0</span></div>
                 <div class="result-badge" id="resultBadge" style="display:none"></div>
@@ -612,7 +421,6 @@
                             <canvas id="wheelCanvas" width="300" height="300"></canvas>
                         </div>
                     </div>
-                    <div class="wheel-countdown" id="wheelCountdown">8</div>
                 </div>
                 
                 <div class="bet-section">
@@ -709,20 +517,6 @@
         <div class="result-popup-box">
             <p id="resultPopupMsg"></p>
             <button id="resultPopupBtn">確定</button>
-        </div>
-    </div>
-    <!-- 升級版中獎卡片 -->
-    <div class="win-result-overlay" id="winResultOverlay">
-        <div class="win-result-card" id="winResultCard">
-            <div class="win-avatar-wrap">
-                <div class="win-avatar-ring"></div>
-                <img class="win-avatar-img" id="winAvatarImg" src="/roulette/avatar1.jpg">
-            </div>
-            <div class="win-name-glow" id="winNameGlow"></div>
-            <div class="win-level-badge" id="winLevelBadge"></div>
-            <div class="win-amount-label">中獎金額</div>
-            <div class="win-amount-slot" id="winAmountSlot">$0</div>
-            <button class="win-close-btn" onclick="closeWinResult()">確定</button>
         </div>
     </div>
 
@@ -980,291 +774,6 @@
             setTimeout(() => { el.classList.remove('show'); el.innerHTML = ''; }, 2000);
         }
 
-        function triggerWinFlash() {
-            const f = document.getElementById('winFlash');
-            if (!f) return;
-            f.classList.remove('active');
-            void f.offsetWidth;
-            f.classList.add('active');
-            setTimeout(() => f.classList.remove('active'), 800);
-        }
-
-        function triggerScreenShake() {
-            document.body.classList.remove('shaking');
-            void document.body.offsetWidth;
-            document.body.classList.add('shaking');
-            setTimeout(() => document.body.classList.remove('shaking'), 700);
-        }
-
-        function spawnCoinParticles(prize) {
-            const count = Math.min(Math.floor(prize / 50), 12);
-            for (let i = 0; i < count; i++) {
-                setTimeout(() => {
-                    const coin = document.createElement('div');
-                    coin.className = 'coin-particle';
-                    coin.textContent = '🪙';
-                    const startX = window.innerWidth / 2 + (Math.random() - 0.5) * 160;
-                    coin.style.left = startX + 'px';
-                    coin.style.top = (window.innerHeight * 0.45) + 'px';
-                    document.body.appendChild(coin);
-                    setTimeout(() => coin.remove(), 1000);
-                }, i * 80);
-            }
-        }
-
-        function triggerWinEffects(prize) {
-            triggerWinFlash();
-            triggerScreenShake();
-            spawnCoinParticles(prize);
-            updateBalancePop();
-        }
-
-        function updateBalancePop() {
-            const balEl = document.getElementById('balance');
-            if (balEl) {
-                balEl.classList.remove('pop');
-                void balEl.offsetWidth;
-                balEl.classList.add('pop');
-            }
-        }
-
-        // ── 輪盤倒數計時器 ──
-        let wheelCountdownInterval = null;
-        let wheelCountdownRemaining = 0;
-        let lastDisplayedRemaining = -1;
-        function showWheelCountdown(seconds) {
-            const el = document.getElementById('wheelCountdown');
-            if (!el) return;
-            if (seconds === lastDisplayedRemaining) return; // 避免重複触發
-            lastDisplayedRemaining = seconds;
-            el.style.display = 'block';
-            el.style.opacity = '1';
-            el.textContent = seconds;
-            el.style.animation = 'none';
-            void el.offsetWidth;
-            el.style.animation = seconds === 1 ? 'countdownPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'countdownPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
-            playSound('tick');
-        }
-        function hideWheelCountdown() {
-            const el = document.getElementById('wheelCountdown');
-            if (!el) return;
-            el.style.transition = 'opacity 0.2s ease-out';
-            el.style.opacity = '0';
-            setTimeout(() => {
-                el.style.display = 'none';
-                el.style.transition = '';
-                el.style.opacity = '1';
-                el.textContent = '';
-            }, 220);
-            lastDisplayedRemaining = -1;
-        }
-        function startWheelCountdown(total) {
-            if (wheelCountdownInterval && wheelCountdownRemaining === total) return; // 已在倒數中
-            stopWheelCountdown();
-            wheelCountdownRemaining = total;
-            showWheelCountdown(total);
-            wheelCountdownInterval = setInterval(() => {
-                wheelCountdownRemaining--;
-                if (wheelCountdownRemaining <= 0) {
-                    stopWheelCountdown();
-                    return;
-                }
-                showWheelCountdown(wheelCountdownRemaining);
-            }, 1000);
-        }
-        function stopWheelCountdown() {
-            clearInterval(wheelCountdownInterval);
-            wheelCountdownInterval = null;
-            wheelCountdownRemaining = 0;
-        }
-
-        /* 倒數動畫 */
-        function addCountdownAnimations() {
-            if (document.getElementById('countdown-anims')) return;
-            const style = document.createElement('style');
-            style.id = 'countdown-anims';
-            style.textContent = `
-                @keyframes countdownPop {
-                    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0.6; }
-                    60%  { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
-                    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        addCountdownAnimations();
-
-        // ── 倒數進度條 ──
-        let progressTimer = null;
-        let progressTotal = 10;
-        function startProgressBar(remaining, total) {
-            progressTotal = total || 10;
-            const wrap = document.getElementById('progressWrap');
-            const fill = document.getElementById('progressFill');
-            if (!wrap || !fill) return;
-            wrap.style.display = 'block';
-            const pct = total > 0 ? (remaining / total) * 100 : 0;
-            fill.style.transition = 'none';
-            fill.style.width = pct + '%';
-            void fill.offsetWidth;
-            fill.style.transition = 'width 1s linear';
-        }
-        function updateProgressBar(remaining) {
-            const fill = document.getElementById('progressFill');
-            if (!fill) return;
-            const pct = progressTotal > 0 ? (remaining / progressTotal) * 100 : 0;
-            fill.style.width = pct + '%';
-        }
-        function stopProgressBar() {
-            clearTimeout(progressTimer);
-            const wrap = document.getElementById('progressWrap');
-            if (wrap) wrap.style.display = 'none';
-        }
-
-        // ── 歷史路紙 ──
-        let localHistory = [];
-        function addHistoryDot(color) {
-            localHistory.unshift(color);
-            if (localHistory.length > 15) localHistory.pop();
-            renderHistoryDots();
-        }
-        function renderHistoryDots() {
-            const container = document.getElementById('historyDots');
-            if (!container) return;
-            container.innerHTML = '';
-            localHistory.forEach(color => {
-                const d = document.createElement('div');
-                d.className = 'history-dot ' + (color === 'red' ? 'red-d' : color === 'black' ? 'black-d' : 'yellow-d');
-                d.textContent = color === 'red' ? 'R' : color === 'black' ? 'B' : 'Y';
-                container.appendChild(d);
-            });
-        }
-
-        // ── 餘額飄字 ──
-        function spawnFloatText(amount, isWin) {
-            const el = document.createElement('div');
-            el.className = 'float-text ' + (isWin ? 'win' : 'lose');
-            el.textContent = (isWin ? '+' : '-') + amount;
-            const bal = document.getElementById('balance');
-            if (bal) {
-                const rect = bal.getBoundingClientRect();
-                el.style.left = rect.left + (rect.width / 2) - 20 + 'px';
-                el.style.top = rect.top - 10 + 'px';
-            } else {
-                el.style.left = (window.innerWidth / 2) - 20 + 'px';
-                el.style.top = (window.innerHeight * 0.3) + 'px';
-            }
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1500);
-        }
-
-        // ── 升級版中獎卡片 ──
-        let _winResultSlotTimer = null;
-        function showWinResult(avatar, username, level, tier, amount) {
-            const overlay = document.getElementById('winResultOverlay');
-            const card = document.getElementById('winResultCard');
-            if (!overlay) return;
-            // 設定頭像
-            const avImg = document.getElementById('winAvatarImg');
-            if (avImg) avImg.src = avatar || '/roulette/avatar1.jpg';
-            // 設定名字
-            const nameEl = document.getElementById('winNameGlow');
-            if (nameEl) nameEl.textContent = username || myName || '玩家';
-            // 設定等級
-            const lvBadge = document.getElementById('winLevelBadge');
-            if (lvBadge) {
-                const tierColor = {bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',platinum:'#e5e4e2',diamond:'#b9f2ff'}[tier] || '#ffd700';
-                const tierName = {bronze:'青銅',silver:'白銀',gold:'黃金',platinum:'白金',diamond:'鑽石'}[tier] || tier || '玩家';
-                lvBadge.textContent = 'Lv.' + level + ' ' + tierName;
-                lvBadge.style.borderColor = tierColor;
-                lvBadge.style.color = tierColor;
-            }
-            // 顯示卡片
-            overlay.classList.add('show');
-            // 金額翻牌動畫
-            startSlotNumber(amount);
-            // ✨ 閃光粒子
-            spawnSparkles();
-            // 自動關閉
-            clearTimeout(_winResultSlotTimer);
-            _winResultSlotTimer = setTimeout(() => closeWinResult(), 5000);
-        }
-        function closeWinResult() {
-            const overlay = document.getElementById('winResultOverlay');
-            if (overlay) overlay.classList.remove('show');
-            clearTimeout(_winResultSlotTimer);
-        }
-        function startSlotNumber(target) {
-            const el = document.getElementById('winAmountSlot');
-            if (!el) return;
-            const duration = 1200;
-            const startTime = performance.now();
-            function tick(now) {
-                const elapsed = now - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                const current = Math.floor(eased * target);
-                el.textContent = '$' + current;
-                if (progress < 1) {
-                    requestAnimationFrame(tick);
-                } else {
-                    el.textContent = '$' + target;
-                }
-            }
-            requestAnimationFrame(tick);
-        }
-        function spawnSparkles() {
-            const symbols = ['✨','💫','⭐','🌟','💛'];
-            const count = 18;
-            for (let i = 0; i < count; i++) {
-                const p = document.createElement('div');
-                p.className = 'win-sparkle-particle';
-                p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-                const startX = window.innerWidth * 0.2 + Math.random() * window.innerWidth * 0.6;
-                const startY = window.innerHeight * 0.35;
-                p.style.left = startX + 'px';
-                p.style.top = startY + 'px';
-                const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
-                const dist = 80 + Math.random() * 120;
-                const dx = Math.cos(angle) * dist;
-                const dy = Math.sin(angle) * dist - 60;
-                p.style.setProperty('--dx', dx + 'px');
-                p.style.setProperty('--dy', dy + 'px');
-                p.style.animation = 'none';
-                void p.offsetWidth;
-                // 動態計算終點
-                const endX = startX + dx;
-                const endY = startY + dy;
-                p.animate([{transform:'translate(0,0) scale(0)',opacity:1},{transform:'translate('+dx+'px,'+dy+'px) scale(1.3)',opacity:1},{transform:'translate('+(dx*1.4)+'px,'+(dy*0.6)+'px) scale(0)',opacity:0}],{duration:1000+Math.random()*400,easing:'cubic-bezier(0.25,0.46,0.45,0.94)',fill:'forwards'});
-                document.body.appendChild(p);
-                setTimeout(() => p.remove(), 1600);
-            }
-        }
-        // ── Toast 結算卡 ──
-        function showSettleToast(netWin, totalBet, mysteryBonus) {
-            const overlay = document.getElementById('toastOverlay');
-            const card = document.getElementById('toastCard');
-            const title = document.getElementById('toastTitle');
-            const content = document.getElementById('toastContent');
-            if (!overlay || !card) return;
-            const isWin = netWin > 0;
-            title.textContent = isWin ? '🎉 恭喜獲勝！' : netWin < 0 ? '😢 這局输了' : '➖ 持平';
-            card.className = 'toast-card ' + (isWin ? 'win-card' : netWin < 0 ? 'lose-card' : '');
-            let html = '';
-            html += '<div class="toast-row"><span>下注總額</span><span class="val">' + totalBet + '</span></div>';
-            if (mysteryBonus) html += '<div class="toast-row"><span>神秘彩池</span><span class="val pos">+' + mysteryBonus + '</span></div>';
-            html += '<div class="toast-row"><span>結算</span><span class="val ' + (isWin ? 'pos' : 'neg') + '">' + (isWin ? '+' : '') + netWin + '</span></div>';
-            content.innerHTML = html;
-            overlay.classList.add('show');
-        }
-        function closeToast() {
-            const overlay = document.getElementById('toastOverlay');
-            if (overlay) overlay.classList.remove('show');
-        }
-        document.getElementById('toastOverlay') && document.getElementById('toastOverlay').addEventListener('click', function(e) {
-            if (e.target === this) closeToast();
-        });
-
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1323,30 +832,22 @@
         }
 
         // 全服公告廣播
-        // ========== 假的繁榮系統 ==========
-        let lastBroadcastKey = '';
-        let fakeScrolling = false;
-        let fakeAnnounceTimer = null, fakeBarEl = null, fakeBarTextEl = null;
-        const fakeNames = ['xKevin88','Miki_Taro','Joker_Wang','RubyChen','DarkKnight_7','SummerLin','WindMan','CatFood_99','LuckyStar_TW','BossHsu','FishLin','MoneyMaker','NightWolf_TW','SunnyDay_22','TigerLin','PandaKing_TW','StarDust_X','MagicWand_55','RockChen','DragonFly_33','PhoenixLin','SilverFox_TW','GoldenEgg_88','ThunderBolt_11','IceCream_TW','FireWork_66','MoonLight_X','SolarFlare_TW','ShadowCat_44','CrystalLin'];
-        const fakeAmounts = [200, 300, 500, 800, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 8000];
         function showBroadcast(message) {
             const el = document.getElementById('mysteryBroadcast');
             const text = document.getElementById('broadcastText');
             if (!el || !text) return;
-            const key = message;
-            if (key === lastBroadcastKey) return;
-            lastBroadcastKey = key;
-            // 估計文字寬度，超過視窗就加 marquee class
             text.textContent = message;
-            el.classList.remove('long-text');
             el.style.display = 'block';
-            el.style.animation = 'broadcastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards, broadcast-pulse 1.5s ease-in-out 0.4s infinite';
-            if (text.scrollWidth > el.clientWidth) {
-                el.classList.add('long-text');
-            }
-            playSound('broadcast');
-            setTimeout(() => { el.style.display = 'none'; el.classList.remove('long-text'); el.style.animation = ''; lastBroadcastKey = ''; }, 3000);
+            el.style.animation = 'none';
+            void el.offsetWidth;
+            el.style.animation = 'broadcast-pulse 1s ease-in-out infinite';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
+
+        // ========== 假的繁榮系統 ==========
+        const fakeNames = ['xKevin88','Miki_Taro','Joker_Wang','RubyChen','DarkKnight_7','SummerLin','WindMan','CatFood_99','LuckyStar_TW','BossHsu','FishLin','MoneyMaker','NightWolf_TW','SunnyDay_22','TigerLin','PandaKing_TW','StarDust_X','MagicWand_55','RockChen','DragonFly_33','PhoenixLin','SilverFox_TW','GoldenEgg_88','ThunderBolt_11','IceCream_TW','FireWork_66','MoonLight_X','SolarFlare_TW','ShadowCat_44','CrystalLin'];
+        const fakeAmounts = [200, 300, 500, 800, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 8000];
+        let fakeAnnounceTimer = null, fakeBarEl = null, fakeBarTextEl = null, fakeScrolling = false;
         function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function generateFakeAnnounce() {
             const name = randomPick(fakeNames);
@@ -1480,16 +981,6 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                 osc.start(now);
                 osc.stop(now + 0.2);
-            } else if (type === 'broadcast') {
-                // 廣播音效：勝利的短號角
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523, now); // C5
-                osc.frequency.setValueAtTime(659, now + 0.08); // E5
-                osc.frequency.setValueAtTime(784, now + 0.16); // G5
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                osc.start(now);
-                osc.stop(now + 0.4);
             }
         }
         
@@ -1956,6 +1447,7 @@ function closeProfileModal(){
             loadHistoryFromDB();
             pollStatus();
             pollInterval = setInterval(pollStatus, 1000);
+            startFakeAnnounces();
             // 通知伺服器玩家上線
             fetch('/api/roulette/ping', { method: 'POST' });
             
@@ -2020,6 +1512,7 @@ function closeProfileModal(){
                     pollStatus();
                     console.log('Setting up poll interval');
                     pollInterval = setInterval(pollStatus, 1000);
+                    startFakeAnnounces();
 
                     // 啟動背景音樂（使用者已經看到遊戲，有操作意圖）
                     initAudio();
@@ -2461,7 +1954,6 @@ function closeProfileModal(){
                 const cd = document.getElementById('betCountdown');
                 if (cd && data.remaining !== undefined) {
                     cd.textContent = data.remaining + 's';
-                    updateProgressBar(data.remaining);
                     // 防呆：下注時間的最後3秒，顯示警示
                     if (data.remaining <= 3 && data.phase === 'betting') {
                         cd.style.color = '#ff4444';
@@ -2469,6 +1961,12 @@ function closeProfileModal(){
                     } else {
                         cd.style.color = '#ffd700';
                         cd.style.fontSize = '1.4rem';
+                    }
+                } else {
+                    // betCountdown not found, update resultDisplay directly
+                    const resultDisplay = document.getElementById('resultDisplay');
+                    if (resultDisplay && data.phase === 'betting') {
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
                     }
                 }
             } catch(e) {
@@ -2501,9 +1999,6 @@ function closeProfileModal(){
                 case 'waiting':
                     badge.style.display = 'none';
                     disableBtns();
-                    stopProgressBar();
-                    stopWheelCountdown();
-                    hideWheelCountdown();
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display waiting';
                         resultDisplay.textContent = '等待開始...';
@@ -2522,14 +2017,10 @@ function closeProfileModal(){
                         lastProcessedSpinId = 0;
                     }
                     badge.style.display = 'none';
+                    // 如果轉盤動畫還在進行中（結果即將顯示），不要覆蓋 resultDisplay
                     if (!window.rouletteAnimating) {
                         resultDisplay.className = 'result-display betting';
-                        resultDisplay.innerHTML = '';
-                    }
-                    stopProgressBar();
-                    // 輪盤倒數
-                    if (data.remaining !== undefined && data.remaining > 0) {
-                        startWheelCountdown(data.remaining);
+                        resultDisplay.innerHTML = '<span>⏰ 下注時間</span><span class="countdown" id="betCountdown">' + (data.remaining || 10) + 's</span>';
                     }
                     break;
                     
@@ -2541,9 +2032,6 @@ function closeProfileModal(){
                     resultDisplay.textContent = '🎰 轉動中...';
                     resultDisplay.style.display = 'block';
                     playSound('spin'); // 播放開始旋轉音效
-                    stopProgressBar();
-                    stopWheelCountdown();
-                    hideWheelCountdown();
                     
                     // 開始轉盤減速動畫（由快到慢）
                     // 更新神秘彩池顯示
@@ -2585,10 +2073,6 @@ function closeProfileModal(){
                     wheel.style.animation = 'none';
                     disableBtns();
                     resultDisplay.style.display = 'block';
-                    stopProgressBar();
-                    stopWheelCountdown();
-                    hideWheelCountdown();
-                    if (data.lastSpin && data.lastSpin.color) addHistoryDot(data.lastSpin.color);
                     break;
                     
                 default:
@@ -2789,21 +2273,16 @@ function closeProfileModal(){
                 // 播放贏或輸的音效
                 if (netWin > 0) {
                     setTimeout(() => playSound('win'), 100);
-                    setTimeout(() => triggerWinEffects(roundWin), 100);
                     setTimeout(() => showWinCelebration(), 100);
-                    setTimeout(() => {
-                        const pd = window._profileData || {};
-                        const av = (pd.profile && pd.profile.avatar_url) || '/roulette/avatar1.jpg';
-                        const lv = pd.level || 1;
-                        const tier = pd.tier || 'bronze';
-                        spawnFloatText(roundWin, true);
-                        showWinResult(av, myName, lv, tier, roundWin);
-                    }, 300);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
-                    setTimeout(() => spawnFloatText(Math.abs(netWin), false), 100);
-                    setTimeout(() => showSettleToast(netWin, roundBet, 0), 300);
                 }
+                // 神秘獎金顯示在結算彈窗
+            if (wonMystery && lastSpin.perPersonPool) {
+                setTimeout(() => showResultPopup(netWin, roundBet, lastSpin.perPersonPool), 100);
+            } else {
+                setTimeout(() => showResultPopup(netWin, roundBet), 100);
+            }
             }
             
             // 檢查餘額是否歸零
@@ -2891,7 +2370,7 @@ function closeProfileModal(){
             }
             
             let html = '';
-            const colors = { red: '🔴', black: '⚫', gold: '⭐', green: '🟡' };
+            const colors = { red: '🔴', black: '⚫', gold: '⭐' };
             
             for (const record of historyBets) {
                 const colorEmoji = colors[record.color] || '⚪';
@@ -3982,7 +3461,7 @@ document.addEventListener('click', function(e){
         
         function openVideoPopup() {
             if (!myName) { showToast('請先登入'); return; }
-            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/9QcLDlzNT_Q?autoplay=1';
+            document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/Npu3ra_HopM?autoplay=1';
             document.getElementById('videoPopup').classList.add('show');
             document.getElementById('videoClaimSubmit').disabled = true;
             document.getElementById('videoClaimSubmit').textContent = '請等待...';
