@@ -3911,30 +3911,35 @@ function showMyInviteCode() {
             try {
                 const res = await fetch('/api/roulette/mystery-winners?_=' + Date.now(), { cache: 'no-store' });
                 const data = await res.json();
-                console.log('[DEBUG] mystery winners response:', JSON.stringify(data));
                 const emptyHtml = '<div style="color:#888;text-align:center;font-size:0.82rem;">還沒有中獎記錄</div>';
-                const failHtml = '<div style="color:#888;text-align:center;font-size:0.82rem;">載入失敗</div>';
+                const failHtml = '<div style="color:#e74c3c;text-align:center;font-size:0.82rem;">載入失敗</div>';
                 
-                if (!data.success || !data.winners || data.winners.length === 0) {
-                    if (document.getElementById('mysteryWinnersList')) document.getElementById('mysteryWinnersList').innerHTML = emptyHtml;
-                    if (document.getElementById('leaderboardMysteryWinners')) document.getElementById('leaderboardMysteryWinners').innerHTML = emptyHtml;
-                    return;
-                }
+                const winners = data.success && data.winners && data.winners.length > 0 ? data.winners : null;
                 
-                let html = '';
-                data.winners.forEach(w => {
-                    const time = new Date((w.created_at || 0) * 1000);
-                    const timeStr = (time.getMonth()+1) + '/' + time.getDate() + ' ' + time.getHours().toString().padStart(2,'0') + ':' + time.getMinutes().padStart(2,'0');
-                    html += '<div style="padding:6px 0;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">';
-                    html += '<div><div style="color:#ffd700;font-weight:bold;font-size:0.82rem;">' + w.username + '</div><div style="color:#aaa;font-size:0.68rem;">' + timeStr + '</div></div>';
-                    html += '<div style="text-align:right;"><div style="color:#ffd700;font-weight:bold;">+$' + w.per_person.toLocaleString() + '</div><div style="color:#888;font-size:0.62rem;">彩池$' + w.pool_amount.toLocaleString() + '</div></div></div>';
+                const containers = ['mysteryWinnersList', 'leaderboardMysteryWinners'];
+                containers.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    if (!winners) {
+                        el.innerHTML = emptyHtml;
+                        return;
+                    }
+                    let html = '';
+                    winners.forEach(w => {
+                        const time = new Date((w.created_at || 0) * 1000);
+                        const timeStr = (time.getMonth()+1) + '/' + time.getDate() + ' ' + time.getHours().toString().padStart(2,'0') + ':' + time.getMinutes().padStart(2,'0');
+                        html += '<div style="padding:6px 0;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">';
+                        html += '<div><div style="color:#ffd700;font-weight:bold;font-size:0.82rem;">' + w.username + '</div><div style="color:#aaa;font-size:0.68rem;">' + timeStr + '</div></div>';
+                        html += '<div style="text-align:right;"><div style="color:#ffd700;font-weight:bold;">+$' + w.per_person.toLocaleString() + '</div><div style="color:#888;font-size:0.62rem;">彩池$' + w.pool_amount.toLocaleString() + '</div></div></div>';
+                    });
+                    el.innerHTML = html;
                 });
-                
-                if (document.getElementById('mysteryWinnersList')) document.getElementById('mysteryWinnersList').innerHTML = html;
-                if (document.getElementById('leaderboardMysteryWinners')) document.getElementById('leaderboardMysteryWinners').innerHTML = html;
             } catch(e) {
-                if (document.getElementById('mysteryWinnersList')) document.getElementById('mysteryWinnersList').innerHTML = failHtml;
-                if (document.getElementById('leaderboardMysteryWinners')) document.getElementById('leaderboardMysteryWinners').innerHTML = failHtml;
+                const containers = ['mysteryWinnersList', 'leaderboardMysteryWinners'];
+                containers.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = '<div style="color:#e74c3c;text-align:center;font-size:0.82rem;">載入失敗</div>';
+                });
             }
         }
         
