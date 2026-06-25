@@ -46,16 +46,130 @@
         html { height: 100%; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e, #16213e); 
-            height: 100dvh; /* 動態視窗高度，包含行動瀏覽器位址列 */
-            height: 100%; /* fallback */
+            background: #050510;
+            height: 100dvh;
+            height: 100%;
             color: white; 
             overflow: hidden; 
             display: flex;
             flex-direction: column;
             touch-action: manipulation;
             -webkit-overflow-scrolling: touch;
+            position: relative;
         }
+        /* ── 三層星空背景 ── */
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .stars-layer-1 {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                radial-gradient(2.5px 2.5px at 8% 12%, #fff 45%, transparent 100%),
+                radial-gradient(3px 3px at 23% 45%, #ffe8c0 45%, transparent 100%),
+                radial-gradient(2px 2px at 38% 78%, #fff 45%, transparent 100%),
+                radial-gradient(2.5px 2.5px at 53% 28%, #fff 45%, transparent 100%),
+                radial-gradient(3px 3px at 68% 62%, #c8e0ff 45%, transparent 100%),
+                radial-gradient(2px 2px at 78% 8%, #fff 45%, transparent 100%),
+                radial-gradient(2.5px 2.5px at 88% 52%, #ffe0c8 45%, transparent 100%),
+                radial-gradient(2px 2px at 13% 88%, #fff 45%, transparent 100%),
+                radial-gradient(3px 3px at 33% 18%, #fff 45%, transparent 100%),
+                radial-gradient(2px 2px at 63% 92%, #c8f0ff 45%, transparent 100%),
+                radial-gradient(2.5px 2.5px at 93% 33%, #fff 45%, transparent 100%),
+                radial-gradient(2px 2px at 48% 58%, #fff 45%, transparent 100%),
+                radial-gradient(3px 3px at 3% 65%, #ffe8c0 45%, transparent 100%),
+                radial-gradient(2px 2px at 73% 42%, #fff 45%, transparent 100%),
+                radial-gradient(2.5px 2.5px at 28% 3%, #c8e0ff 45%, transparent 100%);
+            background-size: 350px 350px;
+            animation: starDrift 80s linear infinite;
+        }
+        .stars-layer-2 {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                radial-gradient(1px 1px at 5% 22%, rgba(255,255,255,0.7) 40%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 18% 55%, rgba(255,255,255,0.6) 40%, transparent 100%),
+                radial-gradient(1px 1px at 32% 8%, rgba(255,255,255,0.8) 40%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 47% 72%, rgba(255,255,255,0.5) 40%, transparent 100%),
+                radial-gradient(1px 1px at 62% 35%, rgba(255,255,255,0.7) 40%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 77% 18%, rgba(255,255,255,0.6) 40%, transparent 100%),
+                radial-gradient(1px 1px at 92% 68%, rgba(255,255,255,0.8) 40%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 42% 48%, rgba(255,255,255,0.5) 40%, transparent 100%),
+                radial-gradient(1px 1px at 57% 85%, rgba(255,255,255,0.6) 40%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 72% 92%, rgba(255,255,255,0.7) 40%, transparent 100%);
+            background-size: 500px 500px;
+            animation: starDrift2 120s linear infinite reverse;
+        }
+        .stars-layer-3 {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                radial-gradient(2px 2px at 15% 35%, rgba(200,220,255,0.9) 40%, transparent 100%),
+                radial-gradient(3px 3px at 45% 15%, rgba(255,240,200,0.9) 40%, transparent 100%),
+                radial-gradient(2px 2px at 75% 65%, rgba(200,255,230,0.8) 40%, transparent 100%);
+            background-size: 280px 280px;
+            animation: starTwinkle 4s ease-in-out infinite alternate;
+        }
+        @keyframes starDrift {
+            from { background-position: 0 0; }
+            to { background-position: 350px 350px; }
+        }
+        @keyframes starDrift2 {
+            from { background-position: 0 0; }
+            to { background-position: 500px 500px; }
+        }
+        @keyframes starTwinkle {
+            0% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        /* 轉盤外發光 */
+        .wheel-outer {
+            box-shadow:
+                0 0 15px rgba(255,215,0,0.4),
+                0 0 30px rgba(255,140,0,0.25),
+                0 0 50px rgba(255,100,0,0.15),
+                inset 0 0 20px rgba(255,215,0,0.1);
+        }
+        .wheel-border {
+            box-shadow: 0 0 20px #ffd700, 0 0 40px rgba(255,215,0,0.5), 0 0 60px rgba(255,140,0,0.3);
+        }
+        /* 畫面震動 */
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(-8px) rotate(-0.5deg); }
+            30% { transform: translateX(8px) rotate(0.5deg); }
+            45% { transform: translateX(-6px) rotate(-0.3deg); }
+            60% { transform: translateX(6px) rotate(0.3deg); }
+            75% { transform: translateX(-3px); }
+            90% { transform: translateX(3px); }
+        }
+        body.shaking { animation: screenShake 0.6s ease-out; }
+        /* 贏錢閃光 */
+        .win-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 65%); pointer-events: none; z-index: 9998; opacity: 0; }
+        .win-flash.active { opacity: 1; animation: flashBurst 0.7s ease-out forwards; }
+        @keyframes flashBurst {
+            0% { opacity: 1; transform: scale(0.8); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.3); }
+        }
+        /* 金幣噴射 */
+        .coin-particle { position: fixed; font-size: 1.3rem; pointer-events: none; z-index: 9997; animation: coinFly 1s ease-out forwards; filter: drop-shadow(0 0 6px #ffd700); }
+        @keyframes coinFly {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-120px) scale(0.5); }
+        }
+        /* 餘額 pop */
+        .balance span { transition: transform 0.2s, text-shadow 0.2s; display: inline-block; }
+        .balance span.pop { animation: coinPop 0.4s ease-out; }
+        @keyframes coinPop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.4) rotate(-5deg); color: #fff; text-shadow: 0 0 25px #ffd700; }
+            100% { transform: scale(1); }
+        }
+        /* 轉盤 spin 發光 */
+        .wheel.spinning-anim + .wheel-border + .wheel-outer .wheel { animation: wheelGlow 0.8s infinite alternate; }
+        @keyframes wheelGlow {
+            from { box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+            to { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 60px rgba(255,140,0,0.4); }
+        }
+        /* 內容容器加 z-index */
+        .container { position: relative; z-index: 1; }
         .container { 
             max-width: 100%; 
             margin: 0 auto; 
@@ -352,6 +466,10 @@
     </style>
 </head>
 <body>
+<!-- 三層星空背景 -->
+<div class="stars"><div class="stars-layer-1"></div><div class="stars-layer-2"></div><div class="stars-layer-3"></div></div>
+<!-- 贏錢閃光 -->
+<div class="win-flash" id="winFlash"></div>
     <div class="win-celebration" id="winCelebration">
         <div class="glow"></div>
         <div class="text">🎉 恭喜發財！🎉</div>
@@ -772,6 +890,54 @@
             }
             el.classList.add('show');
             setTimeout(() => { el.classList.remove('show'); el.innerHTML = ''; }, 2000);
+        }
+
+        function triggerWinFlash() {
+            const f = document.getElementById('winFlash');
+            if (!f) return;
+            f.classList.remove('active');
+            void f.offsetWidth;
+            f.classList.add('active');
+            setTimeout(() => f.classList.remove('active'), 800);
+        }
+
+        function triggerScreenShake() {
+            document.body.classList.remove('shaking');
+            void document.body.offsetWidth;
+            document.body.classList.add('shaking');
+            setTimeout(() => document.body.classList.remove('shaking'), 700);
+        }
+
+        function spawnCoinParticles(prize) {
+            const count = Math.min(Math.floor(prize / 50), 12);
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'coin-particle';
+                    coin.textContent = '🪙';
+                    const startX = window.innerWidth / 2 + (Math.random() - 0.5) * 160;
+                    coin.style.left = startX + 'px';
+                    coin.style.top = (window.innerHeight * 0.45) + 'px';
+                    document.body.appendChild(coin);
+                    setTimeout(() => coin.remove(), 1000);
+                }, i * 80);
+            }
+        }
+
+        function triggerWinEffects(prize) {
+            triggerWinFlash();
+            triggerScreenShake();
+            spawnCoinParticles(prize);
+            updateBalancePop();
+        }
+
+        function updateBalancePop() {
+            const balEl = document.getElementById('balance');
+            if (balEl) {
+                balEl.classList.remove('pop');
+                void balEl.offsetWidth;
+                balEl.classList.add('pop');
+            }
         }
 
         function initAudio() {
@@ -2273,6 +2439,7 @@ function closeProfileModal(){
                 // 播放贏或輸的音效
                 if (netWin > 0) {
                     setTimeout(() => playSound('win'), 100);
+                    setTimeout(() => triggerWinEffects(roundWin), 100);
                     setTimeout(() => showWinCelebration(), 100);
                 } else if (netWin < 0) {
                     setTimeout(() => playSound('lose'), 100);
