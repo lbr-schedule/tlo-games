@@ -3921,7 +3921,7 @@ function showMyInviteCode() {
             }
             
             // Try fetch with timeout
-            async function fetchWithTimeout(url, timeout = 8000) {
+            async function fetchWithTimeout(url, timeout = 15000) {
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), timeout);
                 try {
@@ -3963,6 +3963,7 @@ function showMyInviteCode() {
                 });
                 updateContainers(html);
             } catch(e) {
+                console.error('Mystery winners error:', e.message, e.name);
                 updateContainers(failHtml);
             }
         }
