@@ -407,14 +407,19 @@
                     const oppDiceVal = data.diceValues[1 - myIndex];
                     const myDiceVal = data.diceValues[myIndex];
                     
-                    // 對手骰子
-                    document.getElementById('oppDice').textContent = oppDiceVal || '?';
+                    // 對手骰子（停止搖晃動畫）
+                    const oppDiceEl = document.getElementById('oppDice');
+                    oppDiceEl.classList.remove('shaking');
+                    oppDiceEl.textContent = oppDiceVal || '?';
                     
                     // 檢查我是否已骰
                     const iHaveRolled = myDiceVal > 0 || (data.rolled && data.rolled[myIndex]);
                     
                     if (iHaveRolled) {
-                        document.getElementById('myDice').textContent = myDiceVal || '?';
+                        // 停止搖晃動畫，顯示真實骰值
+                        const myDiceEl = document.getElementById('myDice');
+                        myDiceEl.classList.remove('shaking');
+                        myDiceEl.textContent = myDiceVal || '?';
                     } else {
                         document.getElementById('myDice').textContent = '...';
                     }
