@@ -612,9 +612,9 @@ async function handleDiceMessage(ws, msg) {
         // 檢查這玩家是否已經骰過（不重複骰）
         if (game.rolled && game.rolled[playerIndex]) return;
         
-        // 如果是老闆帳號(12345)，使用加權骰子給予約70%勝率
+        // 如果是老闆帳號(NPC1)，使用加權骰子給予約70%勝率
         let dice;
-        if (username === '12345') {
+        if (username === 'NPC1') {
             // 65%機會骰到5-6，35%機會骰到1-4
             dice = Math.random() < 0.65 ? Math.floor(Math.random() * 2) + 5 : Math.floor(Math.random() * 4) + 1;
         } else {
