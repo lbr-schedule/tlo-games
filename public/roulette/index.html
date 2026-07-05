@@ -4141,7 +4141,7 @@ document.addEventListener('click', function(e){
             setTimeout(() => { 
                 videoWatched = true;
                 document.getElementById('videoClaimSubmit').disabled = false;
-                document.getElementById('videoClaimSubmit').textContent = '✅ 領取 2000 金幣';
+                document.getElementById('videoClaimSubmit').textContent = '✅ 領取 10000 金幣';
             }, 30000);
         }
         
@@ -4258,7 +4258,7 @@ document.addEventListener('click', function(e){
         <!-- 看片彈窗 -->
         <div class="video-popup" id="videoPopup">
             <button class="close-btn" onclick="closeVideoPopup()">✕</button>
-            <h3 style="color: #ffd700; margin-bottom: 10px;">🎬 觀看影片領取2000金幣</h3>
+            <h3 style="color: #ffd700; margin-bottom: 10px;">🎬 觀看影片領取10000金幣</h3>
             <iframe id="videoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
             <button class="claim-btn" id="videoClaimSubmit" onclick="claimVideoReward()" disabled>請等待...</button>
