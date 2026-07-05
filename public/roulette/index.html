@@ -933,6 +933,10 @@
                 🎬 看影片領獎勵
             </button>
 
+            <button id="specialBonusBtn" onclick="showSpecialBonusPopup();closePlayerMenu();" style="width:100%;padding:12px;background:linear-gradient(135deg,#ff2222,#ff6600);border:none;border-radius:10px;color:#fff;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;font-weight:bold;box-shadow:0 4px 15px rgba(255,80,0,0.4);">
+                🎁 限定登入獎勵
+            </button>
+
             <button id="noAdBtn" onclick="buyNoAd();closePlayerMenu();" style="width:100%;padding:12px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.4);border-radius:10px;color:#ffd700;font-size:1rem;cursor:pointer;text-align:left;margin-bottom:8px;display:none;">
                 🎫 購買免廣告 (10000 金幣)
             </button>
@@ -4177,6 +4181,150 @@ document.addEventListener('click', function(e){
             } catch(e) { showToast('領取失敗'); }
         }
 
+        // ========== 限定登入獎勵 ==========
+        let specialBonusChecked = false;
+        let specialBonusAvailable = false;
+        let specialBonusTimerInterval = null;
+
+        function showSpecialBonusPopup() {
+            if (!myName) { showToast('請先登入'); return; }
+            const popup = document.getElementById('specialBonusPopup');
+            popup.style.display = 'block';
+            checkSpecialBonusStatus();
+        }
+
+        function closeSpecialBonusPopup() {
+            document.getElementById('specialBonusPopup').style.display = 'none';
+            if (specialBonusTimerInterval) { clearInterval(specialBonusTimerInterval); specialBonusTimerInterval = null; }
+        }
+
+        async function checkSpecialBonusStatus() {
+            const statusEl = document.getElementById('specialBonusStatus');
+            const timerEl = document.getElementById('specialBonusTimer');
+            const btn = document.getElementById('specialBonusClaimBtn');
+
+            const now = new Date();
+            const deadline = new Date('2026-07-05T12:00:00+08:00');
+
+            if (now > deadline) {
+                statusEl.textContent = '已超過領取時間';
+                statusEl.style.color = '#ff4444';
+                timerEl.textContent = '活動已結束';
+                btn.textContent = '活動已結束';
+                btn.disabled = true;
+                specialBonusAvailable = false;
+                return;
+            }
+
+            // 顯示倒計時
+            const diff = deadline - now;
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            timerEl.textContent = '距離結束：' + (h > 0 ? h + '時' : '') + m + '分' + s + '秒';
+
+            if (specialBonusTimerInterval) clearInterval(specialBonusTimerInterval);
+            specialBonusTimerInterval = setInterval(() => {
+                const now2 = new Date();
+                const d2 = new Date('2026-07-05T12:00:00+08:00');
+                const diff2 = d2 - now2;
+                if (diff2 <= 0) {
+                    clearInterval(specialBonusTimerInterval);
+                    timerEl.textContent = '活動已結束';
+                    btn.textContent = '活動已結束';
+                    btn.disabled = true;
+                    statusEl.textContent = '已超過領取時間';
+                    statusEl.style.color = '#ff4444';
+                    return;
+                }
+                const h2 = Math.floor(diff2 / 3600000);
+                const m2 = Math.floor((diff2 % 3600000) / 60000);
+                const s2 = Math.floor((diff2 % 60000) / 1000);
+                timerEl.textContent = '距離結束：' + (h2 > 0 ? h2 + '時' : '') + m2 + '分' + s2 + '秒';
+            }, 1000);
+
+            // 檢查是否已領取
+            try {
+                const resp = await fetch('/api/roulette/special-login-bonus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    statusEl.textContent = '恭喜！獲得 +10000 金幣！';
+                    statusEl.style.color = '#ffd700';
+                    timerEl.textContent = '領取成功';
+                    btn.textContent = '領取成功 ✅';
+                    btn.disabled = true;
+                    btn.style.background = '#888';
+                    specialBonusAvailable = false;
+                    if (data.newScore !== undefined) document.getElementById('balance').textContent = data.newScore;
+                } else if (data.message && data.message.includes('已領過')) {
+                    statusEl.textContent = '此活動已領過囉';
+                    statusEl.style.color = '#ff4444';
+                    timerEl.textContent = '每帳號限一次';
+                    btn.textContent = '已領取';
+                    btn.disabled = true;
+                    btn.style.background = '#888';
+                    specialBonusAvailable = false;
+                } else if (data.message && data.message.includes('超過')) {
+                    statusEl.textContent = '已超過領取時間';
+                    statusEl.style.color = '#ff4444';
+                    timerEl.textContent = '活動已結束';
+                    btn.textContent = '活動已結束';
+                    btn.disabled = true;
+                    specialBonusAvailable = false;
+                } else {
+                    statusEl.textContent = '點擊下方按鈕領取！';
+                    statusEl.style.color = '#ffd700';
+                    btn.textContent = '🎁 領取 10000 金幣';
+                    btn.disabled = false;
+                    btn.style.background = '#ffd700';
+                    specialBonusAvailable = true;
+                }
+            } catch(e) {
+                statusEl.textContent = '載入失敗，請稍後再試';
+                statusEl.style.color = '#ff4444';
+                btn.textContent = '載入失敗';
+                btn.disabled = true;
+            }
+        }
+
+        async function claimSpecialBonus() {
+            if (!myName) return;
+            const btn = document.getElementById('specialBonusClaimBtn');
+            btn.disabled = true;
+            btn.textContent = '領取中...';
+            try {
+                const resp = await fetch('/api/roulette/special-login-bonus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('specialBonusStatus').textContent = '恭喜！獲得 +10000 金幣！';
+                    document.getElementById('specialBonusStatus').style.color = '#ffd700';
+                    document.getElementById('specialBonusTimer').textContent = '領取成功';
+                    btn.textContent = '領取成功 ✅';
+                    btn.style.background = '#888';
+                    if (data.newScore !== undefined) document.getElementById('balance').textContent = data.newScore;
+                    showToast('🎁 限定獎勵 +10000 金幣！');
+                    setTimeout(closeSpecialBonusPopup, 1500);
+                } else {
+                    showToast(data.message || '領取失敗');
+                    btn.textContent = '領取 10000 金幣';
+                    btn.disabled = false;
+                    await checkSpecialBonusStatus();
+                }
+            } catch(e) {
+                showToast('領取失敗，請稍後再試');
+                btn.textContent = '領取 10000 金幣';
+                btn.disabled = false;
+            }
+        }
+
         // ========== 片頭 Intro ==========
         function enterGameFromIntro(){
             var video=document.getElementById('introVideoStatic');
@@ -4262,6 +4410,16 @@ document.addEventListener('click', function(e){
             <iframe id="videoFrame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <p style="color: #aaa; font-size: 0.85rem; margin-top: 8px;">請看完影片後再領取（30秒）</p>
             <button class="claim-btn" id="videoClaimSubmit" onclick="claimVideoReward()" disabled>請等待...</button>
+        </div>
+
+        <!-- 限定登入獎勵彈窗 -->
+        <div class="video-popup" id="specialBonusPopup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;background:linear-gradient(135deg,#1a1a2e,#2d1a4a);border:2px solid #ffd700;border-radius:20px;padding:30px;max-width:380px;width:90%;text-align:center;box-shadow:0 0 40px rgba(255,215,0,0.3);">
+            <button onclick="closeSpecialBonusPopup()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>
+            <h3 style="color:#ffd700;margin-bottom:8px;font-size:1.4rem;">🎁 限定登入獎勵</h3>
+            <div style="font-size:3.5rem;margin:10px 0;">💰</div>
+            <div id="specialBonusStatus" style="color:#fff;font-size:1rem;margin:10px 0;">載入中...</div>
+            <div id="specialBonusTimer" style="color:#ff6600;font-size:1.1rem;font-weight:bold;margin:8px 0;"></div>
+            <button id="specialBonusClaimBtn" onclick="claimSpecialBonus()" disabled style="width:100%;padding:14px;background:#ffd700;border:none;border-radius:12px;font-size:1.1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-top:10px;">請稍候...</button>
         </div>
 
         <!-- 片頭動畫彈窗 -->
