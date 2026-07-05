@@ -107,7 +107,6 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         // 邀請記錄表
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
         rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }).catch(e => {});
-        rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN lastSpecialBonus TEXT DEFAULT ''` }).catch(e => {});
         // 建立 roulette_bets 表格（所有下注追蹤）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
         // 建立 mystery_bets 表格（每局神秘下注追蹤）
@@ -944,30 +943,6 @@ app.post('/api/roulette/video-bonus', async (req, res) => {
         const scoreResult = await rouletteDb.execute({ sql: `SELECT score FROM players WHERE username = ?`, args: [username] });
         const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
         res.json({ success: true, amount: 2000, newScore });
-    } catch(e) { res.json({ success: false, message: '領取失敗，請稍後再試' }); }
-});
-
-// 限定登入獎勵：今天（2026-07-05）12:00 前限一次，送 10000 金幣
-app.post('/api/roulette/special-login-bonus', async (req, res) => {
-    const { username } = req.body;
-    if (!username) return res.json({ success: false, message: '請先登入' });
-    const today = new Date().toISOString().split('T')[0];
-    const deadline = '2026-07-05';
-    const now = new Date();
-    const deadlineDate = new Date('2026-07-05T12:00:00+08:00'); // 台北時間中午12點
-    if (now > deadlineDate) return res.json({ success: false, message: '已超過領取時間（中午12:00），下次請早！' });
-    if (!rouletteDbAvailable || !rouletteDb) return res.json({ success: false, message: '伺服器維護中' });
-    try {
-        const check = await rouletteDb.execute({ sql: `SELECT lastSpecialBonus FROM players WHERE username = ?`, args: [username] });
-        if (check.rows && check.rows.length > 0) {
-            const last = check.rows[0].lastSpecialBonus || '';
-            if (last === today) return res.json({ success: false, message: '此活動已領過，一個帳號僅限一次' });
-        }
-        await rouletteDb.execute({ sql: `UPDATE players SET score = score + 10000, lastSpecialBonus = ? WHERE username = ?`, args: [today, username] });
-        const scoreResult = await rouletteDb.execute({ sql: `SELECT score FROM players WHERE username = ?`, args: [username] });
-        const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
-        console.log(`🎁 限定登入獎勵！${username} 獲得 10000 金幣`);
-        res.json({ success: true, amount: 10000, newScore, message: '恭喜獲得限定登入獎勵 +10000 金幣！' });
     } catch(e) { res.json({ success: false, message: '領取失敗，請稍後再試' }); }
 });
 
