@@ -105,7 +105,7 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN invite_code TEXT DEFAULT ''` }).catch(e => {});
         rouletteDb.execute({ sql: `ALTER TABLE players ADD COLUMN used_invite_code TEXT DEFAULT ''` }).catch(e => {});
         // 邀請記錄表
-        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 200, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
+        rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_invites (id INTEGER PRIMARY KEY AUTOINCREMENT, inviter TEXT NOT NULL, invited TEXT NOT NULL, reward INTEGER DEFAULT 10000, time TEXT DEFAULT CURRENT_TIMESTAMP, claimed INTEGER DEFAULT 0)` }).catch(e => console.log('建立 roulette_invites 表格失敗:', e.message));
         rouletteDb.execute({ sql: `ALTER TABLE roulette_invites ADD COLUMN claimed INTEGER DEFAULT 0` }).catch(e => {});
         // 建立 roulette_bets 表格（所有下注追蹤）
         rouletteDb.execute({ sql: `CREATE TABLE IF NOT EXISTS roulette_bets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, round_id TEXT, bet_type TEXT, choice TEXT, amount INTEGER, created_at TEXT DEFAULT (datetime('now')))` }).catch(e => console.log('建立 roulette_bets 表格失敗:', e.message));
@@ -1421,9 +1421,9 @@ app.post('/api/roulette/register', async (req, res) => {
         localPlayers[username] = { password, score: 1000, realname, phone, email, invitedBy: inviteCode || null };
         // 邀請人獲得獎勵
         if (inviteCode && localPlayers[inviteCode]) {
-            localPlayers[inviteCode].score += 200;
-            inviterBonus = 200;
-            console.log('邀請獎勵發放:', inviteCode, '+200, 帳戶:', localPlayers[inviteCode].score);
+            localPlayers[inviteCode].score += 10000;
+            inviterBonus = 10000;
+            console.log('邀請獎勵發放:', inviteCode, '+10000, 帳戶:', localPlayers[inviteCode].score);
         }
         console.log('本地測試模式：註冊成功, username:', username, '| 姓名:', realname, '| 電話:', phone, '| 信箱:', email);
         return res.json({ success: true, message: '註冊成功！', inviterBonus });
@@ -1490,18 +1490,18 @@ app.post('/api/roulette/register', async (req, res) => {
             const inviterCheck = await rouletteDb.execute('SELECT score FROM players WHERE username = ?', [inviteCode]).catch(e => null);
             if (inviterCheck && inviterCheck.rows && inviterCheck.rows.length > 0) {
                 // 邀請人存在，發放獎勵（跟撲克一样：立即發放 + 記錄 claimed=0）
-                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [inviteCode] });
-                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 200 WHERE username = ?`, args: [username] });
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 10000 WHERE username = ?`, args: [inviteCode] });
+                await rouletteDb.execute({ sql: `UPDATE players SET score = score + 10000 WHERE username = ?`, args: [username] });
                 // 記錄到 roulette_invites（claimed=0 等之後領取，跟撲克一样）
-                await rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 200, 0)`, args: [inviteCode, username] });
-                inviterBonus = 200;
-                console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+200, 新用戶+200');
+                await rouletteDb.execute({ sql: `INSERT INTO roulette_invites (inviter, invited, reward, claimed) VALUES (?, ?, 10000, 0)`, args: [inviteCode, username] });
+                inviterBonus = 10000;
+                console.log('邀請獎勵:', username, '使用了邀請碼', inviteCode, '邀請人+10000, 新用戶+10000');
             } else {
                 // 邀請碼無效，不發放獎勵
                 console.log('邀請碼無效:', inviteCode);
             }
         }
-        res.json({ success: true, message: '註冊成功！獲得 1,000 遊戲金' + (inviterBonus > 0 ? '（含邀請獎勵 200 金幣）' : ''), inviterBonus });
+        res.json({ success: true, message: '註冊成功！獲得 1,000 遊戲金' + (inviterBonus > 0 ? '（含邀請獎勵 10000 金幣）' : ''), inviterBonus });
     } catch(e) {
         console.log('註冊失敗, error:', e.message);
         // 細分錯誤類型

@@ -3029,7 +3029,7 @@ function showMyInviteCode() {
                 document.body.appendChild(modal);
             }
             modal.style.display = 'flex';
-            modal.querySelector('div').innerHTML = '<div style="color:#ffd700;font-size:2rem;margin-bottom:15px;">🎟️ 我的邀請碼</div><div style="background:rgba(255,215,0,0.1);border:2px dashed #ffd700;border-radius:12px;padding:15px;margin:10px 0;"><span style="font-size:1.5rem;font-weight:bold;color:#ffd700;letter-spacing:2px;">' + myName + '</span></div><button onclick="copyRouletteInviteCode()" style="width:100%;padding:12px;background:#D4AF37;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-bottom:10px;">📋 一鍵複製邀請碼</button><p style="color:#888;font-size:0.85rem;">邀請好友雙方都可獲得金幣獎勵</p><div id="rouletteInviteRewards"></div><button onclick="document.getElementById(\'rouletteInviteModal\').style.display=\'none\'" style="margin-top:15px;padding:10px;background:#333;border:none;border-radius:10px;cursor:pointer;color:#fff;width:100%;">關閉</button>';
+            modal.querySelector('div').innerHTML = '<div style="color:#ffd700;font-size:2rem;margin-bottom:15px;">🎟️ 我的邀請碼</div><div style="background:rgba(255,215,0,0.1);border:2px dashed #ffd700;border-radius:12px;padding:15px;margin:10px 0;"><span style="font-size:1.5rem;font-weight:bold;color:#ffd700;letter-spacing:2px;">' + myName + '</span></div><button onclick="copyRouletteInviteCode()" style="width:100%;padding:12px;background:#D4AF37;border:none;border-radius:10px;font-size:1rem;font-weight:bold;cursor:pointer;color:#1a1a2e;margin-bottom:10px;">📋 一鍵複製邀請碼</button><p style="color:#888;font-size:0.85rem;">邀請好友雙方都可獲得 10000 金幣獎勵</p><div id="rouletteInviteRewards"></div><button onclick="document.getElementById(\'rouletteInviteModal\').style.display=\'none\'" style="margin-top:15px;padding:10px;background:#333;border:none;border-radius:10px;cursor:pointer;color:#fff;width:100%;">關閉</button>';
             
             // 載入邀請獎勵通知
             fetch('/api/roulette/invite-notifications', { method: 'GET', headers: { 'Authorization': 'Bearer ' + myName } }).then(r => r.json()).then(d => {
@@ -3038,7 +3038,7 @@ function showMyInviteCode() {
                     // 已發放（金幣直接入帳）
                     rewardsHtml = '<div style="background:#1a3a1a;border-radius:10px;padding:12px;margin-top:15px;text-align:center;"><div style="color:#00c864;font-size:1.2rem;font-weight:bold;">🎉 有人用過你的邀請碼！</div><div style="color:#ffd700;font-size:1.8rem;margin:10px 0;">已發放 +' + (d.totalEarned || 0) + ' 金幣</div><div style="color:#888;font-size:0.85rem;">共 ' + d.count + ' 次邀請</div></div>';
                 } else {
-                    rewardsHtml = '<div style="color:#888;font-size:0.85rem;margin-top:15px;text-align:center;">還沒有人使用你的邀請碼<br>分享給朋友，雙方都獲得獎勵</div>';
+                    rewardsHtml = '<div style="color:#888;font-size:0.85rem;margin-top:15px;text-align:center;">還沒有人使用你的邀請碼<br>分享給朋友，雙方都獲得 10000 金幣</div>';
                 }
                 document.getElementById('rouletteInviteRewards').innerHTML = rewardsHtml;
             }).catch(() => {});
