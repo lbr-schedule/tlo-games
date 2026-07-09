@@ -1333,7 +1333,7 @@ app.post('/api/roulette/claim-video', async (req, res) => {
         if (player.lastVideoClaim === today) {
             return res.json({ success: false, message: '今天已領過了，明天再來！' });
         }
-        player.score += 2000;
+        player.score += 10000;
         player.lastVideoClaim = today;
         return res.json({ success: true, amount: 2000, newScore: player.score });
     }
@@ -1356,7 +1356,7 @@ app.post('/api/roulette/claim-video', async (req, res) => {
         }
         
         await rouletteDb.execute({
-            sql: `UPDATE players SET score = score + 2000, lastVideoClaim = ? WHERE username = ?`,
+            sql: `UPDATE players SET score = score + 10000, lastVideoClaim = ? WHERE username = ?`,
             args: [today, username]
         });
         
@@ -1366,8 +1366,8 @@ app.post('/api/roulette/claim-video', async (req, res) => {
         });
         const newScore = scoreResult.rows ? scoreResult.rows[0].score : 0;
         
-        console.log('看片領金幣成功:', username, '+2000');
-        res.json({ success: true, amount: 2000, newScore });
+        console.log('看片領金幣成功:', username, '+10000');
+        res.json({ success: true, amount: 10000, newScore });
     } catch(e) {
         console.log('claim-video錯誤:', e.message);
         res.json({ success: false, message: '領取失敗，請稍後再試' });
