@@ -257,7 +257,9 @@ let rouletteState = {
     lastWinner: null,
     currentRoundId: null,    // 神秘中獎者 {username, amount, type}
     bigWinner: null,     // 大贏家 {username, amount}
-    rouletteAdIndex: 0   // 廣告輪播索引（持久化）
+    rouletteAdIndex: 0,  // 廣告輪播索引（持久化）
+    rouletteChatMessages: [],  // 聊天室訊息 {username, text, time, type}
+    rouletteLastMsgTime: 0     // 上一條訊息時間（防刷）
 };
 
 // 輪盤廣告設定
@@ -1013,7 +1015,8 @@ app.get('/api/roulette/status', (req, res) => {
             mysteryPool: rouletteState.mysteryPool,
             ad: null,
             lastWinner: rouletteState.lastWinner,
-            bigWinner: rouletteState.bigWinner
+            bigWinner: rouletteState.bigWinner,
+            chatMessages: rouletteState.rouletteChatMessages.slice(0, 20)
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
@@ -1955,6 +1958,16 @@ app.post('/api/roulette/save-history', async (req, res) => {
                     sql: 'UPDATE roulette_player_stats SET wins_today = wins_today + 1 WHERE username = ?',
                     args: [username]
                 }).catch(e3 => console.log('更新勝利計數失敗:', e3.message));
+                // 連勝系統
+                rouletteDb.execute({
+                    sql: `INSERT INTO roulette_player_stats (username, win_streak, max_win_streak) VALUES (?, 1, 1) ON CONFLICT(username) DO UPDATE SET win_streak = win_streak + 1, max_win_streak = MAX(max_win_streak, win_streak + 1)`,
+                    args: [username]
+                }).catch(e3 => console.log('更新連勝失敗:', e3.message));
+            } else {
+                rouletteDb.execute({
+                    sql: 'UPDATE roulette_player_stats SET win_streak = 0 WHERE username = ?',
+                    args: [username]
+                }).catch(e3 => console.log('重置連勝失敗:', e3.message));
             }
         } catch(e2) {
             console.log('更新玩家統計失敗:', e2.message);
@@ -2017,6 +2030,44 @@ app.post('/api/roulette/feedback', async (req, res) => {
     }
     
     res.json({ success: true });
+});
+
+
+// 即時聊天室 API（輪盤）
+const MAX_CHAT = 100, CHAT_CD = 3000;
+app.post('/api/roulette/chat', (req, res) => {
+    const { username, text, type } = req.body;
+    if (!username || !text) return res.json({ success: false });
+    const t = String(text).trim().slice(0, 200);
+    if (!t) return res.json({ success: false });
+    const now = Date.now();
+    if (rouletteState.rouletteLastMsgTime && (now - rouletteState.rouletteLastMsgTime) < CHAT_CD) {
+        const m = rouletteState.rouletteChatMessages[0];
+        if (m && m.text === t && m.username === username) return res.json({ success: false, message: '請勿重複發送' });
+    }
+    rouletteState.rouletteChatMessages.unshift({ username, text: t, time: now, type: type || 'normal' });
+    if (rouletteState.rouletteChatMessages.length > MAX_CHAT) rouletteState.rouletteChatMessages.pop();
+    rouletteState.rouletteLastMsgTime = now;
+    res.json({ success: true });
+});
+app.get('/api/roulette/chat/history', (req, res) => {
+    const { before } = req.query;
+    let msgs = rouletteState.rouletteChatMessages;
+    if (before) msgs = msgs.filter(m => m.time < parseInt(before));
+    res.json({ success: true, messages: msgs.slice(0, 50) });
+});
+app.get('/api/roulette/streak/:username', async (req, res) => {
+    const { username } = req.params;
+    if (!username) return res.json({ success: false });
+    if (LOCAL_TEST_MODE) {
+        const s = localStats[username] || {};
+        return res.json({ success: true, streak: s.win_streak || 0, maxStreak: s.max_win_streak || 0 });
+    }
+    if (!rouletteDbAvailable) return res.json({ success: false });
+    try {
+        const r = await rouletteDb.execute({ sql: 'SELECT win_streak, max_win_streak FROM roulette_player_stats WHERE username = ?', args: [username] });
+        res.json({ success: true, streak: r.rows?.[0]?.win_streak || 0, maxStreak: r.rows?.[0]?.max_win_streak || 0 });
+    } catch(e) { res.json({ success: false }); }
 });
 
 // 輪盤遊戲 - 管理員：查看所有玩家輸贏統計
