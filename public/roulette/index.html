@@ -2528,8 +2528,10 @@ let myStreak = 0, myMaxStreak = 0, lastChatLen = 0;
             const el = document.getElementById('chatMsgs');
             if (!el) return;
             if (msgs.length !== lastChatLen) {
-                el.innerHTML = msgs.map(renderChatMsg).join('');
-                if (chatPanelOpen) scrollChatToBottom();
+                // Reverse so newest is at bottom (oldest at top, scroll up to see older)
+                el.innerHTML = msgs.slice().reverse().map(renderChatMsg).join('');
+                // Always scroll to bottom when new message arrives
+                scrollChatToBottom();
                 lastChatLen = msgs.length;
             }
         }
