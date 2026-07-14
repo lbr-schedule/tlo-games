@@ -1016,7 +1016,7 @@ app.get('/api/roulette/status', (req, res) => {
             ad: null,
             lastWinner: rouletteState.lastWinner,
             bigWinner: rouletteState.bigWinner,
-            chatMessages: rouletteState.rouletteChatMessages.slice(0, 20)
+            chatMessages: rouletteState.rouletteChatMessages.slice(0, 50)
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
@@ -2034,7 +2034,7 @@ app.post('/api/roulette/feedback', async (req, res) => {
 
 
 // 即時聊天室 API（輪盤）
-const MAX_CHAT = 100, CHAT_CD = 3000;
+const MAX_CHAT = 200, CHAT_CD = 3000;
 app.post('/api/roulette/chat', (req, res) => {
     const { username, text, type } = req.body;
     if (!username || !text) return res.json({ success: false });
