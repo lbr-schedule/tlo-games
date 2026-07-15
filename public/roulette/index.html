@@ -273,6 +273,9 @@
         .chat-header-title { color: #ffd700; font-weight: bold; font-size: 0.95rem; }
         .chat-close { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
         .chat-msgs { flex: 1; overflow-y: auto; padding: 10px; max-height: 260px; }
+        .chat-pinned { background: rgba(255,215,0,0.12); border-bottom: 1px solid rgba(255,215,0,0.2); padding: 6px 10px; font-size: 0.78rem; color: #ffd700; line-height: 1.4; display: none; }
+        .chat-pinned.show { display: block; }
+        .chat-pinned-label { color: #ff8c00; font-weight: bold; font-size: 0.7rem; margin-right: 4px; }
         .chat-msg { margin-bottom: 8px; font-size: 0.82rem; line-height: 1.4; word-break: break-all; }
         .chat-msg .cm-user { color: #ffd700; font-weight: bold; }
         .chat-msg .cm-text { color: #e0e0e0; }
@@ -623,6 +626,7 @@
                 <div id="mysteryPoolDisplay" style="text-align:center;color:#ffd700;font-size:0.9rem;margin-top:4px;display:none;">🎁 神秘彩池：$<span id="poolAmount">0</span></div>
         <div id="chatPanel">
             <div class="chat-header"><span class="chat-header-title">💬 聊天室</span><button class="chat-close" onclick="toggleChatPanel()">✕</button></div>
+            <div class="chat-pinned" id="chatPinned"></div>
             <div class="chat-msgs" id="chatMsgs"></div>
             <div class="chat-input-row"><input class="chat-input" id="chatInput" placeholder="說點什麼..." onkeydown="if(event.key==='Enter')sendChatMsg()"><button class="chat-send" onclick="sendChatMsg()">發送</button></div>
         </div>
@@ -2519,6 +2523,17 @@ let myStreak = 0, myMaxStreak = 0, lastChatLen = 0;
         function loadChatFromStatus() {
             // chatMessages are in pollStatus data, called from updateChatFromData
         }
+        function showPinnedChat(text) {
+            const el = document.getElementById('chatPinned');
+            if (!el) return;
+            if (text) {
+                el.innerHTML = '<span class="chat-pinned-label">📌</span>' + text;
+                el.classList.add('show');
+            } else {
+                el.innerHTML = '';
+                el.classList.remove('show');
+            }
+        }
         function renderChatMsg(m) {
             const t = new Date(m.time).toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
             if (m.type === 'system') return '<div class="chat-msg system"><span class="cm-text">' + m.text + ' <span style="color:#666;font-size:0.75rem;">' + t + '</span></span></div>';
@@ -2567,6 +2582,7 @@ let myStreak = 0, myMaxStreak = 0, lastChatLen = 0;
                 console.log('Poll data:', data);
                 updateUI(data);
                 if (data.chatMessages) updateChatFromData(data.chatMessages);
+                if (data.pinnedChat) showPinnedChat(data.pinnedChat);
                 loadStreak();
                 
                 // Update countdown display every poll

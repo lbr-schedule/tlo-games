@@ -259,7 +259,8 @@ let rouletteState = {
     bigWinner: null,     // 大贏家 {username, amount}
     rouletteAdIndex: 0,  // 廣告輪播索引（持久化）
     rouletteChatMessages: [],  // 聊天室訊息 {username, text, time, type}
-    rouletteLastMsgTime: 0     // 上一條訊息時間（防刷）
+    rouletteLastMsgTime: 0,     // 上一條訊息時間（防刷）
+    pinnedChatMessage: '🎰 T-LO大轉盤 | 紅包雨、任務獎勵天天領 | 公平公正公開'  // 置頂訊息
 };
 
 // 輪盤廣告設定
@@ -1016,7 +1017,8 @@ app.get('/api/roulette/status', (req, res) => {
             ad: null,
             lastWinner: rouletteState.lastWinner,
             bigWinner: rouletteState.bigWinner,
-            chatMessages: rouletteState.rouletteChatMessages.slice(0, 50)
+            chatMessages: rouletteState.rouletteChatMessages.slice(0, 50),
+            pinnedChat: rouletteState.pinnedChatMessage
         };
         
         // 如果是result階段，隨機決定是否顯示廣告
