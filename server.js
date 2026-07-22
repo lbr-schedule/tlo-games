@@ -115,6 +115,13 @@ if (rouletteDb && !LOCAL_TEST_MODE) {
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_player_stats (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, total_bets INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0, total_losses INTEGER DEFAULT 0, total_win_amount INTEGER DEFAULT 0, total_lose_amount INTEGER DEFAULT 0, bet_count_today INTEGER DEFAULT 0, wins_today INTEGER DEFAULT 0, mystery_bets_today INTEGER DEFAULT 0, last_task_reset TEXT DEFAULT '', last_login_date TEXT DEFAULT '', login_streak INTEGER DEFAULT 0, streak_title TEXT DEFAULT '', weekly_bet INTEGER DEFAULT 0, last_weekly_reset TEXT DEFAULT '', level INTEGER DEFAULT 1, completed_tasks TEXT DEFAULT '[]')`
         }).catch(e => console.log('建立 roulette_player_stats 表格失敗:', e.message));
+        // 擴充欄位：win_streak / max_win_streak（若原本表格已存在則自動添加）
+        rouletteDb.execute({
+            sql: `ALTER TABLE roulette_player_stats ADD COLUMN win_streak INTEGER DEFAULT 0`,
+        }).catch(() => {});
+        rouletteDb.execute({
+            sql: `ALTER TABLE roulette_player_stats ADD COLUMN max_win_streak INTEGER DEFAULT 0`,
+        }).catch(() => {});
         // 建立 pets 表格（寵物系統）
         rouletteDb.execute({
             sql: `CREATE TABLE IF NOT EXISTS roulette_pets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, pet_type TEXT DEFAULT 'none', pet_name TEXT DEFAULT '', pet_level INTEGER DEFAULT 1, pet_xp INTEGER DEFAULT 0, pet_hunger INTEGER DEFAULT 100, pet_energy INTEGER DEFAULT 100, last_fed TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')))`
